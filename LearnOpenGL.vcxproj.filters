@@ -34,6 +34,15 @@
     <Filter Include="ThirdParty\OpenGL\includes\GLAD">
       <UniqueIdentifier>{bce43b95-057e-49b4-9ca7-98db7d54c3c8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{521b01f0-a70d-4fc6-b83a-5bfcd157623d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Vertex">
+      <UniqueIdentifier>{82266c06-7c2d-41d0-8a28-234e412359b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Fragment">
+      <UniqueIdentifier>{df568979-6858-4087-afaa-aa5d842c35e2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LearnOpenGL\Source\Private\main.cpp">
