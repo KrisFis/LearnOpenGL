@@ -137,6 +137,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>GLFW/glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -156,10 +157,18 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>GLFW/glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="LearnOpenGL\Source\Private\main.cpp" />
+    <ClCompile Include="LearnOpenGL\ThirdParty\OpenGL\src\GLAD\glad.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="LearnOpenGL\ThirdParty\OpenGL\includes\GLAD\glad.h" />
+    <ClInclude Include="LearnOpenGL\ThirdParty\OpenGL\includes\GLFW\glfw3.h" />
+    <ClInclude Include="LearnOpenGL\ThirdParty\OpenGL\includes\GLFW\glfw3native.h" />
+    <ClInclude Include="LearnOpenGL\ThirdParty\OpenGL\includes\KHR\khrplatform.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
