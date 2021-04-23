@@ -1,6 +1,7 @@
 
-# VS Solution
+# Solutions
 .vs
+.idea
 
 # Binaries
 **/Binaries
