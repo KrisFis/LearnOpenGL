@@ -5,6 +5,8 @@
 #include <GLAD/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Shader.h"
+
 // typedefs
 typedef unsigned int FId;
 
@@ -75,7 +77,7 @@ void BindEvents(GLFWwindow* Window)
 	glfwSetFramebufferSizeCallback(Window, &WindowSizeChanged);
 }
 
-void ProcessDraw(GLFWwindow* Window, const FId& ProgramId, const FId& VertexArrayId)
+void ProcessDraw(FShader ShaderToUse, const FId& VertexArrayId)
 {
 	// Clear part
 	{
@@ -87,25 +89,23 @@ void ProcessDraw(GLFWwindow* Window, const FId& ProgramId, const FId& VertexArra
 	}
 
 	// Defines which program to use
-	glUseProgram(ProgramId);
+	ShaderToUse.Apply();
 
 	// Binds vertex array
 	glBindVertexArray(VertexArrayId);
 
 	// TRIANGLES
-	// glDrawArrays(GL_TRIANGLES, 0, 3);
-
-	// ELEMENTS
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 bool CreateAndBindTriangle(const FId& VertexArrayId, FId* OutBufferId)
 {
 	// Triangle in center
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f
+        // positions         // colors
+         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
+         0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top
 	};
 
 	FId resultVertexBufferId;
@@ -123,11 +123,13 @@ bool CreateAndBindTriangle(const FId& VertexArrayId, FId* OutBufferId)
 	// Fills data
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// Defines how data should be represented
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-
-	// Activates data representation
+	// Defines how POSITION should be represented
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
 	glEnableVertexAttribArray(0);
+
+	// Defines how COLOR should be represented
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6* sizeof(float), (void*)(3* sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -138,64 +140,7 @@ bool CreateAndBindTriangle(const FId& VertexArrayId, FId* OutBufferId)
 	return true;
 }
 
-bool CreateAndBindSquare(const FId& VertexArrayId, std::vector<FId>* OutBuffersIds)
-{
-	float vertices[] = {
-		 0.5f,  0.5f, 0.0f,  // top right
-		 0.5f, -0.5f, 0.0f,  // bottom right
-		-0.5f, -0.5f, 0.0f,  // bottom left
-		-0.5f,  0.5f, 0.0f   // top left 
-	};
-	unsigned int indices[] = {
-		0, 1, 3,  // first Triangle
-		1, 2, 3   // second Triangle
-	};
-
-	FId resultElementsBufferId, resultVertexBufferId;
-
-	glGenBuffers(1, &resultElementsBufferId);
-	glGenBuffers(1, &resultVertexBufferId);
-
-	glBindVertexArray(VertexArrayId);
-
-	// Start of VERTEX ARRAY
-	//////////////////////////////////////////////////////////////////////////
-
-	glBindBuffer(GL_ARRAY_BUFFER, resultVertexBufferId);
-
-	// Start of VERTEX BUFFER
-	//////////////////////////////////////////////////////////////////////////
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, resultElementsBufferId);
-
-	// Start of ELEMENT BUFFER
-	//////////////////////////////////////////////////////////////////////////
-
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	//////////////////////////////////////////////////////////////////////////
-	// End of ELEMENT BUFFER
-
-	// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // DONT UNBOUND !
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//////////////////////////////////////////////////////////////////////////
-	// End of VERTEX BUFFER
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	//////////////////////////////////////////////////////////////////////////
-	// End of VERTEX ARRAY
-
-	glBindVertexArray(0);
-
-	return true;
-}
-
-bool CreateMainVertexArray(FId* OutArrayId)
+bool CreateVertexArray(FId* OutArrayId)
 {
 	FId resultArrayId;
 	glGenVertexArrays(1, &resultArrayId);
@@ -204,7 +149,7 @@ bool CreateMainVertexArray(FId* OutArrayId)
 	return true;
 }
 
-bool CreateMainWindow(GLFWwindow** OutWindow)
+bool CreateInitWindow(GLFWwindow** OutWindow)
 {
 	if (!glfwInit()) 
 	{
@@ -231,89 +176,37 @@ bool CreateMainWindow(GLFWwindow** OutWindow)
 		return false;
 	}
 
+    BindEvents(resultWindow);
 	glViewport(0, 0, 800, 600);
 
 	if (OutWindow) *OutWindow = resultWindow;
 	return true;
 }
 
-bool CreateMainProgram(FId* OutProgramId)
-{
-	FId vertexShaderId, fragmentShaderId;
-
-	// Vertex
-	{
-		const char* vertexShaderSource = "#version 330 core\n"
-			"layout (location = 0) in vec3 aPos;\n"
-			"void main()\n"
-			"{\n"
-			"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-			"}\0";
-
-		if (!CompileShader(GL_VERTEX_SHADER, "VERTEX", vertexShaderSource, &vertexShaderId))
-		{
-			return false;
-		}
-	}
-
-	// Fragment
-	{
-		const char* fragmentShaderSource = "#version 330 core\n"
-			"out vec4 FragColor;\n"
-			"void main()\n"
-			"{\n"
-			"	FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-			"}\0";
-
-		if (!CompileShader(GL_FRAGMENT_SHADER, "FRAGMENT", fragmentShaderSource, &fragmentShaderId))
-		{
-			return false;
-		}
-	}
-
-	FId resultProgramId;
-	if (!CreateAndLinkProgram(vertexShaderId, fragmentShaderId, &resultProgramId))
-	{
-		return false;
-	}
-
-	glDeleteShader(vertexShaderId);
-	glDeleteShader(fragmentShaderId);
-
-	if(OutProgramId) *OutProgramId = resultProgramId;
-	return true;
-}
-
 int RenderMain()
 {
 	GLFWwindow* mainWindow;
-	if (!CreateMainWindow(&mainWindow))
+	if (!CreateInitWindow(&mainWindow))
 	{
 		glfwTerminate();
 		return -1;
 	}
 
-	FId mainProgramId;
-	if (!CreateMainProgram(&mainProgramId))
+	FId vertexArrayId;
+	if (!CreateVertexArray(&vertexArrayId))
 	{
 		glfwTerminate();
 		return -2;
 	}
 
-	FId mainVertexArrayId;
-	if (!CreateMainVertexArray(&mainVertexArrayId))
-	{
-		glfwTerminate();
-		return -3;
-	}
+ 	if (!CreateAndBindTriangle(vertexArrayId, nullptr /* WE DO NOT CHANGE BUFFERS NOW */))
+ 	{
+ 		glfwTerminate();
+ 		return -3;
+ 	}
 
-// 	if (!CreateAndBindTriangle(mainVertexArrayId, nullptr /* WE DO NOT CHANGE BUFFERS NOW */))
-// 	{
-// 		glfwTerminate();
-// 		return -4;
-// 	}
-
-	if (!CreateAndBindSquare(mainVertexArrayId, nullptr /* WE DO NOT CHANGE BUFFERS NOW */))
+ 	FShader testShader("TestShader.vs", "TestShader.fs");
+ 	if(!testShader.IsInitialized())
 	{
 		glfwTerminate();
 		return -4;
@@ -323,30 +216,23 @@ int RenderMain()
 	while (!glfwWindowShouldClose(mainWindow))
 	{
 		ProcessInput(mainWindow);
-		ProcessDraw(mainWindow, mainProgramId, mainVertexArrayId);
+		ProcessDraw(testShader, vertexArrayId);
 
 		glfwSwapBuffers(mainWindow);
 		glfwPollEvents();
 	}
 
-	// Not necessary
-// 	glDeleteVertexArrays(1, &mainVertexArrayId);
-// 	glDeleteBuffers(1, &triangleVertexBuffleId);
-// 	glDeleteProgram(mainProgramId);
-// 	glfwDestroyWindow(mainWindow);
-
 	glfwTerminate();
-
 	return 0;
 }
 
-int main(void)
+int main()
 {
 	int errorCode = RenderMain();
 	if (errorCode)
 	{
 		// Give time to look
-		std::cout << "Program exited with Error [" << errorCode << "]" << std::endl;
+		std::cout << "Error occurred [" << errorCode << "]" << std::endl;
 		system("pause");
 	}
 
