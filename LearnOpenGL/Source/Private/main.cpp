@@ -1,9 +1,12 @@
 
 #include <iostream>
-#include <vector>
 
 #include <GLAD/glad.h>
 #include <GLFW/glfw3.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
+#include <stb_image.h>
 
 #include "Shader.h"
 
@@ -77,7 +80,7 @@ void BindEvents(GLFWwindow* Window)
 	glfwSetFramebufferSizeCallback(Window, &WindowSizeChanged);
 }
 
-void ProcessDraw(FShader ShaderToUse, const FId& VertexArrayId)
+void ProcessDraw(FShader ShaderToUse, const FId& VertexArrayId, const FId TexturesIds[2])
 {
 	// Clear part
 	{
@@ -91,52 +94,107 @@ void ProcessDraw(FShader ShaderToUse, const FId& VertexArrayId)
 	// Defines which program to use
 	ShaderToUse.Apply();
 
+	glActiveTexture(GL_TEXTURE0);
+ 	glBindTexture(GL_TEXTURE_2D, TexturesIds[0]);
+
+ 	glActiveTexture(GL_TEXTURE1);
+ 	glBindTexture(GL_TEXTURE_2D, TexturesIds[1]);
+
 	// Binds vertex array
 	glBindVertexArray(VertexArrayId);
 
 	// TRIANGLES
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
-bool CreateAndBindTriangle(const FId& VertexArrayId, FId* OutBufferId)
+bool CreateAndBindTexture(const char* TextureFilePath, FId* OutTextureId)
 {
-	// Triangle in center
+	FId resultTextureId;
+	glGenTextures(1, &resultTextureId);
+	glBindTexture(GL_TEXTURE_2D, resultTextureId);
+	
+	// set the texture wrapping parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load(TextureFilePath, &width, &height, &nrChannels, 0);
+	if(data)
+	{
+		if(data[0] == '\0')
+		{
+			std::cout << "Texture load failed [" << TextureFilePath << "] [EMPTY]" << std::endl;
+		}
+		else if(nrChannels < 3 || nrChannels > 4)
+		{
+			std::cout << "Texture load failed [" << TextureFilePath << "] [NOT_SUPPORTED_CHANNELS]" << std::endl;
+		}
+		else
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, (nrChannels == STBI_rgb_alpha) ? GL_RGBA : GL_RGB, width, height, 0, (nrChannels == STBI_rgb_alpha) ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			stbi_image_free(data);
+
+			std::cout << "Texture load successful [" << TextureFilePath << "]" << std::endl;
+
+			if(OutTextureId) *OutTextureId = resultTextureId;
+			return true;
+		}
+	}
+	else
+	{
+		std::cout << "Texture load failed [" << TextureFilePath << "] [NOT_FOUND]" << std::endl;
+	}
+
+	return false;
+}
+
+bool CreateAndBindSquare(const FId& VertexArrayId, FId* OutBuffersIds[2])
+{
 	float vertices[] = {
-        // positions         // colors
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-         0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top
+		// positions          // colors           // texture coords
+		0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+		0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
 	};
 
-	FId resultVertexBufferId;
-	glGenBuffers(1, &resultVertexBufferId);
+	unsigned int indices[] = {
+		 0, 1, 3, // first triangle
+		 1, 2, 3  // second triangle
+	};
 
-	// From now on do changes to vertex array
+	FId resultBuffersIds[2];
+	glGenBuffers(2, resultBuffersIds);
+
 	glBindVertexArray(VertexArrayId);
 
-	// Within VERTEX ARRAY
-	//////////////////////////////////////////////////////////////////////////
-
-	// Binds buffer to ARRAY_BUFFER
-	glBindBuffer(GL_ARRAY_BUFFER, resultVertexBufferId);
-
-	// Fills data
+	glBindBuffer(GL_ARRAY_BUFFER, resultBuffersIds[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// Defines how POSITION should be represented
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, resultBuffersIds[1]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	// Defines how COLOR should be represented
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6* sizeof(float), (void*)(3* sizeof(float)));
+	// color attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	//////////////////////////////////////////////////////////////////////////
+	// texture coord attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// Unbind vertex array
 	glBindVertexArray(0);
 
-	if (OutBufferId) *OutBufferId = resultVertexBufferId;
+	if (OutBuffersIds) *OutBuffersIds = resultBuffersIds;
 	return true;
 }
 
@@ -183,8 +241,10 @@ bool CreateInitWindow(GLFWwindow** OutWindow)
 	return true;
 }
 
-int RenderMain()
+int main()
 {
+	stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+
 	GLFWwindow* mainWindow;
 	if (!CreateInitWindow(&mainWindow))
 	{
@@ -199,24 +259,36 @@ int RenderMain()
 		return -2;
 	}
 
- 	if (!CreateAndBindTriangle(vertexArrayId, nullptr /* WE DO NOT CHANGE BUFFERS NOW */))
+ 	if (!CreateAndBindSquare(vertexArrayId, nullptr /* WE DO NOT CHANGE BUFFERS NOW */))
  	{
  		glfwTerminate();
  		return -3;
  	}
 
- 	FShader testShader("TestShader.vs", "TestShader.fs");
+ 	FId texturesIds[2];
+ 	if( !CreateAndBindTexture("../../Content/Textures/container.jpg", &texturesIds[0]) ||
+ 		!CreateAndBindTexture("../../Content/Textures/awesomeface.png", &texturesIds[1]))
+	{
+		glfwTerminate();
+		return -4;
+	}
+
+ 	FShader testShader("TestShader.vert", "TestShader.frag");
  	if(!testShader.IsInitialized())
 	{
 		glfwTerminate();
 		return -4;
 	}
 
+	// Texture samplers
+	testShader.SetInt("texture1", 0);
+	testShader.SetInt("texture2", 1);
+
 	// Main render loop
 	while (!glfwWindowShouldClose(mainWindow))
 	{
 		ProcessInput(mainWindow);
-		ProcessDraw(testShader, vertexArrayId);
+		ProcessDraw(testShader, vertexArrayId, texturesIds);
 
 		glfwSwapBuffers(mainWindow);
 		glfwPollEvents();
@@ -224,17 +296,4 @@ int RenderMain()
 
 	glfwTerminate();
 	return 0;
-}
-
-int main()
-{
-	int errorCode = RenderMain();
-	if (errorCode)
-	{
-		// Give time to look
-		std::cout << "Error occurred [" << errorCode << "]" << std::endl;
-		system("pause");
-	}
-
-	return errorCode;
 }

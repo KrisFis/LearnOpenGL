@@ -16,10 +16,6 @@ public: // Getters
 	inline bool IsInitialized() const { return bIsInitialized; }
     inline const unsigned int& GetProgramId() const { return ProgramId; }
 
-public: // Setters
-
-    inline void SetProgramId(const unsigned int& InId) { ProgramId = InId; }
-
 public: // External methods
 
 	void Apply();
