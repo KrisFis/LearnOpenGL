@@ -4,11 +4,8 @@
 #include <GLAD/glad.h>
 #include <GLFW/glfw3.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_FAILURE_USERMSG
-#include <stb_image.h>
-
 #include "Shader.h"
+#include "Texture.h"
 
 // typedefs
 typedef unsigned int FId;
@@ -80,7 +77,7 @@ void BindEvents(GLFWwindow* Window)
 	glfwSetFramebufferSizeCallback(Window, &WindowSizeChanged);
 }
 
-void ProcessDraw(FShader ShaderToUse, const FId& VertexArrayId, const FId TexturesIds[2])
+void ProcessDraw(const FId& VertexArrayId, FShader ShaderToUse, FTexture TexturesToUse[2])
 {
 	// Clear part
 	{
@@ -94,63 +91,14 @@ void ProcessDraw(FShader ShaderToUse, const FId& VertexArrayId, const FId Textur
 	// Defines which program to use
 	ShaderToUse.Apply();
 
-	glActiveTexture(GL_TEXTURE0);
- 	glBindTexture(GL_TEXTURE_2D, TexturesIds[0]);
-
- 	glActiveTexture(GL_TEXTURE1);
- 	glBindTexture(GL_TEXTURE_2D, TexturesIds[1]);
+	TexturesToUse[0].Apply();
+	TexturesToUse[1].Apply();
 
 	// Binds vertex array
 	glBindVertexArray(VertexArrayId);
 
 	// TRIANGLES
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-}
-
-bool CreateAndBindTexture(const char* TextureFilePath, FId* OutTextureId)
-{
-	FId resultTextureId;
-	glGenTextures(1, &resultTextureId);
-	glBindTexture(GL_TEXTURE_2D, resultTextureId);
-	
-	// set the texture wrapping parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	
-	// set texture filtering parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load(TextureFilePath, &width, &height, &nrChannels, 0);
-	if(data)
-	{
-		if(data[0] == '\0')
-		{
-			std::cout << "Texture load failed [" << TextureFilePath << "] [EMPTY]" << std::endl;
-		}
-		else if(nrChannels < 3 || nrChannels > 4)
-		{
-			std::cout << "Texture load failed [" << TextureFilePath << "] [NOT_SUPPORTED_CHANNELS]" << std::endl;
-		}
-		else
-		{
-			glTexImage2D(GL_TEXTURE_2D, 0, (nrChannels == STBI_rgb_alpha) ? GL_RGBA : GL_RGB, width, height, 0, (nrChannels == STBI_rgb_alpha) ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
-			glGenerateMipmap(GL_TEXTURE_2D);
-			stbi_image_free(data);
-
-			std::cout << "Texture load successful [" << TextureFilePath << "]" << std::endl;
-
-			if(OutTextureId) *OutTextureId = resultTextureId;
-			return true;
-		}
-	}
-	else
-	{
-		std::cout << "Texture load failed [" << TextureFilePath << "] [NOT_FOUND]" << std::endl;
-	}
-
-	return false;
 }
 
 bool CreateAndBindSquare(const FId& VertexArrayId, FId* OutBuffersIds[2])
@@ -243,8 +191,6 @@ bool CreateInitWindow(GLFWwindow** OutWindow)
 
 int main()
 {
-	stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-
 	GLFWwindow* mainWindow;
 	if (!CreateInitWindow(&mainWindow))
 	{
@@ -265,9 +211,8 @@ int main()
  		return -3;
  	}
 
- 	FId texturesIds[2];
- 	if( !CreateAndBindTexture("../../Content/Textures/container.jpg", &texturesIds[0]) ||
- 		!CreateAndBindTexture("../../Content/Textures/awesomeface.png", &texturesIds[1]))
+ 	FTexture testTextures[] = {FTexture("container.jpg", ETextureType::JPEG), FTexture("container.jpg", ETextureType::JPEG)};
+ 	if(!testTextures[0].IsInitialized() || !testTextures[1].IsInitialized())
 	{
 		glfwTerminate();
 		return -4;
@@ -277,7 +222,7 @@ int main()
  	if(!testShader.IsInitialized())
 	{
 		glfwTerminate();
-		return -4;
+		return -5;
 	}
 
 	// Texture samplers
@@ -288,7 +233,7 @@ int main()
 	while (!glfwWindowShouldClose(mainWindow))
 	{
 		ProcessInput(mainWindow);
-		ProcessDraw(testShader, vertexArrayId, texturesIds);
+		ProcessDraw(vertexArrayId, testShader, testTextures);
 
 		glfwSwapBuffers(mainWindow);
 		glfwPollEvents();
