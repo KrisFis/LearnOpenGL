@@ -14,11 +14,13 @@ public: // Constructors
 public: // Getters
 
 	inline bool IsInitialized() const { return bIsInitialized; }
+	inline bool IsUsed() const { return bIsUsed; }
     inline const unsigned int& GetProgramId() const { return ProgramId; }
 
 public: // External methods
 
-	void Apply();
+	void Use();
+	void Clear();
 
 	void SetBool(const char* Name, bool Value) const;
 	void SetInt(const char* Name, const int& Value) const;
@@ -29,5 +31,6 @@ private: // Fields
 
     unsigned int ProgramId;
 
+	bool bIsUsed;
 	bool bIsInitialized;
 };

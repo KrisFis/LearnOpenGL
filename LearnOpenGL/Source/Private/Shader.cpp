@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <assert.h>
 
 static bool HasErrors(const unsigned int& Id, const std::string& ShaderType)
 {
@@ -36,6 +37,7 @@ static bool HasErrors(const unsigned int& Id, const std::string& ShaderType)
 
 FShader::FShader(const char* VertexFilename, const char* FragmentFilename)
 	: ProgramId(0)
+	, bIsUsed(false)
 	, bIsInitialized(false)
 {
 	// 1. retrieve the vertex/fragment source code from filePath
@@ -115,13 +117,20 @@ FShader::FShader(const char* VertexFilename, const char* FragmentFilename)
 }
 
 FShader::~FShader()
-{
+{}
 
-}
-
-void FShader::Apply()
+void FShader::Use()
 {
 	glUseProgram(ProgramId);
+
+	bIsUsed = true;
+}
+
+void FShader::Clear()
+{
+	glUseProgram(0);
+
+	bIsUsed = false;
 }
 
 void FShader::SetBool(const char* Name, bool Value) const

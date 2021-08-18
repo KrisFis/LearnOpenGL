@@ -4,17 +4,25 @@
 #include <GLAD/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <jpgd.h>
-#include <lodepng.h>
+#include <stb_image.h>
 
 #include <string>
 #include <iostream>
+#include <assert.h>
 
 FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
 	: Id(0)
+	, UseIndex(-1)
 	, Type(TextureType)
 	, bIsInitialized(false)
 {
+	static bool flipFixed = false;
+	if(!flipFixed)
+	{
+		stbi_set_flip_vertically_on_load(true);
+		flipFixed = true;
+	}
+
 	glGenTextures(1, &Id);
 	glBindTexture(GL_TEXTURE_2D, Id);
 
@@ -28,63 +36,54 @@ FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
 
 	const std::string fullTextPath = std::string("../../Content/Textures/") + std::string(TextureFilename);
 
-	switch (TextureType)
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load(fullTextPath.c_str(), &width, &height, &nrChannels, 0);
+
+	if(!data)
 	{
-	case ETextureType::JPEG:
+		std::cout << "Texture load failed [" << TextureFilename << "] [NOT_FOUND]" << std::endl;
+	}
+	else
+	{
+		switch(TextureType)
 		{
-			int width, height, nrChannels;
-			unsigned char* data = jpgd::decompress_jpeg_image_from_file(fullTextPath.c_str(), &width, &height, &nrChannels, 3);
-			if(!data)
-			{
-				std::cout << "Texture load failed [" << TextureFilename << "] [NOT_FOUND]" << std::endl;
-			}
-			else if(data[0] == '\0')
-			{
-				std::cout << "Texture load failed [" << TextureFilename << "] [EMPTY]" << std::endl;
-			}
-			else
-			{
+			case ETextureType::JPEG:
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-				glGenerateMipmap(GL_TEXTURE_2D);
-
-				jpgd::free_image(data);
-
-				std::cout << "Texture load successful [" << TextureFilename << "]" << std::endl;
-			}
+			break;
+			case ETextureType::PNG:
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			break;
+			default:
+				assert(false);
+			return;
 		}
-		break;
-	case ETextureType::PNG:
-		{
-			std::vector<unsigned char> data;
-			unsigned int width, height;
-			lodepng::decode(data, width, height, fullTextPath);
-			if(data.size() <= 0)
-			{
-				std::cout << "Texture load failed [" << TextureFilename << "] [NOT_FOUND]" << std::endl;
-			}
-			else if(data[0] == '\0')
-			{
-				std::cout << "Texture load failed [" << TextureFilename << "] [EMPTY]" << std::endl;
-			}
-			else
-			{
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
-				glGenerateMipmap(GL_TEXTURE_2D);
 
-				std::cout << "Texture load successful [" << TextureFilename << "]" << std::endl;
-			}
-		}
-		break;
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		stbi_image_free(data);
+
+		std::cout << "Texture load successful [" << TextureFilename << "]" << std::endl;
+		bIsInitialized = true;
 	}
 
-	bIsInitialized = true;
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 FTexture::~FTexture()
 {}
 
-void FTexture::Apply()
+void FTexture::Use(unsigned char Index)
 {
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0 + Index);
  	glBindTexture(GL_TEXTURE_2D, Id);
+
+	UseIndex = Index;
+}
+
+void FTexture::Clear()
+{
+	glActiveTexture(GL_TEXTURE0 + (unsigned char)UseIndex);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	UseIndex = -1;
 }

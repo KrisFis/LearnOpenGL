@@ -31,8 +31,7 @@ endif(MSVC)
 include_directories(
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/include"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/LodePNG/include"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/JPEGCompressor/include"
+    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/STB/include"
 )
 
 link_directories(
@@ -41,9 +40,9 @@ link_directories(
 
 # Sources
 file(GLOB_RECURSE "ALL_SOURCE_FILES"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Private/*.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/*/src/*.c"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/*/src/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Private/*.cpp"
 )
 
 # Libs

@@ -89,10 +89,14 @@ void ProcessDraw(const FId& VertexArrayId, FShader ShaderToUse, FTexture Texture
 	}
 
 	// Defines which program to use
-	ShaderToUse.Apply();
+	ShaderToUse.Use();
 
-	TexturesToUse[0].Apply();
-	TexturesToUse[1].Apply();
+	// Texture samplers
+	ShaderToUse.SetInt("texture1", 0);
+	ShaderToUse.SetInt("texture2", 1);
+
+	TexturesToUse[0].Use(0);
+	TexturesToUse[1].Use(1);
 
 	// Binds vertex array
 	glBindVertexArray(VertexArrayId);
@@ -211,7 +215,7 @@ int main()
  		return -3;
  	}
 
- 	FTexture testTextures[] = {FTexture("container.jpg", ETextureType::JPEG), FTexture("container.jpg", ETextureType::JPEG)};
+ 	FTexture testTextures[] = {FTexture("container.jpg", ETextureType::JPEG), FTexture("awesomeface.png", ETextureType::PNG)};
  	if(!testTextures[0].IsInitialized() || !testTextures[1].IsInitialized())
 	{
 		glfwTerminate();
@@ -224,10 +228,6 @@ int main()
 		glfwTerminate();
 		return -5;
 	}
-
-	// Texture samplers
-	testShader.SetInt("texture1", 0);
-	testShader.SetInt("texture2", 1);
 
 	// Main render loop
 	while (!glfwWindowShouldClose(mainWindow))
