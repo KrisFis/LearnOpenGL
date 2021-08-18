@@ -10,6 +10,8 @@
 // typedefs
 typedef unsigned int FId;
 
+static float MixOpacity = 0.2f;
+
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 {
 	glViewport(0, 0, Width, Height);
@@ -63,13 +65,27 @@ bool CompileShader(const GLenum Type, const char* ShaderName, const char* Source
 
 void ProcessInput(GLFWwindow* Window)
 {
-	if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS && glfwGetKey(Window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+	const bool shiftPressed = (glfwGetKey(Window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+
+	if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS && shiftPressed)
 		glfwSetWindowShouldClose(Window, true);
 
 	if (glfwGetKey(Window, GLFW_KEY_F1) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	else if (glfwGetKey(Window, GLFW_KEY_F2) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	{
+		const float changeCount = (shiftPressed) ? 0.01f : 0.005f;
+		if(glfwGetKey(Window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		{
+			MixOpacity = (MixOpacity < changeCount) ? 0.f : MixOpacity - changeCount;
+		}
+		else if(glfwGetKey(Window, GLFW_KEY_UP) == GLFW_PRESS)
+		{
+			MixOpacity = (MixOpacity > 1.f - changeCount) ? 1.f : MixOpacity + changeCount;
+		}
+	}
 }
 
 void BindEvents(GLFWwindow* Window)
@@ -91,12 +107,15 @@ void ProcessDraw(const FId& VertexArrayId, FShader ShaderToUse, FTexture Texture
 	// Defines which program to use
 	ShaderToUse.Use();
 
-	// Texture samplers
-	ShaderToUse.SetInt("texture1", 0);
-	ShaderToUse.SetInt("texture2", 1);
+	// Textures
+	{
+		ShaderToUse.SetInt("texture1", 0);
+		ShaderToUse.SetInt("texture2", 1);
+		ShaderToUse.SetFloat("lerpValue", MixOpacity);
 
-	TexturesToUse[0].Use(0);
-	TexturesToUse[1].Use(1);
+		TexturesToUse[0].Use(0);
+		TexturesToUse[1].Use(1);
+	}
 
 	// Binds vertex array
 	glBindVertexArray(VertexArrayId);
