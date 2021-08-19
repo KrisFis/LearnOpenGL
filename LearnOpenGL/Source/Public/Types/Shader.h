@@ -2,6 +2,7 @@
 #pragma once
 
 #include <GLAD/glad.h>
+#include <glm/glm.hpp>
 
 class FShader
 {
@@ -26,6 +27,7 @@ public: // External methods
 	void SetInt(const char* Name, const int& Value) const;
 	void SetUInt(const char* Name, const unsigned int& Value) const;
 	void SetFloat(const char* Name, float Value) const;
+	void SetMatrix4(const char* Name, const glm::mat4& Value) const;
 
 private: // Fields
 

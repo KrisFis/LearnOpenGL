@@ -8,11 +8,18 @@
 #include "Texture.h"
 #include "Timer.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 // typedefs
 typedef unsigned int FId;
 
 static float DeltaSeconds = 0.f;
-static float MixOpacity = 0.2f;
+
+// Test
+static float Opacity = 0.2f;
+static float Rotation = 0.f;
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 {
@@ -77,15 +84,29 @@ void ProcessInput(GLFWwindow* Window)
 	else if (glfwGetKey(Window, GLFW_KEY_F2) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	// Opacity
 	{
 		const float changeCount = ((shiftPressed) ? 0.1f : 0.05f) * DeltaSeconds;
 		if(glfwGetKey(Window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		{
-			MixOpacity = (MixOpacity < changeCount) ? 0.f : MixOpacity - changeCount;
+			Opacity = (Opacity < changeCount) ? 0.f : Opacity - changeCount;
 		}
 		else if(glfwGetKey(Window, GLFW_KEY_UP) == GLFW_PRESS)
 		{
-			MixOpacity = (MixOpacity > 1.f - changeCount) ? 1.f : MixOpacity + changeCount;
+			Opacity = (Opacity > 1.f - changeCount) ? 1.f : Opacity + changeCount;
+		}
+	}
+
+	// Rotation
+	{
+		const float changeCount = ((shiftPressed) ? 0.5f : 0.25f) * DeltaSeconds;
+		if(glfwGetKey(Window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		{
+			Rotation += changeCount;
+		}
+		else if(glfwGetKey(Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		{
+			Rotation -= changeCount;
 		}
 	}
 }
@@ -113,10 +134,20 @@ void ProcessDraw(const FId& VertexArrayId, FShader ShaderToUse, FTexture Texture
 	{
 		ShaderToUse.SetInt("texture1", 0);
 		ShaderToUse.SetInt("texture2", 1);
-		ShaderToUse.SetFloat("lerpValue", MixOpacity);
+		ShaderToUse.SetFloat("lerpValue", Opacity);
 
 		TexturesToUse[0].Use(0);
 		TexturesToUse[1].Use(1);
+	}
+
+	// Trans Mat
+	{
+		ShaderToUse.SetMatrix4("transform",
+			glm::rotate(
+				glm::mat4(1.0f),
+				Rotation,
+				glm::vec3(0.0f, 0.0f, 1.0f)
+		));
 	}
 
 	// Binds vertex array

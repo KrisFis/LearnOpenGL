@@ -1,6 +1,8 @@
 
 #include "Shader.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -151,4 +153,9 @@ void FShader::SetUInt(const char* Name, const unsigned int& Value) const
 void FShader::SetFloat(const char* Name, float Value) const
 {
 	glUniform1f(glGetUniformLocation(ProgramId, Name), Value);
+}
+
+void FShader::SetMatrix4(const char* Name, const glm::mat4& Value) const
+{
+	glUniformMatrix4fv(glGetUniformLocation(ProgramId, Name), 1, GL_FALSE, glm::value_ptr(Value));
 }
