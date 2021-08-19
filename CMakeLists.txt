@@ -30,6 +30,7 @@ endif(MSVC)
 
 include_directories(
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public"
+    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Types"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/include"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/STB/include"
 )

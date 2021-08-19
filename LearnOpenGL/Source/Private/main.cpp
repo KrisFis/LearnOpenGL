@@ -6,10 +6,12 @@
 
 #include "Shader.h"
 #include "Texture.h"
+#include "Timer.h"
 
 // typedefs
 typedef unsigned int FId;
 
+static float DeltaSeconds = 0.f;
 static float MixOpacity = 0.2f;
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
@@ -76,7 +78,7 @@ void ProcessInput(GLFWwindow* Window)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	{
-		const float changeCount = (shiftPressed) ? 0.01f : 0.005f;
+		const float changeCount = ((shiftPressed) ? 0.1f : 0.05f) * DeltaSeconds;
 		if(glfwGetKey(Window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		{
 			MixOpacity = (MixOpacity < changeCount) ? 0.f : MixOpacity - changeCount;
@@ -249,13 +251,20 @@ int main()
 	}
 
 	// Main render loop
+	FTimer frameTimer;
 	while (!glfwWindowShouldClose(mainWindow))
 	{
+		frameTimer.Start();
+
 		ProcessInput(mainWindow);
 		ProcessDraw(vertexArrayId, testShader, testTextures);
 
 		glfwSwapBuffers(mainWindow);
 		glfwPollEvents();
+
+		frameTimer.Stop();
+		DeltaSeconds = (float)frameTimer.GetSeconds();
+		frameTimer.Reset();
 	}
 
 	glfwTerminate();
