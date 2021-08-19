@@ -20,6 +20,7 @@ static float DeltaSeconds = 0.f;
 // Test
 static float Opacity = 0.2f;
 static float Rotation = 0.f;
+static float PositionY = 0.f, PositionX = 0.f;
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 {
@@ -86,27 +87,55 @@ void ProcessInput(GLFWwindow* Window)
 
 	// Opacity
 	{
-		const float changeCount = ((shiftPressed) ? 0.1f : 0.05f) * DeltaSeconds;
-		if(glfwGetKey(Window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		{
-			Opacity = (Opacity < changeCount) ? 0.f : Opacity - changeCount;
-		}
-		else if(glfwGetKey(Window, GLFW_KEY_UP) == GLFW_PRESS)
-		{
-			Opacity = (Opacity > 1.f - changeCount) ? 1.f : Opacity + changeCount;
-		}
+
 	}
 
-	// Rotation
+	// Rotation && Translation && Opacity
 	{
-		const float changeCount = ((shiftPressed) ? 0.5f : 0.25f) * DeltaSeconds;
-		if(glfwGetKey(Window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		if(shiftPressed)
 		{
-			Rotation += changeCount;
+			const float rotationChange = 0.25f * DeltaSeconds;
+			if(glfwGetKey(Window, GLFW_KEY_LEFT) == GLFW_PRESS)
+			{
+				Rotation += rotationChange;
+			}
+			else if(glfwGetKey(Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+			{
+				Rotation -= rotationChange;
+			}
+
+			const float opacityChance = ((shiftPressed) ? 0.1f : 0.05f) * DeltaSeconds;
+			if(glfwGetKey(Window, GLFW_KEY_DOWN) == GLFW_PRESS)
+			{
+				Opacity = (Opacity < opacityChance) ? 0.f : Opacity - opacityChance;
+			}
+			else if(glfwGetKey(Window, GLFW_KEY_UP) == GLFW_PRESS)
+			{
+				Opacity = (Opacity > 1.f - opacityChance) ? 1.f : Opacity + opacityChance;
+			}
 		}
-		else if(glfwGetKey(Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		else
 		{
-			Rotation -= changeCount;
+			const float positionChange = 0.1f * DeltaSeconds;
+			if(glfwGetKey(Window, GLFW_KEY_UP) == GLFW_PRESS)
+			{
+				PositionX += positionChange;
+			}
+			if(glfwGetKey(Window, GLFW_KEY_LEFT) == GLFW_PRESS)
+			{
+				PositionY -= positionChange;
+			}
+			if(glfwGetKey(Window, GLFW_KEY_DOWN) == GLFW_PRESS)
+			{
+				PositionX -= positionChange;
+			}
+			if(glfwGetKey(Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+			{
+				PositionY += positionChange;
+			}
+
+			PositionY = glm::clamp(PositionY, -1.f, 1.f);
+			PositionX = glm::clamp(PositionX, -1.f, 1.f);
 		}
 	}
 }
@@ -142,12 +171,11 @@ void ProcessDraw(const FId& VertexArrayId, FShader ShaderToUse, FTexture Texture
 
 	// Trans Mat
 	{
-		ShaderToUse.SetMatrix4("transform",
-			glm::rotate(
-				glm::mat4(1.0f),
-				Rotation,
-				glm::vec3(0.0f, 0.0f, 1.0f)
-		));
+		glm::mat4 trans = glm::mat4(1.f);
+		trans =	glm::rotate(trans, Rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+		trans = glm::translate(trans, glm::vec3(PositionY, PositionX, 0.f));
+
+		ShaderToUse.SetMatrix4("transform", trans);
 	}
 
 	// Binds vertex array
