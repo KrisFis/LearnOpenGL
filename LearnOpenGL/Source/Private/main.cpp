@@ -16,21 +16,22 @@
 typedef unsigned int FId;
 
 // Window
-static unsigned short WindowWidth = 800;
-static unsigned short WindowHeight = 600;
+unsigned short GWindowWidth = 800;
+unsigned short GWindowHeight = 600;
 
 // Global
-static float DeltaSeconds = 0.f;
+float GLastSeconds = 0.f;
+float GDeltaSeconds = 0.f;
 
-// Test
-static float Opacity = 0.2f;
-static float Rotation = 0.f;
-static float PositionY = 0.f, PositionX = 0.f;
+// PlayMode
+glm::vec3 GCameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 GCameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 GCameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 {
-	WindowWidth = Width;
-	WindowHeight = Height;
+	GWindowWidth = Width;
+	GWindowHeight = Height;
 
 	glViewport(0, 0, Width, Height);
 }
@@ -95,114 +96,21 @@ void ProcessInput(GLFWwindow* Window)
 
 	// Rotation && Translation && Opacity
 	{
-		if(shiftPressed)
-		{
-			const float rotationChange = 0.25f * DeltaSeconds;
-			if(glfwGetKey(Window, GLFW_KEY_LEFT) == GLFW_PRESS)
-			{
-				Rotation += rotationChange;
-			}
-			else if(glfwGetKey(Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-			{
-				Rotation -= rotationChange;
-			}
-
-			const float opacityChance = ((shiftPressed) ? 0.1f : 0.05f) * DeltaSeconds;
-			if(glfwGetKey(Window, GLFW_KEY_DOWN) == GLFW_PRESS)
-			{
-				Opacity = (Opacity < opacityChance) ? 0.f : Opacity - opacityChance;
-			}
-			else if(glfwGetKey(Window, GLFW_KEY_UP) == GLFW_PRESS)
-			{
-				Opacity = (Opacity > 1.f - opacityChance) ? 1.f : Opacity + opacityChance;
-			}
-		}
-		else
-		{
-			const float positionChange = 0.1f * DeltaSeconds;
-			if(glfwGetKey(Window, GLFW_KEY_UP) == GLFW_PRESS)
-			{
-				PositionX += positionChange;
-			}
-			if(glfwGetKey(Window, GLFW_KEY_LEFT) == GLFW_PRESS)
-			{
-				PositionY -= positionChange;
-			}
-			if(glfwGetKey(Window, GLFW_KEY_DOWN) == GLFW_PRESS)
-			{
-				PositionX -= positionChange;
-			}
-			if(glfwGetKey(Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-			{
-				PositionY += positionChange;
-			}
-
-			PositionY = glm::clamp(PositionY, -1.f, 1.f);
-			PositionX = glm::clamp(PositionX, -1.f, 1.f);
-		}
+		const float cameraSpeed = (shiftPressed) ? 1.f * GDeltaSeconds : 0.5f * GDeltaSeconds;
+		if (glfwGetKey(Window, GLFW_KEY_W) == GLFW_PRESS)
+			GCameraPos += cameraSpeed * GCameraFront;
+		if (glfwGetKey(Window, GLFW_KEY_S) == GLFW_PRESS)
+			GCameraPos -= cameraSpeed * GCameraFront;
+		if (glfwGetKey(Window, GLFW_KEY_A) == GLFW_PRESS)
+			GCameraPos -= glm::normalize(glm::cross(GCameraFront, GCameraUp)) * cameraSpeed;
+		if (glfwGetKey(Window, GLFW_KEY_D) == GLFW_PRESS)
+			GCameraPos += glm::normalize(glm::cross(GCameraFront, GCameraUp)) * cameraSpeed;
 	}
 }
 
 void BindEvents(GLFWwindow* Window)
 {
 	glfwSetFramebufferSizeCallback(Window, &WindowSizeChanged);
-}
-
-void ProcessDraw(const FId& VertexArrayId, FShader ShaderToUse, FTexture TexturesToUse[2], glm::vec3 cubePositions[10])
-{
-	// Clear part
-	{
-		// Default clear color
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-
-		// Clears screen with ClearColor
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-
-	// Defines which program to use
-	// * and init
-	if(!ShaderToUse.IsUsed())
-	{
-		ShaderToUse.Use();
-
-		// Textures
-		{
-			TexturesToUse[0].Use(0);
-			TexturesToUse[1].Use(1);
-
-			ShaderToUse.SetInt("texture1", 0);
-			ShaderToUse.SetInt("texture2", 1);
-		}
-
-		// MAT4
-		{
-			glm::mat4 view = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -3.f));
-			glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)WindowWidth / (float)WindowHeight, 0.1f, 100.f);
-
-			ShaderToUse.SetMatrix4("view", view);
-			ShaderToUse.SetMatrix4("projection", projection);
-		}
-	}
-
-	// Binds vertex array
-	glBindVertexArray(VertexArrayId);
-
-	// Textures
-	{
-		ShaderToUse.SetFloat("lerpValue", Opacity);
-	}
-
-	// MAT4
-	for(unsigned char i = 0; i < 10; ++i)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-  		model = glm::translate(model, cubePositions[i]);
-  		model = glm::rotate(model, glm::radians(20.0f * i) + (float)glfwGetTime(), glm::vec3(1.0f, 0.3f, 0.5f));
-		ShaderToUse.SetMatrix4("model", model);
-
-		// TRIANGLES
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
 }
 
 bool CreateAndBindCube(const FId& VertexArrayId, FId* OutBufferId)
@@ -294,7 +202,7 @@ bool CreateInitWindow(GLFWwindow** OutWindow)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* resultWindow = glfwCreateWindow(WindowWidth, WindowHeight, "LearnOpenGL", nullptr, nullptr);
+	GLFWwindow* resultWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
 	if (!resultWindow)
 	{
 		std::cout << "Failed to create window" << std::endl;
@@ -310,11 +218,87 @@ bool CreateInitWindow(GLFWwindow** OutWindow)
 	}
 
     BindEvents(resultWindow);
-	glViewport(0, 0, WindowWidth, WindowHeight);
+	glViewport(0, 0, GWindowWidth, GWindowHeight);
 	glEnable(GL_DEPTH_TEST);
 
 	if (OutWindow) *OutWindow = resultWindow;
 	return true;
+}
+
+void InitDraw(FShader& Shader, FTexture Textures[2])
+{
+	Shader.Use();
+
+	// Textures
+	{
+		Textures[0].Use(0);
+		Textures[1].Use(1);
+
+		Shader.SetInt("texture1", 0);
+		Shader.SetInt("texture2", 1);
+	}
+
+	// MAT4
+	{
+		glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
+		Shader.SetMatrix4("projection", projection);
+	}
+}
+
+void DrawCubes(FShader& Shader)
+{
+	static const glm::vec3 cubePositions[] = {
+	    glm::vec3( 0.0f,  0.0f,  0.0f),
+	    glm::vec3( 2.0f,  5.0f, -15.0f),
+	    glm::vec3(-1.5f, -2.2f, -2.5f),
+	    glm::vec3(-3.8f, -2.0f, -12.3f),
+	    glm::vec3( 2.4f, -0.4f, -3.5f),
+	    glm::vec3(-1.7f,  3.0f, -7.5f),
+	    glm::vec3( 1.3f, -2.0f, -2.5f),
+	    glm::vec3( 1.5f,  2.0f, -2.5f),
+	    glm::vec3( 1.5f,  0.2f, -1.5f),
+	    glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
+	for(unsigned char i = 0; i < 10; ++i)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, cubePositions[i]);
+		model = glm::rotate(model, glm::radians(20.0f * i), glm::vec3(1.0f, 0.3f, 0.5f));
+		Shader.SetMatrix4("model", model);
+
+		// TRIANGLES
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+}
+
+void ProcessDraw(const FId& VertexArrayId, FShader& ShaderToUse)
+{
+	// Clear part
+	{
+		// Default clear color
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+
+		// Clears screen with ClearColor
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+
+	// Camera
+	{
+		glm::mat4 view = glm::lookAt(GCameraPos, GCameraPos + GCameraFront, GCameraUp);
+		//glm::mat4 view = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -3.f));
+		ShaderToUse.SetMatrix4("view", view);
+	}
+
+	// Binds vertex array
+	glBindVertexArray(VertexArrayId);
+	DrawCubes(ShaderToUse);
+}
+
+void UpdateDeltaSeconds(const FTimer& Timer)
+{
+	GDeltaSeconds = GLastSeconds;
+	GLastSeconds = (float)Timer.GetSeconds();
 }
 
 int main()
@@ -353,34 +337,24 @@ int main()
 		return -5;
 	}
 
- 	glm::vec3 cubePositions[] = {
- 	    glm::vec3( 0.0f,  0.0f,  0.0f),
- 	    glm::vec3( 2.0f,  5.0f, -15.0f),
- 	    glm::vec3(-1.5f, -2.2f, -2.5f),
- 	    glm::vec3(-3.8f, -2.0f, -12.3f),
- 	    glm::vec3( 2.4f, -0.4f, -3.5f),
- 	    glm::vec3(-1.7f,  3.0f, -7.5f),
- 	    glm::vec3( 1.3f, -2.0f, -2.5f),
- 	    glm::vec3( 1.5f,  2.0f, -2.5f),
- 	    glm::vec3( 1.5f,  0.2f, -1.5f),
- 	    glm::vec3(-1.3f,  1.0f, -1.5f)
- 	};
+	InitDraw(testShader, testTextures);
 
 	// Main render loop
 	FTimer frameTimer;
 	while (!glfwWindowShouldClose(mainWindow))
 	{
+		UpdateDeltaSeconds(frameTimer);
+
+		frameTimer.Reset();
 		frameTimer.Start();
 
 		ProcessInput(mainWindow);
-		ProcessDraw(vertexArrayId, testShader, testTextures, cubePositions);
+		ProcessDraw(vertexArrayId, testShader);
 
 		glfwSwapBuffers(mainWindow);
 		glfwPollEvents();
 
 		frameTimer.Stop();
-		DeltaSeconds = (float)frameTimer.GetSeconds();
-		frameTimer.Reset();
 	}
 
 	glfwTerminate();
