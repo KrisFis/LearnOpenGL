@@ -23,10 +23,61 @@ unsigned short GWindowHeight = 600;
 float GLastSeconds = 0.f;
 float GDeltaSeconds = 0.f;
 
-// PlayMode
+// Camera
+float GCameraFOV = 45.f;
+
+// Mouse
+const float GMouseSensitivity = 0.06f;
+const float GMaxPitch = 89.f;
+float GLastMouseX = GWindowWidth * 0.5f;
+float GLastMouseY = GWindowHeight * 0.5f;
+
+// PlayMode -> Camera
 glm::vec3 GCameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 GCameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 GCameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+// PlayMode -> Mouse
+float GMousePitch = 0.f;
+float GMouseYaw = -90.f;
+float GMouseRoll = 0.f;
+
+void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
+{
+    GCameraFOV -= (float)ScrollY;
+    GCameraFOV = glm::clamp(GCameraFOV, 1.f, 45.f);
+}
+
+void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
+{
+	static bool firstHit = true;
+	if(firstHit)
+	{
+		GLastMouseX = (float)MouseX;
+		GLastMouseY = (float)MouseY;
+		firstHit = false;
+	}
+
+	float offsetX = (float)MouseX - GLastMouseX;
+	float offsetY = GLastMouseY - (float)MouseY; // reversed since y-coordinates range from bottom to top
+	GLastMouseX = (float)MouseX;
+	GLastMouseY = (float)MouseY;
+
+	offsetX *= GMouseSensitivity;
+	offsetY *= GMouseSensitivity;
+
+	GMouseYaw += offsetX;
+	GMousePitch += offsetY;
+
+	GMousePitch = glm::clamp(GMousePitch, -GMaxPitch, GMaxPitch);
+
+	GCameraFront = glm::normalize(
+		glm::vec3(
+			glm::cos(glm::radians(GMouseYaw)) * glm::cos(glm::radians(GMousePitch)),
+			glm::sin(glm::radians(GMousePitch)),
+			glm::sin(glm::radians(GMouseYaw)) * glm::cos(glm::radians(GMousePitch))
+	));
+}
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 {
@@ -111,6 +162,8 @@ void ProcessInput(GLFWwindow* Window)
 void BindEvents(GLFWwindow* Window)
 {
 	glfwSetFramebufferSizeCallback(Window, &WindowSizeChanged);
+	glfwSetCursorPosCallback(Window, &MousePositionChanged);
+	glfwSetScrollCallback(Window, &MouseScrollChanged);
 }
 
 bool CreateAndBindCube(const FId& VertexArrayId, FId* OutBufferId)
@@ -218,6 +271,8 @@ bool CreateInitWindow(GLFWwindow** OutWindow)
 	}
 
     BindEvents(resultWindow);
+
+	glfwSetInputMode(resultWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glViewport(0, 0, GWindowWidth, GWindowHeight);
 	glEnable(GL_DEPTH_TEST);
 
@@ -236,12 +291,6 @@ void InitDraw(FShader& Shader, FTexture Textures[2])
 
 		Shader.SetInt("texture1", 0);
 		Shader.SetInt("texture2", 1);
-	}
-
-	// MAT4
-	{
-		glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
-		Shader.SetMatrix4("projection", projection);
 	}
 }
 
@@ -286,8 +335,10 @@ void ProcessDraw(const FId& VertexArrayId, FShader& ShaderToUse)
 	// Camera
 	{
 		glm::mat4 view = glm::lookAt(GCameraPos, GCameraPos + GCameraFront, GCameraUp);
-		//glm::mat4 view = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -3.f));
 		ShaderToUse.SetMatrix4("view", view);
+
+		glm::mat4 projection = glm::perspective(glm::radians(GCameraFOV), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
+		ShaderToUse.SetMatrix4("projection", projection);
 	}
 
 	// Binds vertex array
