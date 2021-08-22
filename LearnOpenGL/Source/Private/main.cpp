@@ -7,6 +7,7 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "Timer.h"
+#include "Camera.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -23,29 +24,19 @@ unsigned short GWindowHeight = 600;
 float GLastSeconds = 0.f;
 float GDeltaSeconds = 0.f;
 
-// Camera
-float GCameraFOV = 45.f;
+// Key
+bool GbShiftWasPressed = true;
 
 // Mouse
-const float GMouseSensitivity = 0.06f;
-const float GMaxPitch = 89.f;
 float GLastMouseX = GWindowWidth * 0.5f;
 float GLastMouseY = GWindowHeight * 0.5f;
 
-// PlayMode -> Camera
-glm::vec3 GCameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 GCameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 GCameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-// PlayMode -> Mouse
-float GMousePitch = 0.f;
-float GMouseYaw = -90.f;
-float GMouseRoll = 0.f;
+// Camera
+FCamera GCamera;
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
-    GCameraFOV -= (float)ScrollY;
-    GCameraFOV = glm::clamp(GCameraFOV, 1.f, 45.f);
+	GCamera.ProcessScroll((float)ScrollY);
 }
 
 void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
@@ -63,20 +54,7 @@ void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
 	GLastMouseX = (float)MouseX;
 	GLastMouseY = (float)MouseY;
 
-	offsetX *= GMouseSensitivity;
-	offsetY *= GMouseSensitivity;
-
-	GMouseYaw += offsetX;
-	GMousePitch += offsetY;
-
-	GMousePitch = glm::clamp(GMousePitch, -GMaxPitch, GMaxPitch);
-
-	GCameraFront = glm::normalize(
-		glm::vec3(
-			glm::cos(glm::radians(GMouseYaw)) * glm::cos(glm::radians(GMousePitch)),
-			glm::sin(glm::radians(GMousePitch)),
-			glm::sin(glm::radians(GMouseYaw)) * glm::cos(glm::radians(GMousePitch))
-	));
+	GCamera.ProcessMouseMove(offsetX, offsetY);
 }
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
@@ -135,9 +113,13 @@ bool CompileShader(const GLenum Type, const char* ShaderName, const char* Source
 
 void ProcessInput(GLFWwindow* Window)
 {
-	const bool shiftPressed = (glfwGetKey(Window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+	const bool shiftWasPreviouslyPressed = GbShiftWasPressed;
+	GbShiftWasPressed = (glfwGetKey(Window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 
-	if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS && shiftPressed)
+	const bool shiftWasJustPressed = !shiftWasPreviouslyPressed && GbShiftWasPressed;
+	const bool shiftWasJustReleased = shiftWasPreviouslyPressed && !GbShiftWasPressed;
+
+	if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS && shiftWasJustPressed)
 		glfwSetWindowShouldClose(Window, true);
 
 	if (glfwGetKey(Window, GLFW_KEY_F1) == GLFW_PRESS)
@@ -147,15 +129,19 @@ void ProcessInput(GLFWwindow* Window)
 
 	// Rotation && Translation && Opacity
 	{
-		const float cameraSpeed = (shiftPressed) ? 1.f * GDeltaSeconds : 0.5f * GDeltaSeconds;
+		if(shiftWasJustPressed)
+			GCamera.SetMoveSensitivity(GCamera.GetMoveSensitivity()*2.f);
+		if(shiftWasJustReleased)
+			GCamera.SetMoveSensitivity(GCamera.GetMoveSensitivity()*0.5f);
+
 		if (glfwGetKey(Window, GLFW_KEY_W) == GLFW_PRESS)
-			GCameraPos += cameraSpeed * GCameraFront;
+			GCamera.ProcessMoveInput(ECameraMoveDirection::Forward, GDeltaSeconds);
 		if (glfwGetKey(Window, GLFW_KEY_S) == GLFW_PRESS)
-			GCameraPos -= cameraSpeed * GCameraFront;
+			GCamera.ProcessMoveInput(ECameraMoveDirection::Backward, GDeltaSeconds);
 		if (glfwGetKey(Window, GLFW_KEY_A) == GLFW_PRESS)
-			GCameraPos -= glm::normalize(glm::cross(GCameraFront, GCameraUp)) * cameraSpeed;
+			GCamera.ProcessMoveInput(ECameraMoveDirection::Left, GDeltaSeconds);
 		if (glfwGetKey(Window, GLFW_KEY_D) == GLFW_PRESS)
-			GCameraPos += glm::normalize(glm::cross(GCameraFront, GCameraUp)) * cameraSpeed;
+			GCamera.ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
 }
 
@@ -292,6 +278,15 @@ void InitDraw(FShader& Shader, FTexture Textures[2])
 		Shader.SetInt("texture1", 0);
 		Shader.SetInt("texture2", 1);
 	}
+
+	// Camera
+	{
+		GCamera.SetPosition({0.f, 0.f,3.f});
+		GCamera.SetRotation({-90.f, 0.f, 0.f});
+
+		GCamera.SetLookSensitivity(0.1f);
+		GCamera.SetMoveSensitivity(0.5f);
+	}
 }
 
 void DrawCubes(FShader& Shader)
@@ -334,10 +329,9 @@ void ProcessDraw(const FId& VertexArrayId, FShader& ShaderToUse)
 
 	// Camera
 	{
-		glm::mat4 view = glm::lookAt(GCameraPos, GCameraPos + GCameraFront, GCameraUp);
-		ShaderToUse.SetMatrix4("view", view);
+		ShaderToUse.SetMatrix4("view", GCamera.GetViewMatrix());
 
-		glm::mat4 projection = glm::perspective(glm::radians(GCameraFOV), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
+		glm::mat4 projection = glm::perspective(glm::radians(GCamera.GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
 		ShaderToUse.SetMatrix4("projection", projection);
 	}
 
