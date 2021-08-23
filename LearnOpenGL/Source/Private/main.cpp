@@ -28,6 +28,9 @@ float GLastMouseY = GWindowHeight * 0.5f;
 // Camera
 FCamera GCamera;
 
+// Test
+constexpr glm::vec3 GLightPos = {1.2f, 1.f, 2.f};
+
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
 	GCamera.ProcessScroll((float)ScrollY);
@@ -110,6 +113,7 @@ void ProcessInput(GLFWwindow* Window)
 	const bool shiftWasPreviouslyPressed = GbShiftWasPressed;
 	GbShiftWasPressed = (glfwGetKey(Window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 
+	const bool shiftIsPressed = GbShiftWasPressed;
 	const bool shiftWasJustPressed = !shiftWasPreviouslyPressed && GbShiftWasPressed;
 	const bool shiftWasJustReleased = shiftWasPreviouslyPressed && !GbShiftWasPressed;
 
@@ -149,47 +153,47 @@ void BindEvents(GLFWwindow* Window)
 FBufferId CreateAndBindCube()
 {
 	constexpr float vertices[] = {
-	    -0.5f, -0.5f, -0.5f,
-	     0.5f, -0.5f, -0.5f,
-	     0.5f,  0.5f, -0.5f,
-	     0.5f,  0.5f, -0.5f,
-	    -0.5f,  0.5f, -0.5f,
-	    -0.5f, -0.5f, -0.5f,
+	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	   -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-	    -0.5f, -0.5f,  0.5f,
-	     0.5f, -0.5f,  0.5f,
-	     0.5f,  0.5f,  0.5f,
-	     0.5f,  0.5f,  0.5f,
-	    -0.5f,  0.5f,  0.5f,
-	    -0.5f, -0.5f,  0.5f,
+	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	   -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
 
-	    -0.5f,  0.5f,  0.5f,
-	    -0.5f,  0.5f, -0.5f,
-	    -0.5f, -0.5f, -0.5f,
-	    -0.5f, -0.5f, -0.5f,
-	    -0.5f, -0.5f,  0.5f,
-	    -0.5f,  0.5f,  0.5f,
+	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	   -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	   -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-	     0.5f,  0.5f,  0.5f,
-	     0.5f,  0.5f, -0.5f,
-	     0.5f, -0.5f, -0.5f,
-	     0.5f, -0.5f, -0.5f,
-	     0.5f, -0.5f,  0.5f,
-	     0.5f,  0.5f,  0.5f,
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-	    -0.5f, -0.5f, -0.5f,
-	     0.5f, -0.5f, -0.5f,
-	     0.5f, -0.5f,  0.5f,
-	     0.5f, -0.5f,  0.5f,
-	    -0.5f, -0.5f,  0.5f,
-	    -0.5f, -0.5f, -0.5f,
+	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	   -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-	    -0.5f,  0.5f, -0.5f,
-	     0.5f,  0.5f, -0.5f,
-	     0.5f,  0.5f,  0.5f,
-	     0.5f,  0.5f,  0.5f,
-	    -0.5f,  0.5f,  0.5f,
-	    -0.5f,  0.5f, -0.5f,
+	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	   -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
 	FBufferId resultId = NRenderUtils::GenerateBuffer();
@@ -208,8 +212,12 @@ void SetupAttributesForCube(const FBufferId& VertexArrayId, const FBufferId& Buf
 	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, BufferId);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	// normal attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
 	NRenderUtils::UnbindVertexArray();
@@ -280,8 +288,8 @@ void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArray
 	}
 
 	// Matrixes
-	glm::mat4 projection = glm::perspective(glm::radians(GCamera.GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
-	glm::mat4 view = GCamera.GetViewMatrix();
+	const glm::mat4 projection = glm::perspective(glm::radians(GCamera.GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
+	const glm::mat4 view = GCamera.GetViewMatrix();
 
 	// Lightning
 	{
@@ -290,6 +298,9 @@ void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArray
 		LightningShader.SetMat4("view", GCamera.GetViewMatrix());
 		LightningShader.SetMat4("projection", projection);
 		LightningShader.SetMat4("model", glm::mat4(1.f));
+
+		LightningShader.SetVec3("lightPos", GLightPos);
+		LightningShader.SetVec3("viewPos", GCamera.GetPosition());
 
 		LightningShader.SetVec3("objectColor", {1.f, 0.5f, 0.31f});
 		LightningShader.SetVec3("lightColor", {1.f, 1.f, 1.f});
@@ -306,7 +317,7 @@ void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArray
 		LightObjShader.SetMat4("projection", projection);
 		LightObjShader.SetMat4("model",
 			glm::scale(
-				glm::translate(glm::mat4(1.f), {1.2f, 1.f, 2.f}),
+				glm::translate(glm::mat4(1.f), GLightPos),
 				glm::vec3(0.2f)
 		));
 

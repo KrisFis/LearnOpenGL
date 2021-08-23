@@ -39,6 +39,9 @@ public: // Sensitivity
 
 public: // Position and rotation
 
+	inline const glm::vec3& GetPosition() const { return Position; }
+	inline const glm::vec3& GetRotation() const { return Rotation; }
+
 	void SetPosition(const glm::vec3& Value);
 	void SetRotation(const glm::vec3& Value);
 
@@ -59,7 +62,7 @@ private: // Fields
 
 	// Front, Right, Up
 	glm::vec3 CameraCache[3];
-	
+
 	float FieldOfView;
 	float LookSensitivity;
 	float MoveSensitivity;
