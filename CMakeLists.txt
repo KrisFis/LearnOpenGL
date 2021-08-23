@@ -25,6 +25,15 @@ if(MSVC)
     add_link_options("/NODEFAULTLIB:MSVCRT")
 endif(MSVC)
 
+# Definitions
+# -----------------------------------------------------------
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DDEBUG=1)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_definitions(-DRELEASE=1)
+endif()
+
 # Project Files
 # -----------------------------------------------------------
 
