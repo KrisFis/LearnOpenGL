@@ -72,7 +72,7 @@ FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
 FTexture::~FTexture()
 {}
 
-void FTexture::Use(unsigned char Index)
+void FTexture::Use(const uint8 Index)
 {
 	glActiveTexture(GL_TEXTURE0 + Index);
  	glBindTexture(GL_TEXTURE_2D, Id);

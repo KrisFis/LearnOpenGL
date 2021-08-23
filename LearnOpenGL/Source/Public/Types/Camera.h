@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
+#include "ModuleMinimal.h"
 
 enum class ECameraMoveDirection
 {
@@ -56,11 +56,11 @@ private: // Fields
 
 	glm::vec3 Position;
 	glm::vec3 Rotation;
-	float FieldOfView;
-
-	float LookSensitivity;
-	float MoveSensitivity;
 
 	// Front, Right, Up
 	glm::vec3 CameraCache[3];
+	
+	float FieldOfView;
+	float LookSensitivity;
+	float MoveSensitivity;
 };

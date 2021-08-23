@@ -1,11 +1,10 @@
 
 #include "Camera.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-
 FCamera::FCamera()
 	: Position(glm::vec3(0.f, 0.f, 0.f))
 	, Rotation(glm::vec3(0.f, 0.f, 0.f))
+	, CameraCache()
 	, FieldOfView(45.f)
 	, LookSensitivity(0.1f)
 	, MoveSensitivity(0.5f)
@@ -16,6 +15,7 @@ FCamera::FCamera()
 FCamera::FCamera(const glm::vec3 &InPosition, const glm::vec3 &InRotation)
 	: Position(InPosition)
 	, Rotation(InRotation)
+	, CameraCache()
 	, FieldOfView(45.f)
 	, LookSensitivity(0.1f)
 	, MoveSensitivity(0.5f)

@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "ModuleMinimal.h"
+
 enum class ETextureType { JPEG, PNG };
 
 class FTexture
@@ -15,20 +17,20 @@ public: // Getters
 	inline bool IsInitialized() const { return bIsInitialized; }
 	inline bool IsUsed() const { return UseIndex != -1; }
 
-	inline const unsigned int& GetId() const { return Id; }
-	inline short GetUseIndex() const { return UseIndex; }
+	inline const FTextureId& GetId() const { return Id; }
+	inline int16 GetUseIndex() const { return UseIndex; }
 
 	inline ETextureType GetType() const { return Type; }
 
 public: // External methods
 
-	void Use(unsigned char Index);
+	void Use(const uint8 Index);
 	void Clear();
 
 private: // Fields
 
-	unsigned int Id;
-	short UseIndex;
+	FTextureId Id;
+	int16 UseIndex;
 	ETextureType Type;
 
 	bool bIsInitialized;

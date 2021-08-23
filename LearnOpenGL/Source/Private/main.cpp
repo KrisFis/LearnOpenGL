@@ -1,20 +1,14 @@
 
-#include <iostream>
-
-#include <GLAD/glad.h>
-#include <GLFW/glfw3.h>
+#include "ModuleMinimal.h"
+#include "RenderUtils.h"
 
 #include "Shader.h"
 #include "Texture.h"
 #include "Timer.h"
 #include "Camera.h"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-// typedefs
-typedef unsigned int FId;
+#include <iostream>
+#include <vector>
 
 // Window
 unsigned short GWindowWidth = 800;
@@ -65,9 +59,9 @@ void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 	glViewport(0, 0, Width, Height);
 }
 
-bool CreateAndLinkProgram(const FId& VertexShaderId, const FId& FragmentShaderId, FId* OutProgram)
+bool CreateAndLinkProgram(const FBufferId& VertexShaderId, const FBufferId& FragmentShaderId, FBufferId* OutProgram)
 {
-	FId resultProgramId;
+	FBufferId resultProgramId;
 	resultProgramId = glCreateProgram();
 	glAttachShader(resultProgramId, VertexShaderId);
 	glAttachShader(resultProgramId, FragmentShaderId);
@@ -88,9 +82,9 @@ bool CreateAndLinkProgram(const FId& VertexShaderId, const FId& FragmentShaderId
 	return true;
 }
 
-bool CompileShader(const GLenum Type, const char* ShaderName, const char* Source, FId* OutId)
+bool CompileShader(const GLenum Type, const char* ShaderName, const char* Source, FBufferId* OutId)
 {
-	FId resultShaderId = glCreateShader(Type);
+	FBufferId resultShaderId = glCreateShader(Type);
 	glShaderSource(resultShaderId, 1, &Source, nullptr);
 	glCompileShader(resultShaderId);
 
@@ -152,86 +146,78 @@ void BindEvents(GLFWwindow* Window)
 	glfwSetScrollCallback(Window, &MouseScrollChanged);
 }
 
-bool CreateAndBindCube(const FId& VertexArrayId, FId* OutBufferId)
+FBufferId CreateAndBindCube()
 {
-	float vertices[] = {
-	    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	constexpr float vertices[] = {
+	    -0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f, -0.5f,
+	     0.5f,  0.5f, -0.5f,
+	     0.5f,  0.5f, -0.5f,
+	    -0.5f,  0.5f, -0.5f,
+	    -0.5f, -0.5f, -0.5f,
 
-	    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	    -0.5f, -0.5f,  0.5f,
+	     0.5f, -0.5f,  0.5f,
+	     0.5f,  0.5f,  0.5f,
+	     0.5f,  0.5f,  0.5f,
+	    -0.5f,  0.5f,  0.5f,
+	    -0.5f, -0.5f,  0.5f,
 
-	    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	    -0.5f,  0.5f,  0.5f,
+	    -0.5f,  0.5f, -0.5f,
+	    -0.5f, -0.5f, -0.5f,
+	    -0.5f, -0.5f, -0.5f,
+	    -0.5f, -0.5f,  0.5f,
+	    -0.5f,  0.5f,  0.5f,
 
-	     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	     0.5f,  0.5f,  0.5f,
+	     0.5f,  0.5f, -0.5f,
+	     0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f,  0.5f,
+	     0.5f,  0.5f,  0.5f,
 
-	    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	    -0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f,  0.5f,
+	     0.5f, -0.5f,  0.5f,
+	    -0.5f, -0.5f,  0.5f,
+	    -0.5f, -0.5f, -0.5f,
 
-	    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	    -0.5f,  0.5f, -0.5f,
+	     0.5f,  0.5f, -0.5f,
+	     0.5f,  0.5f,  0.5f,
+	     0.5f,  0.5f,  0.5f,
+	    -0.5f,  0.5f,  0.5f,
+	    -0.5f,  0.5f, -0.5f,
 	};
 
-	FId resultBufferId;
-	glGenBuffers(1, &resultBufferId);
+	FBufferId resultId = NRenderUtils::GenerateBuffer();
+	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, resultId);
 
-	glBindVertexArray(VertexArrayId);
-
-	glBindBuffer(GL_ARRAY_BUFFER, resultBufferId);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
+
+	return resultId;
+}
+
+void SetupAttributesForCube(const FBufferId& VertexArrayId, const FBufferId& BufferId)
+{
+	NRenderUtils::BindVertexArray(VertexArrayId);
+	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, BufferId);
+
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindVertexArray(0);
-
-	if (OutBufferId) *OutBufferId = resultBufferId;
-	return true;
+	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
+	NRenderUtils::UnbindVertexArray();
 }
 
-bool CreateVertexArray(FId* OutArrayId)
+bool CreateInitWindow(GLFWwindow*& OutWindow)
 {
-	FId resultArrayId;
-	glGenVertexArrays(1, &resultArrayId);
-
-	if (OutArrayId) *OutArrayId = resultArrayId;
-	return true;
-}
-
-bool CreateInitWindow(GLFWwindow** OutWindow)
-{
-	if (!glfwInit()) 
+	if (!glfwInit())
 	{
 		std::cout << "failed to initialize GLFW" << std::endl;
 		return false;
@@ -241,14 +227,14 @@ bool CreateInitWindow(GLFWwindow** OutWindow)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* resultWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
-	if (!resultWindow)
+	OutWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
+	if (!OutWindow)
 	{
 		std::cout << "Failed to create window" << std::endl;
 		return false;
 	}
 
-	glfwMakeContextCurrent(resultWindow);
+	glfwMakeContextCurrent(OutWindow);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -256,29 +242,17 @@ bool CreateInitWindow(GLFWwindow** OutWindow)
 		return false;
 	}
 
-    BindEvents(resultWindow);
+    BindEvents(OutWindow);
 
-	glfwSetInputMode(resultWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glViewport(0, 0, GWindowWidth, GWindowHeight);
 	glEnable(GL_DEPTH_TEST);
 
-	if (OutWindow) *OutWindow = resultWindow;
 	return true;
 }
 
-void InitDraw(FShader& Shader, FTexture Textures[2])
+void InitRender(FBufferId VBO)
 {
-	Shader.Use();
-
-	// Textures
-	{
-		Textures[0].Use(0);
-		Textures[1].Use(1);
-
-		Shader.SetInt("texture1", 0);
-		Shader.SetInt("texture2", 1);
-	}
-
 	// Camera
 	{
 		GCamera.SetPosition({0.f, 0.f,3.f});
@@ -287,36 +261,14 @@ void InitDraw(FShader& Shader, FTexture Textures[2])
 		GCamera.SetLookSensitivity(0.1f);
 		GCamera.SetMoveSensitivity(0.5f);
 	}
-}
 
-void DrawCubes(FShader& Shader)
-{
-	static const glm::vec3 cubePositions[] = {
-	    glm::vec3( 0.0f,  0.0f,  0.0f),
-	    glm::vec3( 2.0f,  5.0f, -15.0f),
-	    glm::vec3(-1.5f, -2.2f, -2.5f),
-	    glm::vec3(-3.8f, -2.0f, -12.3f),
-	    glm::vec3( 2.4f, -0.4f, -3.5f),
-	    glm::vec3(-1.7f,  3.0f, -7.5f),
-	    glm::vec3( 1.3f, -2.0f, -2.5f),
-	    glm::vec3( 1.5f,  2.0f, -2.5f),
-	    glm::vec3( 1.5f,  0.2f, -1.5f),
-	    glm::vec3(-1.3f,  1.0f, -1.5f)
-	};
-
-	for(unsigned char i = 0; i < 10; ++i)
+	// Buffer
 	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, cubePositions[i]);
-		model = glm::rotate(model, glm::radians(20.0f * i), glm::vec3(1.0f, 0.3f, 0.5f));
-		Shader.SetMatrix4("model", model);
-
-		// TRIANGLES
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		NRenderUtils::BindBuffer(GL_VERTEX_ARRAY, VBO);
 	}
 }
 
-void ProcessDraw(const FId& VertexArrayId, FShader& ShaderToUse)
+void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArrayId LightningVAO, FVertexArrayId LightObjVAO)
 {
 	// Clear part
 	{
@@ -327,17 +279,40 @@ void ProcessDraw(const FId& VertexArrayId, FShader& ShaderToUse)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
-	// Camera
-	{
-		ShaderToUse.SetMatrix4("view", GCamera.GetViewMatrix());
+	// Matrixes
+	glm::mat4 projection = glm::perspective(glm::radians(GCamera.GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
+	glm::mat4 view = GCamera.GetViewMatrix();
 
-		glm::mat4 projection = glm::perspective(glm::radians(GCamera.GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
-		ShaderToUse.SetMatrix4("projection", projection);
+	// Lightning
+	{
+		LightningShader.Use();
+
+		LightningShader.SetMat4("view", GCamera.GetViewMatrix());
+		LightningShader.SetMat4("projection", projection);
+		LightningShader.SetMat4("model", glm::mat4(1.f));
+
+		LightningShader.SetVec3("objectColor", {1.f, 0.5f, 0.31f});
+		LightningShader.SetVec3("lightColor", {1.f, 1.f, 1.f});
+
+		NRenderUtils::BindVertexArray(LightningVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 
-	// Binds vertex array
-	glBindVertexArray(VertexArrayId);
-	DrawCubes(ShaderToUse);
+	// Light Obj
+	{
+		LightObjShader.Use();
+
+		LightObjShader.SetMat4("view", GCamera.GetViewMatrix());
+		LightObjShader.SetMat4("projection", projection);
+		LightObjShader.SetMat4("model",
+			glm::scale(
+				glm::translate(glm::mat4(1.f), {1.2f, 1.f, 2.f}),
+				glm::vec3(0.2f)
+		));
+
+		NRenderUtils::BindVertexArray(LightObjVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 }
 
 void UpdateDeltaSeconds(const FTimer& Timer)
@@ -346,43 +321,28 @@ void UpdateDeltaSeconds(const FTimer& Timer)
 	GLastSeconds = (float)Timer.GetSeconds();
 }
 
-int main()
+int32 GuardedMain()
 {
 	GLFWwindow* mainWindow;
-	if (!CreateInitWindow(&mainWindow))
+	if (!CreateInitWindow(mainWindow))
 	{
-		glfwTerminate();
 		return -1;
 	}
 
-	FId vertexArrayId;
-	if (!CreateVertexArray(&vertexArrayId))
+	FBufferId VBO = CreateAndBindCube();
+	auto VAOs = NRenderUtils::GenerateVertexArrays(2);
+	for(FVertexArrayId VAO : VAOs)
+		SetupAttributesForCube(VAO, VBO);
+
+	FShader shaders[] = {
+		{"Lighting.vert", "Lighting.frag"},
+		{"LightObj.vert", "LightObj.frag"}};
+	if(!shaders[0].IsInitialized() || !shaders[1].IsInitialized())
 	{
-		glfwTerminate();
 		return -2;
 	}
 
- 	if (!CreateAndBindCube(vertexArrayId, nullptr /* WE DO NOT CHANGE BUFFERS NOW */))
- 	{
- 		glfwTerminate();
- 		return -3;
- 	}
-
- 	FTexture testTextures[] = {FTexture("container.jpg", ETextureType::JPEG), FTexture("awesomeface.png", ETextureType::PNG)};
- 	if(!testTextures[0].IsInitialized() || !testTextures[1].IsInitialized())
-	{
-		glfwTerminate();
-		return -4;
-	}
-
- 	FShader testShader("TestShader.vert", "TestShader.frag");
- 	if(!testShader.IsInitialized())
-	{
-		glfwTerminate();
-		return -5;
-	}
-
-	InitDraw(testShader, testTextures);
+	InitRender(VBO);
 
 	// Main render loop
 	FTimer frameTimer;
@@ -394,7 +354,7 @@ int main()
 		frameTimer.Start();
 
 		ProcessInput(mainWindow);
-		ProcessDraw(vertexArrayId, testShader);
+		ProcessRender(shaders[0], shaders[1], VAOs[0], VAOs[1]);
 
 		glfwSwapBuffers(mainWindow);
 		glfwPollEvents();
@@ -402,6 +362,32 @@ int main()
 		frameTimer.Stop();
 	}
 
-	glfwTerminate();
 	return 0;
+}
+
+int32 main()
+{
+	// Init
+	{
+		NRenderUtils::Init();
+		NRenderUtils::AllowUnbind(false);
+	}
+
+	const int32 result = GuardedMain();
+
+	// Shutdown
+	{
+		NRenderUtils::Shutdown();
+		glfwTerminate();
+	}
+
+	// End print
+	{
+		if(result == 0)
+			std::cout << "Application ended successfully" << std::endl;
+		else
+			std::cout << "Application ended with error code " << result << std::endl;
+	}
+
+	return result;
 }
