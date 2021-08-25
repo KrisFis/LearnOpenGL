@@ -287,6 +287,10 @@ void InitRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs, FBuf
 		Shaders[0].SetInt32("material.diffuse", 0);
 		Shaders[0].SetInt32("material.specular", 1);
 		Shaders[0].SetInt32("material.emission", 2);
+
+		Shaders[0].SetFloat("light.constant",  1.0f);
+		Shaders[0].SetFloat("light.linear",    0.09f);
+		Shaders[0].SetFloat("light.quadratic", 0.032f);
 	}
 
 	// Buffer
