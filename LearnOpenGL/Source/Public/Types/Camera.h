@@ -45,6 +45,13 @@ public: // Position and rotation
 	void SetPosition(const glm::vec3& Value);
 	void SetRotation(const glm::vec3& Value);
 
+public: // Cache getters
+
+	inline glm::vec3 GetFront() const { return CameraCache[0]; }
+	inline glm::vec3 GetRight() const { return CameraCache[1]; }
+	inline glm::vec3 GetLeft() const { return -1.f * CameraCache[1]; }
+	inline glm::vec3 GetUp() const { return CameraCache[2]; }
+
 public: // Input
 
 	void ProcessMoveInput(const ECameraMoveDirection Direction, float DeltaSeconds);

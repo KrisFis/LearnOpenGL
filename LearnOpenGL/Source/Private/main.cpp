@@ -30,8 +30,82 @@ float GLastMouseY = GWindowHeight * 0.5f;
 // Camera
 FCamera GCamera;
 
+#define RGBToColor(Red,Green,Blue) glm::vec3(Red / 255, Green / 255, Blue / 255)
+
 // Test
-constexpr glm::vec3 GLightPos = {1.2f, 1.f, 2.f};
+constexpr float GCubeVertices[] = {
+	// positions          // normals           // texture coords
+   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+	0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+	0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+	0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+   -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+
+   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+	0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+	0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+	0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+   -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+
+   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+   -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+   -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+	0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+	0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+	0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+	0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+	0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+	0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+	0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+	0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+	0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+   -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+
+   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+	0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+	0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+	0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+   -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+};
+
+constexpr glm::vec3 GCubePositions[] = {
+    glm::vec3( 0.0f,  0.0f,  0.0f),
+    glm::vec3( 2.0f,  5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3( 2.4f, -0.4f, -3.5f),
+    glm::vec3(-1.7f,  3.0f, -7.5f),
+    glm::vec3( 1.3f, -2.0f, -2.5f),
+    glm::vec3( 1.5f,  2.0f, -2.5f),
+    glm::vec3( 1.5f,  0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f)
+};
+
+constexpr glm::vec3 GPointLightPositions[] =
+{
+	glm::vec3( 0.7f,  0.2f,  2.0f),
+	glm::vec3( 2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f,  2.0f, -12.0f),
+	glm::vec3( 0.0f,  0.0f, -3.0f)
+};
+
+constexpr glm::vec3 GPointLightColors[] =
+{
+	RGBToColor(139, 100, 255),
+	RGBToColor(255, 164, 116),
+	RGBToColor(88, 255, 95),
+	RGBToColor(255, 255, 255)
+};
 
 uint16 GetFramesPerSecond()
 {
@@ -159,55 +233,10 @@ void BindEvents(GLFWwindow* Window)
 
 FBufferId CreateAndBindCube()
 {
-	constexpr float vertices[] = {
-		// positions          // normals           // texture coords
-	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-	   -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-	   -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-
-	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-	   -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-	   -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-	   -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-	   -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-	};
-
 	FBufferId resultId = NRenderUtils::GenerateBuffer();
 	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, resultId);
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GCubeVertices), GCubeVertices, GL_STATIC_DRAW);
 
 	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
 
@@ -282,15 +311,42 @@ void InitRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs, FBuf
 		GCamera.SetMoveSensitivity(0.5f);
 	}
 
+	// Material -> Lights
 	{
 		Shaders[0].Use();
+
 		Shaders[0].SetInt32("material.diffuse", 0);
 		Shaders[0].SetInt32("material.specular", 1);
 		Shaders[0].SetInt32("material.emission", 2);
 
-		Shaders[0].SetFloat("light.constant",  1.0f);
-		Shaders[0].SetFloat("light.linear",    0.09f);
-		Shaders[0].SetFloat("light.quadratic", 0.032f);
+		Shaders[0].SetVec3("dirLight.direction", {-0.2f, -1.0f, -0.3f });
+		Shaders[0].SetVec3("dirLight.ambient", {0.05f, 0.05f, 0.05f });
+		Shaders[0].SetVec3("dirLight.diffuse", {0.4f, 0.4f, 0.4f });
+		Shaders[0].SetVec3("dirLight.specular", {0.5f, 0.5f, 0.5f });
+
+		for(uint8 i = 0; i < 4; ++i)
+		{
+			std::string nameOfLight = "pointLights[";
+			nameOfLight.append(std::to_string(i));
+
+			Shaders[0].SetVec3(std::string(nameOfLight + "].position").c_str(), GPointLightPositions[1]);
+			Shaders[0].SetVec3(std::string(nameOfLight + "].ambient").c_str(), { 0.05f, 0.05f, 0.05f });
+			Shaders[0].SetVec3(std::string(nameOfLight + "].diffuse").c_str(), { 0.8f, 0.8f, 0.8f});
+			Shaders[0].SetVec3(std::string(nameOfLight + "].specular").c_str(), { 1.0f, 1.0f, 1.0f});
+			Shaders[0].SetFloat(std::string(nameOfLight + "].constant").c_str(), 1.0f);
+			Shaders[0].SetFloat(std::string(nameOfLight + "].linear").c_str(), 0.09f);
+			Shaders[0].SetFloat(std::string(nameOfLight + "].quadratic").c_str(), 0.032f);
+		}
+
+		Shaders[0].SetVec3("spotLight.ambient", {0.0f, 0.0f, 0.0f});
+		Shaders[0].SetVec3("spotLight.diffuse", {1.0f, 1.0f, 1.0f});
+		Shaders[0].SetVec3("spotLight.specular", {1.0f, 1.0f, 1.0f});
+		Shaders[0].SetFloat("spotLight.constant", 1.0f);
+		Shaders[0].SetFloat("spotLight.linear", 0.09f);
+		Shaders[0].SetFloat("spotLight.quadratic", 0.032f);
+		Shaders[0].SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		Shaders[0].SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
 	}
 
 	// Buffer
@@ -304,7 +360,7 @@ void ProcessRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs)
 	// Clear part
 	{
 		// Default clear color
-		glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 		// Clears screen with ClearColor
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -318,16 +374,14 @@ void ProcessRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs)
 	{
 		Shaders[0].Use();
 
-		Shaders[0].SetMat4("view", GCamera.GetViewMatrix());
+		Shaders[0].SetVec3("spotLight.position", GCamera.GetPosition());
+		Shaders[0].SetVec3("spotLight.direction", GCamera.GetFront());
+
+		Shaders[0].SetMat4("view", view);
 		Shaders[0].SetMat4("projection", projection);
 		Shaders[0].SetMat4("model", glm::mat4(1.f));
 
 		Shaders[0].SetVec3("viewPos", GCamera.GetPosition());
-
-		Shaders[0].SetVec3("light.position", GLightPos);
-		Shaders[0].SetVec3("light.ambient", {0.2f, 0.2f, 0.2f});
-		Shaders[0].SetVec3("light.diffuse", {0.5f,0.5f,0.5f});
-		Shaders[0].SetVec3("light.specular", { 1.f, 1.f, 1.f });
 
 		Shaders[0].SetFloat("material.shininess", 64.f);
 
@@ -335,23 +389,40 @@ void ProcessRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs)
 			Textures[i].Use(i);
 
 		NRenderUtils::BindVertexArray(VAOs[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (uint8 i = 0; i < 10; ++i)
+		{
+			// calculate the model matrix for each object and pass it to shader before drawing
+			Shaders[0].SetMat4("model",
+				glm::rotate(
+					glm::translate(glm::mat4(1.f), GCubePositions[i]),
+					glm::radians(20.f * i),
+					glm::vec3(1.f, 0.3f, 0.5f)
+			));
+
+		  glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 	}
 
 	// Light Obj
 	{
 		Shaders[1].Use();
 
-		Shaders[1].SetMat4("view", GCamera.GetViewMatrix());
 		Shaders[1].SetMat4("projection", projection);
-		Shaders[1].SetMat4("model",
-			glm::scale(
-				glm::translate(glm::mat4(1.f), GLightPos),
-				glm::vec3(0.2f)
-		));
+		Shaders[1].SetMat4("view", view);
 
 		NRenderUtils::BindVertexArray(VAOs[1]);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (uint8 i = 0; i < 4; ++i)
+		{
+			Shaders[1].SetVec3("color", GPointLightColors[i]);
+
+			Shaders[1].SetMat4("model",
+				glm::scale(
+					glm::translate(glm::mat4(1.f), GPointLightPositions[i]),
+					glm::vec3(0.2f)
+			));
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 	}
 }
 
