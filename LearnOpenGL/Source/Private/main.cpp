@@ -271,7 +271,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
-void InitRender(FBufferId VBO, FShader& LightningShader)
+void InitRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs, FBufferId* VBOs)
 {
 	// Camera
 	{
@@ -283,18 +283,19 @@ void InitRender(FBufferId VBO, FShader& LightningShader)
 	}
 
 	{
-		LightningShader.Use();
-		LightningShader.SetInt32("material.diffuse", 0);
-		LightningShader.SetInt32("material.specular", 1);
+		Shaders[0].Use();
+		Shaders[0].SetInt32("material.diffuse", 0);
+		Shaders[0].SetInt32("material.specular", 1);
+		Shaders[0].SetInt32("material.emission", 2);
 	}
 
 	// Buffer
 	{
-		NRenderUtils::BindBuffer(GL_VERTEX_ARRAY, VBO);
+		NRenderUtils::BindBuffer(GL_VERTEX_ARRAY, VBOs[0]);
 	}
 }
 
-void ProcessRender(FShader& LightningShader, FShader& LightObjShader, FTexture& DiffuseTex, FTexture& SpecularTex, FVertexArrayId LightningVAO, FVertexArrayId LightObjVAO)
+void ProcessRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs)
 {
 	// Clear part
 	{
@@ -311,41 +312,41 @@ void ProcessRender(FShader& LightningShader, FShader& LightObjShader, FTexture& 
 
 	// Lightning
 	{
-		LightningShader.Use();
+		Shaders[0].Use();
 
-		LightningShader.SetMat4("view", GCamera.GetViewMatrix());
-		LightningShader.SetMat4("projection", projection);
-		LightningShader.SetMat4("model", glm::mat4(1.f));
+		Shaders[0].SetMat4("view", GCamera.GetViewMatrix());
+		Shaders[0].SetMat4("projection", projection);
+		Shaders[0].SetMat4("model", glm::mat4(1.f));
 
-		LightningShader.SetVec3("viewPos", GCamera.GetPosition());
+		Shaders[0].SetVec3("viewPos", GCamera.GetPosition());
 
-		LightningShader.SetVec3("light.position", GLightPos);
-		LightningShader.SetVec3("light.ambient", {0.2f, 0.2f, 0.2f});
-		LightningShader.SetVec3("light.diffuse", {0.5f,0.5f,0.5f});
-		LightningShader.SetVec3("light.specular", { 1.f, 1.f, 1.f });
+		Shaders[0].SetVec3("light.position", GLightPos);
+		Shaders[0].SetVec3("light.ambient", {0.2f, 0.2f, 0.2f});
+		Shaders[0].SetVec3("light.diffuse", {0.5f,0.5f,0.5f});
+		Shaders[0].SetVec3("light.specular", { 1.f, 1.f, 1.f });
 
-		LightningShader.SetFloat("material.shininess", 64.f);
+		Shaders[0].SetFloat("material.shininess", 64.f);
 
-		DiffuseTex.Use(0);
-		SpecularTex.Use(1);
+		for(uint8 i = 0; i < 3; ++i)
+			Textures[i].Use(i);
 
-		NRenderUtils::BindVertexArray(LightningVAO);
+		NRenderUtils::BindVertexArray(VAOs[0]);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 
 	// Light Obj
 	{
-		LightObjShader.Use();
+		Shaders[1].Use();
 
-		LightObjShader.SetMat4("view", GCamera.GetViewMatrix());
-		LightObjShader.SetMat4("projection", projection);
-		LightObjShader.SetMat4("model",
+		Shaders[1].SetMat4("view", GCamera.GetViewMatrix());
+		Shaders[1].SetMat4("projection", projection);
+		Shaders[1].SetMat4("model",
 			glm::scale(
 				glm::translate(glm::mat4(1.f), GLightPos),
 				glm::vec3(0.2f)
 		));
 
-		NRenderUtils::BindVertexArray(LightObjVAO);
+		NRenderUtils::BindVertexArray(VAOs[1]);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 }
@@ -380,15 +381,16 @@ int32 GuardedMain()
 		return -2;
 	}
 
-	FTexture texture[] = {
+	FTexture textures[] = {
 			{"container2.png"},
-			{"container2_specular.png"}};
-	if(!texture[0].IsInitialized() || !texture[1].IsInitialized())
+			{"container2_specular.png"},
+			{"matrix.jpg"}};
+	if(!textures[0].IsInitialized() || !textures[1].IsInitialized() || !textures[2].IsInitialized())
 	{
 		return -3;
 	}
 
-	InitRender(VBO, shaders[0]);
+	InitRender(&shaders[0], &textures[0], &VAOs[0], &VBO);
 
 	// Main render loop
 	FTimer frameTimer;
@@ -402,7 +404,7 @@ int32 GuardedMain()
 
 		EngineTick();
 		ProcessInput();
-		ProcessRender(shaders[0], shaders[1], texture[0], texture[1], VAOs[0], VAOs[1]);
+		ProcessRender(&shaders[0], &textures[0], &VAOs[0]);
 
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();
