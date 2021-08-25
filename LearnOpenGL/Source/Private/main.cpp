@@ -160,47 +160,48 @@ void BindEvents(GLFWwindow* Window)
 FBufferId CreateAndBindCube()
 {
 	constexpr float vertices[] = {
-	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	   -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		// positions          // normals           // texture coords
+	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+	   -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-	   -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+		0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+	   -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+	   -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+	   -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	   -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+	   -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	   -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+	   -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 	};
 
 	FBufferId resultId = NRenderUtils::GenerateBuffer();
@@ -219,12 +220,16 @@ void SetupAttributesForCube(const FBufferId& VertexArrayId, const FBufferId& Buf
 	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, BufferId);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	// texture coordinates
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6*sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
 	NRenderUtils::UnbindVertexArray();
@@ -266,7 +271,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
-void InitRender(FBufferId VBO)
+void InitRender(FBufferId VBO, FShader& LightningShader)
 {
 	// Camera
 	{
@@ -277,18 +282,24 @@ void InitRender(FBufferId VBO)
 		GCamera.SetMoveSensitivity(0.5f);
 	}
 
+	{
+		LightningShader.Use();
+		LightningShader.SetInt32("material.diffuse", 0);
+		LightningShader.SetInt32("material.specular", 1);
+	}
+
 	// Buffer
 	{
 		NRenderUtils::BindBuffer(GL_VERTEX_ARRAY, VBO);
 	}
 }
 
-void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArrayId LightningVAO, FVertexArrayId LightObjVAO)
+void ProcessRender(FShader& LightningShader, FShader& LightObjShader, FTexture& DiffuseTex, FTexture& SpecularTex, FVertexArrayId LightningVAO, FVertexArrayId LightObjVAO)
 {
 	// Clear part
 	{
 		// Default clear color
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
 
 		// Clears screen with ClearColor
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -306,28 +317,17 @@ void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArray
 		LightningShader.SetMat4("projection", projection);
 		LightningShader.SetMat4("model", glm::mat4(1.f));
 
-		LightningShader.SetVec3("lightPos", GLightPos);
 		LightningShader.SetVec3("viewPos", GCamera.GetPosition());
 
-		LightningShader.SetVec3("objectColor", {1.f, 0.5f, 0.31f});
-		LightningShader.SetVec3("lightColor", {1.f, 1.f, 1.f});
-
-		LightningShader.SetVec3("material.ambient", {1.f, 0.f, 0.31f});
-		LightningShader.SetVec3("material.diffuse", {1.f, 0.5f, 0.31f});
-		LightningShader.SetVec3("material.specular", {0.5f, 0.5f, 0.5f});
-		LightningShader.SetFloat("material.shininess", 32.f);
-
-		glm::vec3 lightColor;
-		lightColor.x = glm::sin((float)glfwGetTime() * 2.f);
-		lightColor.y = glm::sin((float)glfwGetTime() * 0.7f);
-		lightColor.z = glm::sin((float)glfwGetTime() * 1.3f);
-
-		const glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
-		const glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f);
-
-		LightningShader.SetVec3("light.ambient", ambientColor);
-		LightningShader.SetVec3("light.diffuse", diffuseColor);
+		LightningShader.SetVec3("light.position", GLightPos);
+		LightningShader.SetVec3("light.ambient", {0.2f, 0.2f, 0.2f});
+		LightningShader.SetVec3("light.diffuse", {0.5f,0.5f,0.5f});
 		LightningShader.SetVec3("light.specular", { 1.f, 1.f, 1.f });
+
+		LightningShader.SetFloat("material.shininess", 64.f);
+
+		DiffuseTex.Use(0);
+		SpecularTex.Use(1);
 
 		NRenderUtils::BindVertexArray(LightningVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -380,7 +380,15 @@ int32 GuardedMain()
 		return -2;
 	}
 
-	InitRender(VBO);
+	FTexture texture[] = {
+			{"container2.png"},
+			{"container2_specular.png"}};
+	if(!texture[0].IsInitialized() || !texture[1].IsInitialized())
+	{
+		return -3;
+	}
+
+	InitRender(VBO, shaders[0]);
 
 	// Main render loop
 	FTimer frameTimer;
@@ -394,7 +402,7 @@ int32 GuardedMain()
 
 		EngineTick();
 		ProcessInput();
-		ProcessRender(shaders[0], shaders[1], VAOs[0], VAOs[1]);
+		ProcessRender(shaders[0], shaders[1], texture[0], texture[1], VAOs[0], VAOs[1]);
 
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();

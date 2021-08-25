@@ -1,19 +1,15 @@
 
 #include "Texture.h"
 
-#include <GLAD/glad.h>
-#include <GLFW/glfw3.h>
-
 #include <stb_image.h>
 
 #include <string>
 #include <iostream>
 #include <assert.h>
 
-FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
+FTexture::FTexture(const char* TextureFilename)
 	: Id(0)
 	, UseIndex(-1)
-	, Type(TextureType)
 	, bIsInitialized(false)
 {
 	static bool flipFixed = false;
@@ -24,15 +20,6 @@ FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
 	}
 
 	glGenTextures(1, &Id);
-	glBindTexture(GL_TEXTURE_2D, Id);
-
-	// set the texture wrapping parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	// set texture filtering parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	const std::string fullTextPath = std::string("../../Content/Textures/") + std::string(TextureFilename);
 
@@ -45,20 +32,34 @@ FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
 	}
 	else
 	{
-		switch(TextureType)
+		GLenum format;
+		switch(nrChannels)
 		{
-			case ETextureType::JPEG:
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			case 1:
+				format = GL_RED;
 			break;
-			case ETextureType::PNG:
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			case 3:
+				format = GL_RGB;
+			break;
+			case 4:
+				format = GL_RGBA;
 			break;
 			default:
 				assert(false);
 			return;
 		}
 
+		glBindTexture(GL_TEXTURE_2D, Id);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
+
+		// set the texture wrapping parameters
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		// set texture filtering parameters
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		stbi_image_free(data);
 
@@ -82,6 +83,8 @@ void FTexture::Use(const uint8 Index)
 
 void FTexture::Clear()
 {
+	if(UseIndex == -1) return;
+
 	glActiveTexture(GL_TEXTURE0 + (unsigned char)UseIndex);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
