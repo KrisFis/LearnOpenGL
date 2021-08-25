@@ -312,6 +312,23 @@ void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArray
 		LightningShader.SetVec3("objectColor", {1.f, 0.5f, 0.31f});
 		LightningShader.SetVec3("lightColor", {1.f, 1.f, 1.f});
 
+		LightningShader.SetVec3("material.ambient", {1.f, 0.f, 0.31f});
+		LightningShader.SetVec3("material.diffuse", {1.f, 0.5f, 0.31f});
+		LightningShader.SetVec3("material.specular", {0.5f, 0.5f, 0.5f});
+		LightningShader.SetFloat("material.shininess", 32.f);
+
+		glm::vec3 lightColor;
+		lightColor.x = glm::sin((float)glfwGetTime() * 2.f);
+		lightColor.y = glm::sin((float)glfwGetTime() * 0.7f);
+		lightColor.z = glm::sin((float)glfwGetTime() * 1.3f);
+
+		const glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
+		const glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f);
+
+		LightningShader.SetVec3("light.ambient", ambientColor);
+		LightningShader.SetVec3("light.diffuse", diffuseColor);
+		LightningShader.SetVec3("light.specular", { 1.f, 1.f, 1.f });
+
 		NRenderUtils::BindVertexArray(LightningVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
