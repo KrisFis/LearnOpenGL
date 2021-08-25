@@ -11,8 +11,8 @@
 #include <assert.h>
 
 // GLAD + GLFW
-#include <GLAD/glad.h>
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
+#include <glfw/glfw3.h>
 
 // GLM
 #include <glm/glm.hpp>
