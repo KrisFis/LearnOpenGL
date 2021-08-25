@@ -9,6 +9,7 @@
 #include <vector>
 #include <unordered_map>
 #include <assert.h>
+#include <string>
 
 // GLAD + GLFW
 #include <glad/glad.h>

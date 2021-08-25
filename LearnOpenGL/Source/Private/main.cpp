@@ -11,6 +11,8 @@
 #include <vector>
 
 // Window
+GLFWwindow* GWindow = nullptr;
+
 unsigned short GWindowWidth = 800;
 unsigned short GWindowHeight = 600;
 
@@ -30,6 +32,11 @@ FCamera GCamera;
 
 // Test
 constexpr glm::vec3 GLightPos = {1.2f, 1.f, 2.f};
+
+uint16 GetFramesPerSecond()
+{
+	return (uint16)std::floor(60.f / GDeltaSeconds);
+}
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
@@ -108,21 +115,21 @@ bool CompileShader(const GLenum Type, const char* ShaderName, const char* Source
 	return true;
 }
 
-void ProcessInput(GLFWwindow* Window)
+void ProcessInput()
 {
 	const bool shiftWasPreviouslyPressed = GbShiftWasPressed;
-	GbShiftWasPressed = (glfwGetKey(Window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+	GbShiftWasPressed = (glfwGetKey(GWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 
 	const bool shiftIsPressed = GbShiftWasPressed;
 	const bool shiftWasJustPressed = !shiftWasPreviouslyPressed && GbShiftWasPressed;
 	const bool shiftWasJustReleased = shiftWasPreviouslyPressed && !GbShiftWasPressed;
 
-	if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS && shiftWasJustPressed)
-		glfwSetWindowShouldClose(Window, true);
+	if (glfwGetKey(GWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS && shiftWasJustPressed)
+		glfwSetWindowShouldClose(GWindow, true);
 
-	if (glfwGetKey(Window, GLFW_KEY_F1) == GLFW_PRESS)
+	if (glfwGetKey(GWindow, GLFW_KEY_F1) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	else if (glfwGetKey(Window, GLFW_KEY_F2) == GLFW_PRESS)
+	else if (glfwGetKey(GWindow, GLFW_KEY_F2) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// Rotation && Translation && Opacity
@@ -132,13 +139,13 @@ void ProcessInput(GLFWwindow* Window)
 		if(shiftWasJustReleased)
 			GCamera.SetMoveSensitivity(GCamera.GetMoveSensitivity()*0.5f);
 
-		if (glfwGetKey(Window, GLFW_KEY_W) == GLFW_PRESS)
+		if (glfwGetKey(GWindow, GLFW_KEY_W) == GLFW_PRESS)
 			GCamera.ProcessMoveInput(ECameraMoveDirection::Forward, GDeltaSeconds);
-		if (glfwGetKey(Window, GLFW_KEY_S) == GLFW_PRESS)
+		if (glfwGetKey(GWindow, GLFW_KEY_S) == GLFW_PRESS)
 			GCamera.ProcessMoveInput(ECameraMoveDirection::Backward, GDeltaSeconds);
-		if (glfwGetKey(Window, GLFW_KEY_A) == GLFW_PRESS)
+		if (glfwGetKey(GWindow, GLFW_KEY_A) == GLFW_PRESS)
 			GCamera.ProcessMoveInput(ECameraMoveDirection::Left, GDeltaSeconds);
-		if (glfwGetKey(Window, GLFW_KEY_D) == GLFW_PRESS)
+		if (glfwGetKey(GWindow, GLFW_KEY_D) == GLFW_PRESS)
 			GCamera.ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
 }
@@ -287,7 +294,7 @@ void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArray
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
-	// Matrixes
+	// Mat4
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera.GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera.GetViewMatrix();
 
@@ -326,16 +333,19 @@ void ProcessRender(FShader LightningShader, FShader LightObjShader, FVertexArray
 	}
 }
 
-void UpdateDeltaSeconds(const FTimer& Timer)
+void EngineTick()
 {
-	GDeltaSeconds = GLastSeconds;
-	GLastSeconds = (float)Timer.GetSeconds();
+	std::string resultTitle;
+	resultTitle.append("LearnOpenGL: FPS [");
+	resultTitle.append(std::to_string(GetFramesPerSecond()));
+	resultTitle.append("]");
+
+	glfwSetWindowTitle(GWindow, resultTitle.c_str());
 }
 
 int32 GuardedMain()
 {
-	GLFWwindow* mainWindow;
-	if (!CreateInitWindow(mainWindow))
+	if (!CreateInitWindow(GWindow))
 	{
 		return -1;
 	}
@@ -357,17 +367,19 @@ int32 GuardedMain()
 
 	// Main render loop
 	FTimer frameTimer;
-	while (!glfwWindowShouldClose(mainWindow))
+	while (!glfwWindowShouldClose(GWindow))
 	{
-		UpdateDeltaSeconds(frameTimer);
+		GDeltaSeconds = GLastSeconds;
+		GLastSeconds = (float)frameTimer.GetSeconds();
 
 		frameTimer.Reset();
 		frameTimer.Start();
 
-		ProcessInput(mainWindow);
+		EngineTick();
+		ProcessInput();
 		ProcessRender(shaders[0], shaders[1], VAOs[0], VAOs[1]);
 
-		glfwSwapBuffers(mainWindow);
+		glfwSwapBuffers(GWindow);
 		glfwPollEvents();
 
 		frameTimer.Stop();
