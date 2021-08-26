@@ -391,13 +391,17 @@ void ProcessRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs)
 		NRenderUtils::BindVertexArray(VAOs[0]);
 		for (uint8 i = 0; i < 10; ++i)
 		{
-			// calculate the model matrix for each object and pass it to shader before drawing
-			Shaders[0].SetMat4("model",
+			glm::mat4 model =
 				glm::rotate(
 					glm::translate(glm::mat4(1.f), GCubePositions[i]),
 					glm::radians(20.f * i),
 					glm::vec3(1.f, 0.3f, 0.5f)
-			));
+			);
+
+			glm::mat3 normal = glm::transpose(glm::inverse(model));
+
+			Shaders[0].SetMat4("model", model);
+			Shaders[0].SetMat3("normalMatrix", normal);
 
 		  glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
