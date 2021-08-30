@@ -8,6 +8,7 @@ FCamera::FCamera()
 	, FieldOfView(45.f)
 	, LookSensitivity(0.1f)
 	, MoveSensitivity(0.5f)
+	, bShouldProcessInput(true)
 {
 	UpdateCache();
 }
@@ -19,6 +20,7 @@ FCamera::FCamera(const glm::vec3 &InPosition, const glm::vec3 &InRotation)
 	, FieldOfView(45.f)
 	, LookSensitivity(0.1f)
 	, MoveSensitivity(0.5f)
+	, bShouldProcessInput(true)
 {
 	UpdateCache();
 }
@@ -44,6 +46,8 @@ void FCamera::SetRotation(const glm::vec3& Value)
 
 void FCamera::ProcessMoveInput(const ECameraMoveDirection Direction, float DeltaSeconds)
 {
+	if(!bShouldProcessInput) return;
+
 	const float velocity = MoveSensitivity * DeltaSeconds;
 	switch (Direction)
 	{
@@ -64,6 +68,8 @@ void FCamera::ProcessMoveInput(const ECameraMoveDirection Direction, float Delta
 
 void FCamera::ProcessMouseMove(float OffsetX, float OffsetY, bool ConstrainPitch)
 {
+	if(!bShouldProcessInput) return;
+
 	Rotation.x += OffsetX * LookSensitivity;
 	Rotation.y += OffsetY * LookSensitivity;
 

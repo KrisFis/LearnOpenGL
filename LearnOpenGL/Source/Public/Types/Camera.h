@@ -54,6 +54,9 @@ public: // Cache getters
 
 public: // Input
 
+	inline bool GetShouldProcessInput() const { return bShouldProcessInput; }
+	inline void SetShouldProcessInput(bool Value) { bShouldProcessInput = Value; }
+
 	void ProcessMoveInput(const ECameraMoveDirection Direction, float DeltaSeconds);
 	void ProcessMouseMove(float OffsetX, float OffsetY, bool ConstrainPitch = true);
 	void ProcessScroll(float Value);
@@ -73,4 +76,9 @@ private: // Fields
 	float FieldOfView;
 	float LookSensitivity;
 	float MoveSensitivity;
+
+private: // Configuration
+
+	uint8 bShouldProcessInput : 1;
+
 };

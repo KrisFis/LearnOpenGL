@@ -1,11 +1,13 @@
 
 #include "ModuleMinimal.h"
 #include "RenderUtils.h"
+#include "ColorUtils.h"
 
 #include "Shader.h"
 #include "Texture.h"
 #include "Timer.h"
 #include "Camera.h"
+#include "Color.h"
 
 #include <iostream>
 #include <vector>
@@ -21,7 +23,8 @@ float GLastSeconds = 0.f;
 float GDeltaSeconds = 0.f;
 
 // Key
-bool GbShiftWasPressed = true;
+bool GbShiftWasPressed = false;
+bool GbAltWasPressed = false;
 
 // Mouse
 float GLastMouseX = GWindowWidth * 0.5f;
@@ -29,8 +32,6 @@ float GLastMouseY = GWindowHeight * 0.5f;
 
 // Camera
 FCamera GCamera;
-
-#define RGBToColor(Red,Green,Blue) glm::vec3(Red / 255, Green / 255, Blue / 255)
 
 // Test
 constexpr float GCubeVertices[] = {
@@ -99,12 +100,12 @@ constexpr glm::vec3 GPointLightPositions[] =
 	glm::vec3( 0.0f,  0.0f, -3.0f)
 };
 
-constexpr glm::vec3 GPointLightColors[] =
+constexpr FColor GPointLightColors[] =
 {
-	RGBToColor(139, 100, 255),
-	RGBToColor(255, 164, 116),
-	RGBToColor(88, 255, 95),
-	RGBToColor(255, 255, 255)
+	{ 139, 100, 255 },
+	{ 255, 164, 116 },
+	{ 88, 255, 95 },
+	{ 255, 255, 25 }
 };
 
 uint16 GetFramesPerSecond()
@@ -194,17 +195,33 @@ void ProcessInput()
 	const bool shiftWasPreviouslyPressed = GbShiftWasPressed;
 	GbShiftWasPressed = (glfwGetKey(GWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 
-	const bool shiftIsPressed = GbShiftWasPressed;
 	const bool shiftWasJustPressed = !shiftWasPreviouslyPressed && GbShiftWasPressed;
 	const bool shiftWasJustReleased = shiftWasPreviouslyPressed && !GbShiftWasPressed;
 
-	if (glfwGetKey(GWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS && shiftWasJustPressed)
+	const bool altWasPreviouslyPressed = GbAltWasPressed;
+	GbAltWasPressed = (glfwGetKey(GWindow, GLFW_KEY_LEFT_ALT) == GLFW_PRESS);
+
+	const bool altWasJustPressed = !altWasPreviouslyPressed && GbAltWasPressed;
+	const bool altWasJustReleased = altWasPreviouslyPressed && !GbAltWasPressed;
+
+	if (glfwGetKey(GWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS && GbShiftWasPressed)
 		glfwSetWindowShouldClose(GWindow, true);
 
 	if (glfwGetKey(GWindow, GLFW_KEY_F1) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	else if (glfwGetKey(GWindow, GLFW_KEY_F2) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	// Cursor
+	{
+		if(altWasJustPressed)
+		{
+			const bool isProcessingInput = GCamera.GetShouldProcessInput();
+
+			GCamera.SetShouldProcessInput(!isProcessingInput);
+			glfwSetInputMode(GWindow, GLFW_CURSOR, (isProcessingInput) ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+		}
+	}
 
 	// Rotation && Translation && Opacity
 	{
@@ -417,7 +434,7 @@ void ProcessRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs)
 		NRenderUtils::BindVertexArray(VAOs[1]);
 		for (uint8 i = 0; i < 4; ++i)
 		{
-			Shaders[1].SetVec3("color", GPointLightColors[i]);
+			Shaders[1].SetVec3("color", GPointLightColors[i].ToVec3());
 
 			Shaders[1].SetMat4("model",
 				glm::scale(
