@@ -57,7 +57,7 @@ file(GLOB_RECURSE "ALL_SOURCE_FILES"
 )
 
 # Libs
-set(OpenGLLibs opengl32 GLFW/glfw3)
+set(OpenGLLibs opengl32 glfw/glfw3)
 
 # Executable and linking
 # -----------------------------------------------------------
