@@ -4,6 +4,7 @@
 // Core
 #include "IntegerTypes.h"
 #include "RenderTypes.h"
+#include "FileUtils.h"
 
 // STL
 #include <vector>

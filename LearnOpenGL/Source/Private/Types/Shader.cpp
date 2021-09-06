@@ -51,8 +51,8 @@ FShader::FShader(const char* VertexFilename, const char* FragmentFilename)
 	fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
 
 	// Prepand with shaders folder
-	std::string fullVertexPath = std::string("../../Content/Shaders/Vertex/") + std::string(VertexFilename);
-	std::string fullFragmentPath = std::string("../../Content/Shaders/Fragment/") + std::string(FragmentFilename);
+	std::string fullVertexPath = NFileUtils::ContentPath() + std::string("/Shaders/Vertex/") + std::string(VertexFilename);
+	std::string fullFragmentPath = NFileUtils::ContentPath() + std::string("/Shaders/Fragment/") + std::string(FragmentFilename);
 
 	try
 	{

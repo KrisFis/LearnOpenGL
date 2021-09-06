@@ -21,7 +21,7 @@ FTexture::FTexture(const char* TextureFilename)
 
 	glGenTextures(1, &Id);
 
-	const std::string fullTextPath = std::string("../../Content/Textures/") + std::string(TextureFilename);
+	const std::string fullTextPath = NFileUtils::ContentPath() + std::string("/Textures/") + std::string(TextureFilename);
 
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load(fullTextPath.c_str(), &width, &height, &nrChannels, 0);
