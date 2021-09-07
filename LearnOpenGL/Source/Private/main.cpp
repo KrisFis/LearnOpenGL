@@ -470,8 +470,8 @@ int32 GuardedMain()
 		SetupAttributesForCube(VAO, VBO);
 
 	FShader shaders[] = {
-		{"Lighting.vert", "Lighting.frag"},
-		{"LightObj.vert", "LightObj.frag"}};
+		{"Old/Lighting.vert", "Old/Lighting.frag"},
+		{"Old/LightObj.vert", "Old/LightObj.frag"}};
 	if(!shaders[0].IsInitialized() || !shaders[1].IsInitialized())
 	{
 		return -2;

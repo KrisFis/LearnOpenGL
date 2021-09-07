@@ -3,6 +3,7 @@
 
 #include "Texture.h"
 #include "RenderUtils.h"
+#include "Shader.h"
 
 Mesh::Mesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &InIndices, const std::vector<FTexture> &InTextures) 
 	: Vertices(InVertices)
@@ -43,33 +44,25 @@ Mesh::Mesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &In
 }
 
 Mesh::~Mesh()
-{
+{}
 
-}
-
-void Mesh::Draw(FShader &shader)
+void Mesh::Draw(FShader& Shader)
 {
-	uint16 diffuseIdx = 0;
-	uint16 specularIdx = 0;
-	
-	for(uint16 i = 0; i < Textures.size(); ++i)
-	{
-		Textures[i].Use(i);
-		
-		uint16 samplerNum = 0;
-		switch (texture.GetType()) 
-		{
-		case ETextureType::Diffuse:
-		samplerNum = diffuseIdx++;
-		break;
-		case ETextureType::Specular:
-		samplerNum = specularIdx++;
-		break;
-		default:
-			assert(false);
-		break;
-		}
-		
-		
-	}
+//	for(uint16 i = 0; i < Textures.size(); ++i)
+//	{
+//		Textures[i].Use(i);
+//
+//		switch (Textures[i].GetType()) 
+//		{
+//		case ETextureType::Diffuse:
+//		Shader.SetInt32("texture_diffuse", i);
+//		break;
+//		case ETextureType::Specular:
+//		Shader.SetInt32("texture_specular", i);
+//		break;
+//		default:
+//			assert(false);
+//		break;
+//		}
+//	}
 }
