@@ -1,5 +1,6 @@
 
 #include "Texture.h"
+#include "FileUtils.h"
 
 #include <stb_image.h>
 
@@ -7,11 +8,13 @@
 #include <iostream>
 #include <assert.h>
 
-FTexture::FTexture(const char* TextureFilename)
+FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
 	: Id(0)
 	, UseIndex(-1)
-	, bIsInitialized(false)
+	, Type(ETextureType::Invalid)
 {
+	assert(TextureType != ETextureType::Invalid);
+
 	static bool flipFixed = false;
 	if(!flipFixed)
 	{
@@ -64,7 +67,7 @@ FTexture::FTexture(const char* TextureFilename)
 		stbi_image_free(data);
 
 		std::cout << "Texture load successful [" << TextureFilename << "]" << std::endl;
-		bIsInitialized = true;
+		Type = TextureType;
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);

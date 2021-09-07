@@ -478,9 +478,9 @@ int32 GuardedMain()
 	}
 
 	FTexture textures[] = {
-			{"container2.png"},
-			{"container2_specular.png"},
-			{"matrix.jpg"}};
+			{"container2.png", ETextureType::Diffuse},
+			{"container2_specular.png", ETextureType::Specular},
+			{"matrix.jpg", ETextureType::Diffuse}};
 	if(!textures[0].IsInitialized() || !textures[1].IsInitialized() || !textures[2].IsInitialized())
 	{
 		return -3;

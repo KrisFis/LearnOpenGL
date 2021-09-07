@@ -4,7 +4,6 @@
 // Core
 #include "IntegerTypes.h"
 #include "RenderTypes.h"
-#include "FileUtils.h"
 
 // STL
 #include <vector>
@@ -20,3 +19,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+// Forward declaration
+class FShader;
+class FTexture;
+class FCamera;
+class FMesh;
