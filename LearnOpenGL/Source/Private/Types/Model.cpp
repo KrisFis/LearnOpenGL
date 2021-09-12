@@ -31,9 +31,9 @@ void FModel::Draw(FShaderProgram& Shader)
 	if(!Shader.IsUsed())
 		return;
 
-	for(FMesh& mesh : Meshes)
+	for(std::shared_ptr<FMesh>& mesh : Meshes)
 	{
-		mesh.Draw(Shader);
+		mesh->Draw(Shader);
 	}
 }
 
@@ -52,10 +52,11 @@ void FModel::ProcessNode(aiNode* Node, const aiScene* Scene)
 	}
 }
 
-FMesh FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene) 
+std::shared_ptr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene) 
 {
 	// Vertices
 	std::vector<FVertex> vertices;
+	vertices.reserve(Mesh->mNumVertices);
 	for(uint32 i = 0; i < Mesh->mNumVertices; ++i)
 	{
 		const aiVector3D& currVertex = Mesh->mVertices[i];
@@ -99,7 +100,7 @@ FMesh FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 	
-	return FMesh(vertices, indices, textures);
+	return std::make_shared<FMesh>(vertices, indices, textures);
 }
 
 std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextureType Type) 

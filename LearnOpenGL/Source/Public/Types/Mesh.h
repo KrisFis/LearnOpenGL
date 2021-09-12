@@ -22,6 +22,10 @@ public: // Getters
 
 	inline bool IsInitialized() const { return bIsInitialized; }
 
+public: // Setters
+
+	void SetTextures(const std::vector<FTexture>& InTextures);
+
 public: // Methods
 
 	void Draw(FShaderProgram& Shader);

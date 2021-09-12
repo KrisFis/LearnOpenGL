@@ -2,6 +2,7 @@
 #include "ModuleMinimal.h"
 #include "RenderUtils.h"
 #include "FileUtils.h"
+#include "MeshUtils.h"
 
 #include "Shader.h"
 #include "Timer.h"
@@ -162,7 +163,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
-void ProcessRender(FShaderProgram& Shader, FModel& Model)
+void ProcessRender(FShaderProgram& Shader, const std::shared_ptr<FMesh>& Mesh)
 {
 	// Clear part
 	{
@@ -183,7 +184,7 @@ void ProcessRender(FShaderProgram& Shader, FModel& Model)
 	Shader.SetMat4("projection", projection);
 	Shader.SetMat4("model", glm::mat4(1.f));
 	
-	Model.Draw(Shader);
+	Mesh->Draw(Shader);
 }
 
 void EngineTick()
@@ -208,11 +209,17 @@ int32 GuardedMain()
 	{
 		return -2;
 	}
-
-	FModel modelToUse = { NFileUtils::ContentPath("Models/Backpack/backpack.obj").c_str() }; 
-	if(!modelToUse.IsInitialized())
+	
+	FTexture textureToUse = { NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse };
+	if(!textureToUse.IsInitialized())
 	{
 		return -3;
+	}
+
+	std::shared_ptr<FMesh> meshToUse = NMeshUtils::ConstructPlane({textureToUse});
+	if(!meshToUse || !meshToUse->IsInitialized())
+	{
+		return -4;
 	}
 
 	// Main render loop
@@ -227,7 +234,7 @@ int32 GuardedMain()
 
 		EngineTick();
 		ProcessInput();
-		ProcessRender(shaderToUse, modelToUse);
+		ProcessRender(shaderToUse, meshToUse);
 
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();

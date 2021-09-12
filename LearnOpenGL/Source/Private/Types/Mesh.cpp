@@ -5,7 +5,7 @@
 #include "RenderUtils.h"
 #include "Shader.h"
 
-FMesh::FMesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &InIndices, const std::vector<FTexture> &InTextures) 
+FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<FTexture>& InTextures) 
 	: Vertices(InVertices)
 	, Indices(InIndices)
 	, Textures(InTextures)
@@ -77,4 +77,9 @@ void FMesh::Draw(FShaderProgram& Shader)
 	glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
 	
 	NRenderUtils::UnbindVertexArray();
+}
+
+void FMesh::SetTextures(const std::vector<FTexture>& InTextures)
+{
+	Textures = InTextures;
 }

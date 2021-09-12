@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <string>
 #include <iostream>
+#include <memory>
 
 // GLAD + GLFW
 #include <glad/glad.h>
