@@ -18,6 +18,10 @@ public: // Constructors
 	FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<FTexture>& InTextures);
 	virtual ~FMesh();
 
+public: // Getters
+
+	inline bool IsInitialized() const { return bIsInitialized; }
+
 public: // Methods
 
 	void Draw(FShaderProgram& Shader);
@@ -30,4 +34,6 @@ private: // Fields
 	
 	FVertexArrayId VAO;
 	FBufferId VBO, EBO;
+	
+	bool bIsInitialized;
 };

@@ -9,6 +9,7 @@ FMesh::FMesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &
 	: Vertices(InVertices)
 	, Indices(InIndices)
 	, Textures(InTextures)
+	, bIsInitialized(false)
 {
 	// Generate buffers
 	VAO = NRenderUtils::GenerateVertexArray();
@@ -35,12 +36,14 @@ FMesh::FMesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &
 	// Attributes
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(FVertex), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(FVertex), (void*)offsetof(FVertex, Normal));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(FVertex), (void*)offsetof(FVertex, Normal));
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(FVertex), (void*)offsetof(FVertex, TexCoords));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(FVertex), (void*)offsetof(FVertex, TexCoords));
 	glEnableVertexAttribArray(2);
 	
 	NRenderUtils::UnbindVertexArray(VAO);
+	
+	bIsInitialized = true;
 }
 
 FMesh::~FMesh()
@@ -48,26 +51,30 @@ FMesh::~FMesh()
 
 void FMesh::Draw(FShaderProgram& Shader)
 {
+	uint8 diffuseCounter = 0;
+	uint8 specularCounter = 0;
 	for(uint8 i = 0; i < Textures.size(); ++i)
 	{
 		std::string nameOfTexture;
 		switch (Textures[i].GetType()) 
 		{
 			case ETextureType::Diffuse:
-				nameOfTexture = "diffuse";
+				nameOfTexture = "diffuse" + std::to_string(diffuseCounter++);
 				break;
 			case ETextureType::Specular:
-				nameOfTexture = "specular";
+				nameOfTexture = "specular" + std::to_string(specularCounter++);
 				break;
 			default:
 				continue;
 		}
 		
-		Shader.SetInt32(("material." + nameOfTexture + std::to_string(i)).c_str(), i);
+		Shader.SetInt32(("material." + nameOfTexture).c_str(), i);
 		Textures[i].Use(i);
 	}
 
 	NRenderUtils::BindVertexArray(VAO);
+	
 	glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
+	
 	NRenderUtils::UnbindVertexArray();
 }

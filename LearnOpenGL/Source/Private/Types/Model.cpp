@@ -2,6 +2,7 @@
 #include "Model.h"
 #include "Mesh.h"
 #include "Texture.h"
+#include "Shader.h"
 
 FModel::FModel(const char* FilePath) 
 	: bIsInitialized(false)
@@ -19,11 +20,17 @@ FModel::FModel(const char* FilePath)
 	Directory = pathAsString.substr(0, pathAsString.find_last_of('/'));
 
 	ProcessNode(scene->mRootNode, scene);
+	
+	std::cout << "Model load successful [" << FilePath << "]" << std::endl;
 	bIsInitialized = true;
 }
 
 void FModel::Draw(FShaderProgram& Shader) 
 {
+	assert(Shader.IsUsed());
+	if(!Shader.IsUsed())
+		return;
+
 	for(FMesh& mesh : Meshes)
 	{
 		mesh.Draw(Shader);
@@ -109,9 +116,9 @@ std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextu
 		std::string filePath = Directory + '/' + std::string(path.C_Str());
 		
 		bool skip = false;
-		for(const FTexture& texture : result)
+		for(const FTexture& texture : LoadedTextures)
 		{
-			if(filePath == texture.GetFilePath())
+			if(filePath == texture.GetPath())
 			{
 				result.push_back(texture);
 				skip = true;
@@ -120,7 +127,12 @@ std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextu
 		}
 		
 		if(!skip)
-			result.push_back({filePath.c_str(), friendlyType});
+		{
+			FTexture newTexture = {filePath.c_str(), friendlyType};
+			
+			result.push_back(newTexture);
+			LoadedTextures.push_back(newTexture);
+		}
 	}
 
 	return result;

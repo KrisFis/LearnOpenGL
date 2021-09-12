@@ -25,5 +25,5 @@ uniform Material material;
 void main()
 {
 	// for now use only 0 index
-	FragColor = texture(useMaterial.diffuse0, TexCoord);
+	FragColor = texture(material.diffuse0, TexCoord);
 }

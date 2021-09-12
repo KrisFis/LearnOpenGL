@@ -44,7 +44,7 @@ public: // Getters
 	inline int16 GetUseIndex() const { return UseIndex; }
 	
 	inline ETextureType GetType() const { return Type; }
-	inline const std::string& GetFilePath() const { return FilePath; }
+	inline const std::string& GetPath() const { return FilePath; }
 
 public: // External methods
 

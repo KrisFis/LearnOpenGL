@@ -31,3 +31,4 @@ class FShaderProgram;
 class FTexture;
 class FCamera;
 class FMesh;
+class FModel;
