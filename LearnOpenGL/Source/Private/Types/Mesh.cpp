@@ -48,21 +48,26 @@ FMesh::~FMesh()
 
 void FMesh::Draw(FShaderProgram& Shader)
 {
-//	for(uint16 i = 0; i < Textures.size(); ++i)
-//	{
-//		Textures[i].Use(i);
-//
-//		switch (Textures[i].GetType()) 
-//		{
-//		case ETextureType::Diffuse:
-//		Shader.SetInt32("texture_diffuse", i);
-//		break;
-//		case ETextureType::Specular:
-//		Shader.SetInt32("texture_specular", i);
-//		break;
-//		default:
-//			assert(false);
-//		break;
-//		}
-//	}
+	for(uint8 i = 0; i < Textures.size(); ++i)
+	{
+		std::string nameOfTexture;
+		switch (Textures[i].GetType()) 
+		{
+			case ETextureType::Diffuse:
+				nameOfTexture = "diffuse";
+				break;
+			case ETextureType::Specular:
+				nameOfTexture = "specular";
+				break;
+			default:
+				continue;
+		}
+		
+		Shader.SetInt32(("material." + nameOfTexture + std::to_string(i)).c_str(), i);
+		Textures[i].Use(i);
+	}
+
+	NRenderUtils::BindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
+	NRenderUtils::UnbindVertexArray();
 }
