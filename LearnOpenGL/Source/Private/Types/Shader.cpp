@@ -36,7 +36,7 @@ static bool HasErrors(const unsigned int& Id, const std::string& ShaderType)
     return false;
 }
 
-FShader::FShader(const char* VertexFilename, const char* FragmentFilename)
+FShader::FShader(const char* VertexFilePath, const char* FragmentFilePath)
 	: ProgramId(0)
 	, bIsUsed(false)
 	, bIsInitialized(false)
@@ -52,14 +52,14 @@ FShader::FShader(const char* VertexFilename, const char* FragmentFilename)
 	fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
 
 	// Prepand with shaders folder
-	std::string fullVertexPath = NFileUtils::ContentPath() + std::string("/Shaders/Vertex/") + std::string(VertexFilename);
-	std::string fullFragmentPath = NFileUtils::ContentPath() + std::string("/Shaders/Fragment/") + std::string(FragmentFilename);
+	//std::string fullVertexPath = NFileUtils::ContentPath() + std::string("/Shaders/Vertex/") + std::string(VertexFilePath);
+	//std::string fullFragmentPath = NFileUtils::ContentPath() + std::string("/Shaders/Fragment/") + std::string(FragmentFilePath);
 
 	try
 	{
 		 // open files
-		 vShaderFile.open(fullVertexPath);
-		 fShaderFile.open(fullFragmentPath);
+		 vShaderFile.open(VertexFilePath);
+		 fShaderFile.open(FragmentFilePath);
 		 std::stringstream vShaderStream, fShaderStream;
 		 // read file's buffer contents into streams
 		 vShaderStream << vShaderFile.rdbuf();
@@ -112,7 +112,7 @@ FShader::FShader(const char* VertexFilename, const char* FragmentFilename)
 
 	if(!hasErrors)
 	{
-		std::cout << "Shader compiled successfully [vertex: " << VertexFilename << ", fragment: " << FragmentFilename << "]." << std::endl;
+		std::cout << "Shader compiled successfully [vertex: " << VertexFilePath << ", fragment: " << FragmentFilePath << "]." << std::endl;
 		bIsInitialized = true;
 	}
 }

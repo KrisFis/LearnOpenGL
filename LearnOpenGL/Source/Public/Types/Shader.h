@@ -8,7 +8,7 @@ class FShader
 
 public: // Constructors
 
-    FShader(const char* VertexFilename, const char* FragmentFilename);
+    FShader(const char* VertexFilePath, const char* FragmentFilePath);
     virtual ~FShader();
 
 public: // Getters

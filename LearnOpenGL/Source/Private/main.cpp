@@ -2,6 +2,7 @@
 #include "ModuleMinimal.h"
 #include "RenderUtils.h"
 #include "ColorUtils.h"
+#include "FileUtils.h"
 
 #include "Shader.h"
 #include "Texture.h"
@@ -470,17 +471,17 @@ int32 GuardedMain()
 		SetupAttributesForCube(VAO, VBO);
 
 	FShader shaders[] = {
-		{"Old/Lighting.vert", "Old/Lighting.frag"},
-		{"Old/LightObj.vert", "Old/LightObj.frag"}};
+		{ NFileUtils::ContentPath("Shaders/Vertex/Old/Lighting.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Old/Lighting.frag").c_str()},
+		{NFileUtils::ContentPath("Shaders/Vertex/Old/LightObj.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Old/LightObj.frag").c_str()}};
 	if(!shaders[0].IsInitialized() || !shaders[1].IsInitialized())
 	{
 		return -2;
 	}
 
 	FTexture textures[] = {
-			{"container2.png", ETextureType::Diffuse},
-			{"container2_specular.png", ETextureType::Specular},
-			{"matrix.jpg", ETextureType::Diffuse}};
+			{NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse},
+			{NFileUtils::ContentPath("Textures/container2_specular.png").c_str(), ETextureType::Specular},
+			{NFileUtils::ContentPath("Textures/matrix.jpg").c_str(), ETextureType::Diffuse}};
 	if(!textures[0].IsInitialized() || !textures[1].IsInitialized() || !textures[2].IsInitialized())
 	{
 		return -3;
