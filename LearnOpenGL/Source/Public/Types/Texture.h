@@ -5,16 +5,34 @@
 
 enum class ETextureType : uint8
 {
-	Invalid,
+	Invalid = 0,
 	Diffuse,
-	Specular
+	Specular,
+	Ambient,
+	Emissive,
+	Height,
+	Normals,
+	Shininess,
+	Opacity,
+	Displacement,
+	LightMap,
+	Reflection,
+	BaseColor,
+	NormalCamera,
+	EmissionColor,
+	Metalness,
+	DiffuseRoughness,
+	AmbientOcclusion,
 };
+
+ETextureType ToTextureType(const aiTextureType Type);
 
 class FTexture
 {
+
 public: // Constructors
 
-	FTexture(const char* TextureFilename, const ETextureType TextureType);
+	FTexture(const char* InFilePath, const ETextureType InType);
 	virtual ~FTexture();
 
 public: // Getters
@@ -26,6 +44,7 @@ public: // Getters
 	inline int16 GetUseIndex() const { return UseIndex; }
 	
 	inline ETextureType GetType() const { return Type; }
+	inline const std::string& GetFilePath() const { return FilePath; }
 
 public: // External methods
 
@@ -37,4 +56,5 @@ private: // Fields
 	FTextureId Id;
 	int16 UseIndex;
 	ETextureType Type;
+	std::string FilePath;
 };

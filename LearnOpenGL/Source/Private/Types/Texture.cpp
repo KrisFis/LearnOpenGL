@@ -8,12 +8,56 @@
 #include <iostream>
 #include <assert.h>
 
-FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
+ETextureType ToTextureType(const aiTextureType Type) 
+{
+	switch(Type)
+	{
+		case aiTextureType_DIFFUSE:
+			return ETextureType::Diffuse;
+		case aiTextureType_SPECULAR:
+			return ETextureType::Specular;
+		case aiTextureType_AMBIENT:
+			return ETextureType::Ambient;
+		case aiTextureType_EMISSIVE:
+			return ETextureType::Emissive;
+		case aiTextureType_HEIGHT:
+			return ETextureType::Height;
+		case aiTextureType_NORMALS:
+			return ETextureType::Normals;
+		case aiTextureType_SHININESS:
+			return ETextureType::Shininess;
+		case aiTextureType_OPACITY:
+			return ETextureType::Opacity;
+		case aiTextureType_DISPLACEMENT:
+			return ETextureType::Displacement;
+		case aiTextureType_LIGHTMAP:
+			return ETextureType::LightMap;
+		case aiTextureType_REFLECTION:
+			return ETextureType::Reflection;
+		case aiTextureType_BASE_COLOR:
+			return ETextureType::BaseColor;
+		case aiTextureType_NORMAL_CAMERA:
+			return ETextureType::NormalCamera;
+		case aiTextureType_EMISSION_COLOR:
+			return ETextureType::EmissionColor;
+		case aiTextureType_METALNESS:
+			return ETextureType::Metalness;
+		case aiTextureType_DIFFUSE_ROUGHNESS:
+			return ETextureType::DiffuseRoughness;
+		case aiTextureType_AMBIENT_OCCLUSION:
+			return ETextureType::AmbientOcclusion;
+		default:
+			assert(false);
+			return ETextureType::Invalid;
+	}
+}
+
+FTexture::FTexture(const char* InFilePath, const ETextureType InType)
 	: Id(0)
 	, UseIndex(-1)
 	, Type(ETextureType::Invalid)
 {
-	assert(TextureType != ETextureType::Invalid);
+	assert(InType != ETextureType::Invalid);
 
 	static bool flipFixed = false;
 	if(!flipFixed)
@@ -24,14 +68,14 @@ FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
 
 	glGenTextures(1, &Id);
 
-	const std::string fullTextPath = NFileUtils::ContentPath() + std::string("/Textures/") + std::string(TextureFilename);
+	//const std::string fullTextPath = NFileUtils::ContentPath() + std::string("/Textures/") + std::string(TextureFilename);
 
 	int width, height, nrChannels;
-	unsigned char* data = stbi_load(fullTextPath.c_str(), &width, &height, &nrChannels, 0);
+	unsigned char* data = stbi_load(InFilePath, &width, &height, &nrChannels, 0);
 
 	if(!data)
 	{
-		std::cout << "Texture load failed [" << TextureFilename << "] [NOT_FOUND]" << std::endl;
+		std::cout << "Texture load failed [" << InFilePath << "] [NOT_FOUND]" << std::endl;
 	}
 	else
 	{
@@ -66,8 +110,9 @@ FTexture::FTexture(const char* TextureFilename, const ETextureType TextureType)
 
 		stbi_image_free(data);
 
-		std::cout << "Texture load successful [" << TextureFilename << "]" << std::endl;
-		Type = TextureType;
+		std::cout << "Texture load successful [" << InFilePath << "]" << std::endl;
+		FilePath = InFilePath;
+		Type = InType;
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);

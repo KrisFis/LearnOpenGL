@@ -10,13 +10,13 @@ struct FVertex
 	glm::vec2 TexCoords;
 };
 
-class Mesh
+class FMesh
 {
 
 public: // Constructors
 
-	Mesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<FTexture>& InTextures);
-	virtual ~Mesh();
+	FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<FTexture>& InTextures);
+	virtual ~FMesh();
 
 public: // Methods
 

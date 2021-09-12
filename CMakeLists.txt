@@ -51,8 +51,6 @@ endif()
 # Project Files
 # -----------------------------------------------------------
 
-add_subdirectory(${PROJECT_NAME}/ThirdParty/Assimp EXCLUDE_FROM_ALL)
-
 include_directories(
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Misc"
@@ -64,6 +62,7 @@ include_directories(
 
 link_directories(
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/lib"
+    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/lib"
 )
 
 # Sources
@@ -76,12 +75,20 @@ file(GLOB_RECURSE "ALL_SOURCE_FILES"
 
 # Libs
 set(OpenGLLibs opengl32 glfw/glfw3)
-set(AssimpLibs )
+set(AssimpLibs assimp)
 
 # Executable and linking
 # -----------------------------------------------------------
 
 add_executable(${PROJECT_NAME} "${ALL_SOURCE_FILES}")
-add_dependencies(${PROJECT_NAME} assimp)
 
-target_link_libraries(${PROJECT_NAME} ${OpenGLLibs})
+target_link_libraries(${PROJECT_NAME} ${OpenGLLibs} ${AssimpLibs})
+
+# Commands
+# -----------------------------------------------------------
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+        "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/lib/assimp-vc142-mt.dll"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assimp-vc142-mt.dll"
+)

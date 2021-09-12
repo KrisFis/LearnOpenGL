@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <assert.h>
 #include <string>
+#include <iostream>
 
 // GLAD + GLFW
 #include <glad/glad.h>

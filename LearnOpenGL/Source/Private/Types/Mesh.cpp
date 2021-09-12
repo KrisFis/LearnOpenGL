@@ -5,7 +5,7 @@
 #include "RenderUtils.h"
 #include "Shader.h"
 
-Mesh::Mesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &InIndices, const std::vector<FTexture> &InTextures) 
+FMesh::FMesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &InIndices, const std::vector<FTexture> &InTextures) 
 	: Vertices(InVertices)
 	, Indices(InIndices)
 	, Textures(InTextures)
@@ -43,10 +43,10 @@ Mesh::Mesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &In
 	NRenderUtils::UnbindVertexArray(VAO);
 }
 
-Mesh::~Mesh()
+FMesh::~FMesh()
 {}
 
-void Mesh::Draw(FShader& Shader)
+void FMesh::Draw(FShader& Shader)
 {
 //	for(uint16 i = 0; i < Textures.size(); ++i)
 //	{
