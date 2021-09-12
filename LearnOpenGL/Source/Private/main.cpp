@@ -318,7 +318,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
-void InitRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs, FBufferId* VBOs)
+void InitRender(FShaderProgram* Shaders, FTexture* Textures, FVertexArrayId* VAOs, FBufferId* VBOs)
 {
 	// Camera
 	{
@@ -373,7 +373,7 @@ void InitRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs, FBuf
 	}
 }
 
-void ProcessRender(FShader* Shaders, FTexture* Textures, FVertexArrayId* VAOs)
+void ProcessRender(FShaderProgram* Shaders, FTexture* Textures, FVertexArrayId* VAOs)
 {
 	// Clear part
 	{
@@ -470,7 +470,7 @@ int32 GuardedMain()
 	for(FVertexArrayId VAO : VAOs)
 		SetupAttributesForCube(VAO, VBO);
 
-	FShader shaders[] = {
+	FShaderProgram shaders[] = {
 		{ NFileUtils::ContentPath("Shaders/Vertex/Old/Lighting.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Old/Lighting.frag").c_str()},
 		{NFileUtils::ContentPath("Shaders/Vertex/Old/LightObj.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Old/LightObj.frag").c_str()}};
 	if(!shaders[0].IsInitialized() || !shaders[1].IsInitialized())

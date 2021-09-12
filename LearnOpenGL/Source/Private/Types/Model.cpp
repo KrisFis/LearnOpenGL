@@ -22,7 +22,7 @@ FModel::FModel(const char* FilePath)
 	bIsInitialized = true;
 }
 
-void FModel::Draw(FShader& Shader) 
+void FModel::Draw(FShaderProgram& Shader) 
 {
 	for(FMesh& mesh : Meshes)
 	{

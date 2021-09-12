@@ -20,7 +20,7 @@ public: // Constructors
 
 public: // Methods
 
-	void Draw(FShader& Shader);
+	void Draw(FShaderProgram& Shader);
 
 private: // Fields
 

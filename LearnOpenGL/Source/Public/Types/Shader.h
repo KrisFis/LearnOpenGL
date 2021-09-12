@@ -3,13 +3,20 @@
 
 #include "ModuleMinimal.h"
 
-class FShader
+enum class EShaderType
+{
+	Invalid = 0,
+	Vertex,
+	Fragment
+};
+
+class FShaderProgram
 {
 
 public: // Constructors
 
-    FShader(const char* VertexFilePath, const char* FragmentFilePath);
-    virtual ~FShader();
+    FShaderProgram(const char* VertexFilePath, const char* FragmentFilePath);
+    virtual ~FShaderProgram();
 
 public: // Getters
 

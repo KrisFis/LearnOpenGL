@@ -46,7 +46,7 @@ FMesh::FMesh(const std::vector<FVertex> &InVertices, const std::vector<uint32> &
 FMesh::~FMesh()
 {}
 
-void FMesh::Draw(FShader& Shader)
+void FMesh::Draw(FShaderProgram& Shader)
 {
 //	for(uint16 i = 0; i < Textures.size(); ++i)
 //	{

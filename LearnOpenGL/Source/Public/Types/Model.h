@@ -16,7 +16,7 @@ public: // Getters
 
 public: // Draw methods
 	
-	void Draw(FShader& Shader);
+	void Draw(FShaderProgram& Shader);
 	
 private: // Helper methods
 

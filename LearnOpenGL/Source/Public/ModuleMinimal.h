@@ -27,7 +27,7 @@
 #include <assimp/postprocess.h>
 
 // Forward declaration
-class FShader;
+class FShaderProgram;
 class FTexture;
 class FCamera;
 class FMesh;

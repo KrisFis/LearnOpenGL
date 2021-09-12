@@ -36,7 +36,7 @@ static bool HasErrors(const unsigned int& Id, const std::string& ShaderType)
     return false;
 }
 
-FShader::FShader(const char* VertexFilePath, const char* FragmentFilePath)
+FShaderProgram::FShaderProgram(const char* VertexFilePath, const char* FragmentFilePath)
 	: ProgramId(0)
 	, bIsUsed(false)
 	, bIsInitialized(false)
@@ -117,59 +117,59 @@ FShader::FShader(const char* VertexFilePath, const char* FragmentFilePath)
 	}
 }
 
-FShader::~FShader()
+FShaderProgram::~FShaderProgram()
 {}
 
-void FShader::Use()
+void FShaderProgram::Use()
 {
 	glUseProgram(ProgramId);
 
 	bIsUsed = true;
 }
 
-void FShader::Clear()
+void FShaderProgram::Clear()
 {
 	glUseProgram(0);
 
 	bIsUsed = false;
 }
 
-void FShader::SetBool(const char* Name, bool Value) const
+void FShaderProgram::SetBool(const char* Name, bool Value) const
 {
 	glUniform1i(glGetUniformLocation(ProgramId, Name), (int)Value);
 }
 
-void FShader::SetInt32(const char* Name, const int32& Value) const
+void FShaderProgram::SetInt32(const char* Name, const int32& Value) const
 {
 	glUniform1i(glGetUniformLocation(ProgramId, Name), Value);
 }
 
-void FShader::SetUInt32(const char* Name, const uint32& Value) const
+void FShaderProgram::SetUInt32(const char* Name, const uint32& Value) const
 {
 	glUniform1ui(glGetUniformLocation(ProgramId, Name), Value);
 }
 
-void FShader::SetFloat(const char* Name, float Value) const
+void FShaderProgram::SetFloat(const char* Name, float Value) const
 {
 	glUniform1f(glGetUniformLocation(ProgramId, Name), Value);
 }
 
-void FShader::SetVec3(const char *Name, const glm::vec3& Value) const
+void FShaderProgram::SetVec3(const char *Name, const glm::vec3& Value) const
 {
 	glUniform3fv(glGetUniformLocation(ProgramId, Name), 1, &Value[0]);
 }
 
-void FShader::SetVec4(const char *Name, const glm::vec4& Value) const
+void FShaderProgram::SetVec4(const char *Name, const glm::vec4& Value) const
 {
 	glUniform4fv(glGetUniformLocation(ProgramId, Name), 1, &Value[0]);
 }
 
-void FShader::SetMat3(const char *Name, const glm::mat3& Value) const
+void FShaderProgram::SetMat3(const char *Name, const glm::mat3& Value) const
 {
 	glUniformMatrix3fv(glGetUniformLocation(ProgramId, Name), 1, GL_FALSE, &Value[0][0]);
 }
 
-void FShader::SetMat4(const char* Name, const glm::mat4& Value) const
+void FShaderProgram::SetMat4(const char* Name, const glm::mat4& Value) const
 {
 	glUniformMatrix4fv(glGetUniformLocation(ProgramId, Name), 1, GL_FALSE, &Value[0][0]);
 }
