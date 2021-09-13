@@ -210,13 +210,13 @@ int32 GuardedMain()
 		return -2;
 	}
 	
-	FTexture textureToUse = { NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse };
+	FTexture textureToUse = { NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse };
 	if(!textureToUse.IsInitialized())
 	{
 		return -3;
 	}
 
-	std::shared_ptr<FMesh> meshToUse = NMeshUtils::ConstructPlane({textureToUse});
+	std::shared_ptr<FMesh> meshToUse = NMeshUtils::ConstructSphere({textureToUse});
 	if(!meshToUse || !meshToUse->IsInitialized())
 	{
 		return -4;
