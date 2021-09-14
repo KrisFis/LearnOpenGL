@@ -5,10 +5,12 @@
 #include "RenderUtils.h"
 #include "Shader.h"
 
-FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<FTexture>& InTextures) 
-	: Vertices(InVertices)
+FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<FTexture>& InTextures, bool Owned) 
+	: Transform(FTransform())
+	, Vertices(InVertices)
 	, Indices(InIndices)
 	, Textures(InTextures)
+	, bIsOwned(Owned)
 	, bIsInitialized(false)
 {
 	// Generate buffers
@@ -43,14 +45,23 @@ FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& 
 	
 	NRenderUtils::UnbindVertexArray(VAO);
 	
+	RecalculateModel();
+	
 	bIsInitialized = true;
 }
 
 FMesh::~FMesh()
 {}
 
+void FMesh::SetTextures(const std::vector<FTexture>& InTextures)
+{
+	Textures = InTextures;
+}
+
 void FMesh::Draw(FShaderProgram& Shader)
 {
+	if(!IsValid()) return;
+
 	uint8 diffuseCounter = 0;
 	uint8 specularCounter = 0;
 	for(uint8 i = 0; i < Textures.size(); ++i)
@@ -71,6 +82,9 @@ void FMesh::Draw(FShaderProgram& Shader)
 		Shader.SetInt32(("material." + nameOfTexture).c_str(), i);
 		Textures[i].Use(i);
 	}
+	
+	if(!IsOwned())
+		Shader.SetMat4("model", CachedModel);
 
 	NRenderUtils::BindVertexArray(VAO);
 	
@@ -79,7 +93,9 @@ void FMesh::Draw(FShaderProgram& Shader)
 	NRenderUtils::UnbindVertexArray();
 }
 
-void FMesh::SetTextures(const std::vector<FTexture>& InTextures)
+void FMesh::RecalculateModel()
 {
-	Textures = InTextures;
+	if(bIsOwned) return;
+	
+	CachedModel = Transform.CalculateModelMatrix();
 }

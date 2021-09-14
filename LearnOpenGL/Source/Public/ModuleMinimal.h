@@ -4,6 +4,7 @@
 // Core
 #include "IntegerTypes.h"
 #include "RenderTypes.h"
+#include "SceneTypes.h"
 
 // STL
 #include <vector>
@@ -33,3 +34,4 @@ class FTexture;
 class FCamera;
 class FMesh;
 class FModel;
+class FScene;

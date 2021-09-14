@@ -22,14 +22,16 @@ FModel::FModel(const char* FilePath)
 	ProcessNode(scene->mRootNode, scene);
 	
 	std::cout << "Model load successful [" << FilePath << "]" << std::endl;
+	
+	RecalculateModel();
 	bIsInitialized = true;
 }
 
 void FModel::Draw(FShaderProgram& Shader) 
 {
-	assert(Shader.IsUsed());
-	if(!Shader.IsUsed())
-		return;
+	if(!IsValid()) return;
+
+	Shader.SetMat4("model", CachedModel);
 
 	for(std::shared_ptr<FMesh>& mesh : Meshes)
 	{
@@ -100,7 +102,7 @@ std::shared_ptr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 	
-	return std::make_shared<FMesh>(vertices, indices, textures);
+	return std::make_shared<FMesh>(vertices, indices, textures, true);
 }
 
 std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextureType Type) 
@@ -137,4 +139,9 @@ std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextu
 	}
 
 	return result;
+}
+
+void FModel::RecalculateModel()
+{
+	CachedModel = Transform.CalculateModelMatrix();
 }

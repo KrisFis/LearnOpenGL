@@ -3,6 +3,7 @@
 #include "RenderUtils.h"
 #include "FileUtils.h"
 #include "MeshUtils.h"
+#include "Scene.h"
 
 #include "Shader.h"
 #include "Timer.h"
@@ -163,7 +164,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
-void ProcessRender(FShaderProgram& Shader, const std::shared_ptr<FMesh>& Mesh)
+void ProcessRender(FShaderProgram& Shader, const FScenePtr& Scene)
 {
 	// Clear part
 	{
@@ -184,7 +185,7 @@ void ProcessRender(FShaderProgram& Shader, const std::shared_ptr<FMesh>& Mesh)
 	Shader.SetMat4("projection", projection);
 	Shader.SetMat4("model", glm::mat4(1.f));
 	
-	Mesh->Draw(Shader);
+	Scene->Draw(Shader);
 }
 
 void EngineTick()
@@ -195,6 +196,40 @@ void EngineTick()
 	resultTitle.append("]");
 
 	glfwSetWindowTitle(GWindow, resultTitle.c_str());
+}
+
+FScenePtr ConstructScene()
+{
+	FTexture wallTexture = { NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse };
+	FTexture brickTexture = { NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse };
+	FTexture carpetTexture = { NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse };
+	if(!wallTexture.IsInitialized() || !brickTexture.IsInitialized() || !carpetTexture.IsInitialized())
+	{
+		return nullptr;
+	}
+	
+	FMeshPtr ground = NMeshUtils::ConstructPlane(carpetTexture);
+	ground->SetTransform({
+		{0.f, -10.f, 0.f},
+		{1.f, 1.f, 1.f},
+		{10.f, 1.f, 10.f}
+	});
+	
+	FMeshPtr wall = NMeshUtils::ConstructSphere(wallTexture);
+	wall->SetTransform({
+		{0.f, 0.f, 0.f},
+		{1.f, 1.f, 1.f},
+		{10.f, 1.f, 10.f}
+	});
+	
+	FMeshPtr sun = NMeshUtils::ConstructSphere(brickTexture);
+	sun->SetTransform({
+			{10.f, 10.f, 10.f},
+			{1.f, 1.f, 1.f},
+			{10.f, 1.f, 10.f}
+	});
+	
+	return std::make_shared<FScene>(std::vector<FModelPtr>(), std::vector<FMeshPtr>());
 }
 
 int32 GuardedMain()
@@ -210,16 +245,10 @@ int32 GuardedMain()
 		return -2;
 	}
 	
-	FTexture textureToUse = { NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse };
-	if(!textureToUse.IsInitialized())
+	FScenePtr sceneToUse = ConstructScene();
+	if(!(bool)sceneToUse)
 	{
 		return -3;
-	}
-
-	std::shared_ptr<FMesh> meshToUse = NMeshUtils::ConstructSphere({textureToUse});
-	if(!meshToUse || !meshToUse->IsInitialized())
-	{
-		return -4;
 	}
 
 	// Main render loop
@@ -234,7 +263,7 @@ int32 GuardedMain()
 
 		EngineTick();
 		ProcessInput();
-		ProcessRender(shaderToUse, meshToUse);
+		ProcessRender(shaderToUse, sceneToUse);
 
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();

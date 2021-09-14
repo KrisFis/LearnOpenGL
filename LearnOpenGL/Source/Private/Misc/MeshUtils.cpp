@@ -20,23 +20,23 @@ namespace NMeshUtils
 		}
 	}
 
-	FMeshPtr ConstructCube(const std::vector<FTexture>& Textures)
+	FMeshPtr ConstructCube(const FTexture Texture)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Cube/Cube.obj", Textures);
+		return NPrivate::ConstructShape("Models/Primitive/Cube/Cube.obj", {Texture});
 	}
 
-	FMeshPtr ConstructPlane(const std::vector<FTexture>& Textures)
+	FMeshPtr ConstructPlane(const FTexture Texture)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Plane/Plane.obj", Textures);
+		return NPrivate::ConstructShape("Models/Primitive/Plane/Plane.obj", {Texture});
 	}
 
-	FMeshPtr ConstructSphere(const std::vector<FTexture>& Textures)
+	FMeshPtr ConstructSphere(const FTexture Texture)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Sphere/Sphere.obj", Textures);
+		return NPrivate::ConstructShape("Models/Primitive/Sphere/Sphere.obj", {Texture});
 	}
 
-	FMeshPtr ConstructCylinder(const std::vector<FTexture>& Textures)
+	FMeshPtr ConstructCylinder(const FTexture Texture)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Cylinder/Cylinder.obj", Textures);
+		return NPrivate::ConstructShape("Models/Primitive/Cylinder/Cylinder.obj", {Texture});
 	}
 }
