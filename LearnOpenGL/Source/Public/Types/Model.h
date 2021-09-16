@@ -4,6 +4,7 @@
 #include "ModuleMinimal.h"
 #include "Mesh.h"
 #include "Texture.h"
+#include "Color.h"
 
 class FModel : public ISceneObject
 {
@@ -17,9 +18,13 @@ public: // Getters
 	inline bool IsInitialized() const { return bIsInitialized; } 
 	inline bool IsValid() const { return Meshes.size() > 0; }
 	inline const std::string& GetPath() const { return Directory; }
-	inline const std::vector<std::shared_ptr<FMesh>>& GetMeshes() { return Meshes; }
+	inline const std::vector<std::shared_ptr<FMesh>>& GetMeshes() const { return Meshes; }
 
 public: // ISceneObject overrides
+	
+	inline virtual bool IsOutlined() const override { return (OutlineSize > 0.f) && !OutlineColor.IsTransparent(); }
+	inline virtual void SetOutlineColor(const FColor& Value) override { OutlineColor = Value; }
+	inline virtual void SetOutlineSize(float Value) override { OutlineSize = Value; }
 	
 	inline virtual FTransform GetTransform() const override { return Transform; }
 	inline virtual void SetTransform(const FTransform& Value) override { Transform = Value; RecalculateModel(); }
@@ -28,12 +33,17 @@ public: // ISceneObject overrides
 
 private: // Helper methods
 
+	void DrawImpl(FShaderProgram& Shader);
+
 	void ProcessNode(aiNode* Node, const aiScene* Scene);
 	std::shared_ptr<FMesh> ProcessMesh(aiMesh* Mesh, const aiScene* Scene);
 	std::vector<FTexture> LoadMaterialTextures(aiMaterial* Material, aiTextureType Type);
 	void RecalculateModel();
 
 private: // Fields
+
+	float OutlineSize;
+	FColor OutlineColor;
 
 	FTransform Transform;
 
@@ -47,5 +57,5 @@ private: // Cache
 
 private: // Primitive fields
 	
-	bool bIsInitialized;
+	uint8 bIsInitialized : 1;
 };

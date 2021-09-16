@@ -4,9 +4,12 @@
 #include "Texture.h"
 #include "RenderUtils.h"
 #include "Shader.h"
+#include "ColorUtils.h"
 
 FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<FTexture>& InTextures, bool Owned) 
-	: Transform(FTransform())
+	: OutlineSize(0.f)
+	, OutlineColor(NColors::Transparent)
+	, Transform(FTransform())
 	, Vertices(InVertices)
 	, Indices(InIndices)
 	, Textures(InTextures)
@@ -61,7 +64,56 @@ void FMesh::SetTextures(const std::vector<FTexture>& InTextures)
 void FMesh::Draw(FShaderProgram& Shader)
 {
 	if(!IsValid()) return;
+	
+	const bool shouldOutline = !IsOwned() && IsOutlined(); 
+	
+	if(shouldOutline)
+	{
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+	}
 
+	DrawImpl(Shader);
+	
+	if(shouldOutline)
+	{
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x0);
+		glDisable(GL_DEPTH_TEST);
+	
+		Shader.SetBool("useOverrideColor", true);
+		Shader.SetVec4("overrideColor", OutlineColor.ToVec4());
+		
+		Shader.SetMat4("model",
+			glm::scale(
+				CachedModel,
+				glm::vec3(1 + OutlineSize)
+			)
+		);
+		
+		NRenderUtils::BindVertexArray(VAO);
+		
+		glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
+		
+		NRenderUtils::UnbindVertexArray();
+		
+		Shader.SetBool("useOverrideColor", false);
+		
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
+	}
+}
+
+void FMesh::RecalculateModel()
+{
+	if(bIsOwned) return;
+	
+	CachedModel = Transform.CalculateModelMatrix();
+}
+
+void FMesh::DrawImpl(FShaderProgram& Shader)
+{
 	uint8 diffuseCounter = 0;
 	uint8 specularCounter = 0;
 	for(uint8 i = 0; i < Textures.size(); ++i)
@@ -91,11 +143,4 @@ void FMesh::Draw(FShaderProgram& Shader)
 	glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
 	
 	NRenderUtils::UnbindVertexArray();
-}
-
-void FMesh::RecalculateModel()
-{
-	if(bIsOwned) return;
-	
-	CachedModel = Transform.CalculateModelMatrix();
 }

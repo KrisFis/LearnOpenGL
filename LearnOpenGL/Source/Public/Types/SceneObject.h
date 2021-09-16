@@ -4,6 +4,7 @@
 #include "ModuleMinimal.h"
 
 class FShaderProgram;
+struct FColor;
 
 struct FTransform
 {
@@ -23,6 +24,12 @@ struct FTransform
 
 class ISceneObject
 {
+
+public: // Outline
+
+	virtual bool IsOutlined() const = 0;
+	virtual void SetOutlineColor(const FColor& Value) = 0;
+	virtual void SetOutlineSize(float Value) = 0;
 
 public: // Transform
 

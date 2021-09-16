@@ -1,5 +1,6 @@
 
 #include "Color.h"
+#include "StringUtils.h"
 
 namespace NColorPrivate
 {
@@ -75,22 +76,22 @@ FColor& FColor::operator/=(const FColor& Other)
 
 FColor FColor::operator+(uint8 Value) const
 {
-	return operator+(FColor(Value));
+	return operator+(FColor(Value,Value,Value,Value));
 }
 
 FColor& FColor::operator+=(uint8 Value)
 {
-	return operator+=(FColor(Value));
+	return operator+=(FColor(Value,Value,Value,Value));
 }
 
 FColor FColor::operator-(uint8 Value) const
 {
-	return operator-(FColor(Value));
+	return operator-(FColor(Value,Value,Value,Value));
 }
 
 FColor& FColor::operator-=(uint8 Value)
 {
-	return operator-=(FColor(Value));
+	return operator-=(FColor(Value,Value,Value,Value));
 }
 
 FColor FColor::operator*(float Value) const
@@ -123,6 +124,19 @@ FColor& FColor::operator/=(float Value)
 	return NColorPrivate::FillFrom(*this, operator/(Value));
 }
 
+FColor FColor::FromHex(const char* Value)
+{
+	std::vector<uint8> bytes = NStringUtils::HexToBytes(Value);
+	const uint16 bytesNum = (uint16)bytes.size();
+	
+	return FColor(
+		(bytesNum > 0) ? bytes[0] : 0,
+		(bytesNum > 1) ? bytes[1] : 0,
+		(bytesNum > 2) ? bytes[2] : 0,
+		(bytesNum > 3) ? bytes[3] : UINT8_MAX
+	); 
+}
+
 FColor FColor::FromVec4(const glm::vec4& Value)
 {
 	glm::vec4 normValue = glm::normalize(Value);
@@ -134,7 +148,7 @@ FColor FColor::FromVec3(const glm::vec3& Value)
 {
 	glm::vec3 normValue = glm::normalize(Value);
 	normValue *= (float)UINT8_MAX;
-	return { (uint8)normValue.x, (uint8)normValue.y, (uint8)normValue.z };
+	return { (uint8)normValue.x, (uint8)normValue.y, (uint8)normValue.z, UINT8_MAX };
 }
 
 glm::vec4 FColor::ToVec4() const

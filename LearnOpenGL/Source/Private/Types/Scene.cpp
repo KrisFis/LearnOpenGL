@@ -2,6 +2,7 @@
 #include "Scene.h"
 #include "Model.h"
 #include "Mesh.h"
+#include "Shader.h"
 
 FScene::FScene()
 	: ModelCounter(0)
@@ -81,19 +82,8 @@ bool FScene::RemoveMeshByIdx(uint16 Idx)
 
 void FScene::Draw(FShaderProgram& Shader)
 {
-	if(Models.size() > 0)
+	for(auto& mesh : Meshes)
 	{
-		for(auto& model : Models)
-		{
-			model.second->Draw(Shader);
-		}
-	}
-	
-	if(Meshes.size() > 0)
-	{
-		for(auto& mesh : Meshes)
-		{
-			mesh.second->Draw(Shader);
-		}
+		mesh.second->Draw(Shader);
 	}
 }

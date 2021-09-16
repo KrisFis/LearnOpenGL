@@ -3,9 +3,12 @@
 #include "Mesh.h"
 #include "Texture.h"
 #include "Shader.h"
+#include "ColorUtils.h"
 
 FModel::FModel(const char* FilePath) 
-	: bIsInitialized(false)
+	: OutlineSize(0.f)
+	, OutlineColor(NColors::Transparent)
+	, bIsInitialized(false)
 {
 	Assimp::Importer importer;
 	const aiScene *scene = importer.ReadFile(FilePath, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -30,10 +33,51 @@ FModel::FModel(const char* FilePath)
 void FModel::Draw(FShaderProgram& Shader) 
 {
 	if(!IsValid()) return;
+	
+	if(IsOutlined())
+	{
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+	}
 
+	DrawImpl(Shader);
+	
+	if(IsOutlined())
+	{
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x0);
+		glDisable(GL_DEPTH_TEST);
+	
+		Shader.SetBool("useOverrideColor", true);
+		Shader.SetVec4("overrideColor", OutlineColor.ToVec4());
+		
+		for(auto& mesh : Meshes)
+		{
+			FTransform tmpTransform = mesh->GetTransform();
+			const glm::vec3 oldScale = tmpTransform.Scale;
+
+			tmpTransform.Scale = oldScale * OutlineSize;
+			mesh->SetTransform(tmpTransform);
+
+			mesh->Draw(Shader);
+
+			tmpTransform.Scale = oldScale;
+			mesh->SetTransform(tmpTransform);
+		}
+		
+		Shader.SetBool("useOverrideColor", false);
+		
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
+	}
+}
+
+void FModel::DrawImpl(FShaderProgram& Shader)
+{
 	Shader.SetMat4("model", CachedModel);
 
-	for(std::shared_ptr<FMesh>& mesh : Meshes)
+	for(auto& mesh : Meshes)
 	{
 		mesh->Draw(Shader);
 	}

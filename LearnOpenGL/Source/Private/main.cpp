@@ -3,6 +3,7 @@
 #include "RenderUtils.h"
 #include "FileUtils.h"
 #include "MeshUtils.h"
+#include "ColorUtils.h"
 #include "Scene.h"
 
 #include "Shader.h"
@@ -71,6 +72,122 @@ void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 	glViewport(0, 0, Width, Height);
 }
 
+void BindEvents(GLFWwindow* Window)
+{
+	glfwSetFramebufferSizeCallback(Window, &WindowSizeChanged);
+	glfwSetCursorPosCallback(Window, &MousePositionChanged);
+	glfwSetScrollCallback(Window, &MouseScrollChanged);
+}
+
+bool CreateInitWindow(GLFWwindow*& OutWindow)
+{
+	if (!glfwInit())
+	{
+		std::cout << "failed to initialize GLFW" << std::endl;
+		return false;
+	}
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	OutWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
+	if (!OutWindow)
+	{
+		std::cout << "Failed to create window" << std::endl;
+		return false;
+	}
+
+	glfwMakeContextCurrent(OutWindow);
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		return false;
+	}
+
+    BindEvents(OutWindow);
+
+	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glViewport(0, 0, GWindowWidth, GWindowHeight);
+
+	// TESTS
+	{
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_STENCIL_TEST);
+	}
+	
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+	return true;
+}
+
+bool ConstructScene(FScene& OutScene)
+{
+	FTexture rocksFloorTexture = { NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse };
+	FTexture wallTexture = { NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse };
+	FTexture brickTexture = { NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse };
+	FTexture carpetTexture = { NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse };
+	if(!wallTexture.IsInitialized() || !brickTexture.IsInitialized() || !carpetTexture.IsInitialized())
+	{
+		return false;
+	}
+	
+	std::vector<FMeshPtr> meshes;
+	meshes.push_back(NMeshUtils::ConstructPlane(rocksFloorTexture));
+	meshes[meshes.size()-1]->SetTransform({
+		{0.f, -1.f, 0.f},
+		{0.f, 0.f, 0.f},
+		{10.f, 1.f, 10.f}
+	});
+
+	meshes.push_back(NMeshUtils::ConstructSphere(wallTexture));
+	meshes[meshes.size()-1]->SetTransform({
+			{10.f, 10.f, 10.f},
+			{0.f, 0.f, 0.f},
+			{2.f, 2.f, 2.f}
+	});
+	
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
+	meshes[meshes.size()-1]->SetOutlineColor(NColors::Blue);
+	meshes[meshes.size()-1]->SetTransform({
+			{10.f, 0.f, 0.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 1.f, 5.f}
+	});
+
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
+	meshes[meshes.size()-1]->SetOutlineColor(NColors::Blue);
+	meshes[meshes.size()-1]->SetTransform({
+			{8.f, 0.f, 2.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 1.f, 2.f}
+	});
+
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
+	meshes[meshes.size()-1]->SetOutlineColor(NColors::Blue);
+	meshes[meshes.size()-1]->SetTransform({
+			{6.f, 0.f, -2.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 1.f, 2.f}
+	});
+
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
+	meshes[meshes.size()-1]->SetOutlineColor(NColors::Blue);
+	meshes[meshes.size()-1]->SetTransform({
+			{4.f, 0.f, 0.f},
+			{0.f, 0.f, 0.f},
+			{1.25f, 1.f, 0.25f}
+	});
+	
+	OutScene.AddMeshes(meshes);
+	return true;
+}
+
 void ProcessInput()
 {
 	const bool shiftWasPreviouslyPressed = GbShiftWasPressed;
@@ -122,65 +239,20 @@ void ProcessInput()
 	}
 }
 
-void BindEvents(GLFWwindow* Window)
-{
-	glfwSetFramebufferSizeCallback(Window, &WindowSizeChanged);
-	glfwSetCursorPosCallback(Window, &MousePositionChanged);
-	glfwSetScrollCallback(Window, &MouseScrollChanged);
-}
-
-bool CreateInitWindow(GLFWwindow*& OutWindow)
-{
-	if (!glfwInit())
-	{
-		std::cout << "failed to initialize GLFW" << std::endl;
-		return false;
-	}
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	OutWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
-	if (!OutWindow)
-	{
-		std::cout << "Failed to create window" << std::endl;
-		return false;
-	}
-
-	glfwMakeContextCurrent(OutWindow);
-
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		return false;
-	}
-
-    BindEvents(OutWindow);
-
-	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glViewport(0, 0, GWindowWidth, GWindowHeight);
-
-	// DEPTH
-	{
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-	}
-
-	return true;
-}
-
 void ProcessRender(FShaderProgram& Shader)
 {
-	// Clear part
+	// Setup render tick
 	{
 		// Default clear color
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 		// Clears screen with ClearColor
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		
+		// Disable stencil write
+		glStencilMask(0x0);
 	}
-
+	
 	// Mat4
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera.GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera.GetViewMatrix();
@@ -211,64 +283,6 @@ void EngineTick()
 		const glm::vec3& currentPos = GCamera.GetPosition(); 
 		std::cout << "Current position: [" << currentPos.x << ',' << currentPos.y << ',' << currentPos.z << ']' << std::endl;
 	}
-}
-
-bool ConstructScene(FScene& OutScene)
-{
-	FTexture rocksFloorTexture = { NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse };
-	FTexture wallTexture = { NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse };
-	FTexture brickTexture = { NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse };
-	FTexture carpetTexture = { NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse };
-	if(!wallTexture.IsInitialized() || !brickTexture.IsInitialized() || !carpetTexture.IsInitialized())
-	{
-		return false;
-	}
-	
-	std::vector<FMeshPtr> meshes;
-	meshes.push_back(NMeshUtils::ConstructPlane(rocksFloorTexture));
-	meshes[meshes.size()-1]->SetTransform({
-		{0.f, -1.f, 0.f},
-		{0.f, 0.f, 0.f},
-		{10.f, 1.f, 10.f}
-	});
-
-	meshes.push_back(NMeshUtils::ConstructSphere(wallTexture));
-	meshes[meshes.size()-1]->SetTransform({
-			{10.f, 10.f, 10.f},
-			{0.f, 0.f, 0.f},
-			{2.f, 2.f, 2.f}
-	});
-	
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[meshes.size()-1]->SetTransform({
-			{10.f, 0.f, 0.f},
-			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 5.f}
-	});
-
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[meshes.size()-1]->SetTransform({
-			{8.f, 0.f, 2.f},
-			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 2.f}
-	});
-
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[meshes.size()-1]->SetTransform({
-			{6.f, 0.f, -2.f},
-			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 2.f}
-	});
-
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[meshes.size()-1]->SetTransform({
-			{4.f, 0.f, 0.f},
-			{0.f, 0.f, 0.f},
-			{1.25f, 1.f, 0.25f}
-	});
-	
-	OutScene.AddMeshes(meshes);
-	return true;
 }
 
 int32 GuardedMain()
