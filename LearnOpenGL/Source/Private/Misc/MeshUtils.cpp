@@ -12,6 +12,7 @@ namespace NMeshUtils
 		{
 			FModel resultModel(NFileUtils::ContentPath(PathFromContent).c_str());
 			FMeshPtr resultMesh = resultModel.GetMeshes()[0];
+			resultMesh->SetIsOwned(false);
 			
 			if(Textures.size() > 0)
 				resultMesh->SetTextures(Textures);

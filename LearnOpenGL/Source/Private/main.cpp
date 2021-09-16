@@ -190,12 +190,21 @@ void ProcessRender(FShaderProgram& Shader, const FScenePtr& Scene)
 
 void EngineTick()
 {
-	std::string resultTitle;
-	resultTitle.append("LearnOpenGL: FPS [");
-	resultTitle.append(std::to_string(GetFramesPerSecond()));
-	resultTitle.append("]");
-
-	glfwSetWindowTitle(GWindow, resultTitle.c_str());
+	// Update FPS
+	{
+		std::string resultTitle;
+		resultTitle.append("LearnOpenGL: FPS [");
+		resultTitle.append(std::to_string(GetFramesPerSecond()));
+		resultTitle.append("]");
+	
+		glfwSetWindowTitle(GWindow, resultTitle.c_str());
+	}
+	
+	// Position log
+	{
+		const glm::vec3& currentPos = GCamera.GetPosition();
+		std::cout << "Current position: [" << currentPos.x << ',' << currentPos.y << ',' << currentPos.z << ']' << std::endl;
+	}
 }
 
 FScenePtr ConstructScene()
@@ -208,28 +217,29 @@ FScenePtr ConstructScene()
 		return nullptr;
 	}
 	
-	FMeshPtr ground = NMeshUtils::ConstructPlane(carpetTexture);
-	ground->SetTransform({
-		{0.f, -10.f, 0.f},
+	std::vector<FMeshPtr> meshes;
+	meshes.push_back(NMeshUtils::ConstructPlane(carpetTexture));
+	meshes[0]->SetTransform({
+		{0.f, -1.f, 0.f},
 		{1.f, 1.f, 1.f},
 		{10.f, 1.f, 10.f}
 	});
 	
-	FMeshPtr wall = NMeshUtils::ConstructSphere(wallTexture);
-	wall->SetTransform({
-		{0.f, 0.f, 0.f},
-		{1.f, 1.f, 1.f},
-		{10.f, 1.f, 10.f}
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[1]->SetTransform({
+		{10.f, 0.f, 0.f},
+		{1.f, 0.f, 1.f},
+		{0.25f, 1.f, 5.f}
 	});
 	
-	FMeshPtr sun = NMeshUtils::ConstructSphere(brickTexture);
-	sun->SetTransform({
+	meshes.push_back(NMeshUtils::ConstructSphere(wallTexture));
+	meshes[2]->SetTransform({
 			{10.f, 10.f, 10.f},
 			{1.f, 1.f, 1.f},
-			{10.f, 1.f, 10.f}
+			{2.f, 2.f, 2.f}
 	});
 	
-	return std::make_shared<FScene>(std::vector<FModelPtr>(), std::vector<FMeshPtr>());
+	return std::make_shared<FScene>(std::vector<FModelPtr>(), meshes);
 }
 
 int32 GuardedMain()
