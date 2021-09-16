@@ -11,14 +11,28 @@ class FScene
 	
 public: // Constructors
 
+	FScene();
 	FScene(const std::vector<FModelPtr>& InModels, const std::vector<FMeshPtr>& InMeshes);
 	virtual ~FScene();
 	
+public: // Count
+
+	inline uint16 GetNumOfModels() const { return (uint16)Models.size(); }
+	inline uint16 GetNumOfMeshes() const { return (uint16)Meshes.size(); }
+	
 public: // Add
 
+	void AddModels(const std::vector<FModelPtr>& InModels);
+	void AddMeshes(const std::vector<FMeshPtr>& InMeshes);
+	
 	// returns index
 	int32 AddModel(FModelPtr Model);
 	int32 AddMesh(FMeshPtr Mesh);
+
+public: // Get
+
+	FModelPtr GetModelByIdx(uint16 Idx) const;
+	FMeshPtr GetMeshByIdx(uint16 Idx) const;
 
 public: // Remove
 

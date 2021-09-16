@@ -33,6 +33,7 @@ float GLastMouseY = GWindowHeight * 0.5f;
 
 // Camera
 FCamera GCamera;
+FScene GScene;
 
 uint16 GetFramesPerSecond()
 {
@@ -164,7 +165,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
-void ProcessRender(FShaderProgram& Shader, const FScenePtr& Scene)
+void ProcessRender(FShaderProgram& Shader)
 {
 	// Clear part
 	{
@@ -185,7 +186,7 @@ void ProcessRender(FShaderProgram& Shader, const FScenePtr& Scene)
 	Shader.SetMat4("projection", projection);
 	Shader.SetMat4("model", glm::mat4(1.f));
 	
-	Scene->Draw(Shader);
+	GScene.Draw(Shader);
 }
 
 void EngineTick()
@@ -202,44 +203,67 @@ void EngineTick()
 	
 	// Position log
 	{
-		const glm::vec3& currentPos = GCamera.GetPosition();
+		const glm::vec3& currentPos = GCamera.GetPosition(); 
 		std::cout << "Current position: [" << currentPos.x << ',' << currentPos.y << ',' << currentPos.z << ']' << std::endl;
 	}
 }
 
-FScenePtr ConstructScene()
+bool ConstructScene(FScene& OutScene)
 {
+	FTexture rocksFloorTexture = { NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse };
 	FTexture wallTexture = { NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse };
 	FTexture brickTexture = { NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse };
 	FTexture carpetTexture = { NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse };
 	if(!wallTexture.IsInitialized() || !brickTexture.IsInitialized() || !carpetTexture.IsInitialized())
 	{
-		return nullptr;
+		return false;
 	}
 	
 	std::vector<FMeshPtr> meshes;
-	meshes.push_back(NMeshUtils::ConstructPlane(carpetTexture));
-	meshes[0]->SetTransform({
+	meshes.push_back(NMeshUtils::ConstructPlane(rocksFloorTexture));
+	meshes[meshes.size()-1]->SetTransform({
 		{0.f, -1.f, 0.f},
-		{1.f, 1.f, 1.f},
+		{0.f, 0.f, 0.f},
 		{10.f, 1.f, 10.f}
 	});
-	
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[1]->SetTransform({
-		{10.f, 0.f, 0.f},
-		{1.f, 0.f, 1.f},
-		{0.25f, 1.f, 5.f}
-	});
-	
+
 	meshes.push_back(NMeshUtils::ConstructSphere(wallTexture));
-	meshes[2]->SetTransform({
+	meshes[meshes.size()-1]->SetTransform({
 			{10.f, 10.f, 10.f},
-			{1.f, 1.f, 1.f},
+			{0.f, 0.f, 0.f},
 			{2.f, 2.f, 2.f}
 	});
 	
-	return std::make_shared<FScene>(std::vector<FModelPtr>(), meshes);
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[meshes.size()-1]->SetTransform({
+			{10.f, 0.f, 0.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 1.f, 5.f}
+	});
+
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[meshes.size()-1]->SetTransform({
+			{8.f, 0.f, 2.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 1.f, 2.f}
+	});
+
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[meshes.size()-1]->SetTransform({
+			{6.f, 0.f, -2.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 1.f, 2.f}
+	});
+
+	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
+	meshes[meshes.size()-1]->SetTransform({
+			{4.f, 0.f, 0.f},
+			{0.f, 0.f, 0.f},
+			{1.25f, 1.f, 0.25f}
+	});
+	
+	OutScene.AddMeshes(meshes);
+	return true;
 }
 
 int32 GuardedMain()
@@ -255,8 +279,7 @@ int32 GuardedMain()
 		return -2;
 	}
 	
-	FScenePtr sceneToUse = ConstructScene();
-	if(!(bool)sceneToUse)
+	if(!ConstructScene(GScene))
 	{
 		return -3;
 	}
@@ -273,7 +296,7 @@ int32 GuardedMain()
 
 		EngineTick();
 		ProcessInput();
-		ProcessRender(shaderToUse, sceneToUse);
+		ProcessRender(shaderToUse);
 
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();

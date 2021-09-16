@@ -3,16 +3,31 @@
 #include "Model.h"
 #include "Mesh.h"
 
+FScene::FScene()
+	: ModelCounter(0)
+	, MeshCounter(0)
+{}
+
 FScene::FScene(const std::vector<FModelPtr>& InModels, const std::vector<FMeshPtr>& InMeshes)
 	: ModelCounter(0)
 	, MeshCounter(0)
 {
-	for(const FModelPtr& model : InModels) AddModel(model);
-	for(const FMeshPtr& mesh : InMeshes) AddMesh(mesh);
+	AddModels(InModels);
+	AddMeshes(InMeshes);
 }
 
 FScene::~FScene()
 {}
+
+void FScene::AddModels(const std::vector<FModelPtr>& InModels)
+{
+	for(const FModelPtr& model : InModels) AddModel(model);
+}
+
+void FScene::AddMeshes(const std::vector<FMeshPtr>& InMeshes)
+{
+	for(const FMeshPtr& mesh : InMeshes) AddMesh(mesh);
+}
 
 int32 FScene::AddModel(FModelPtr Model)
 {
@@ -28,6 +43,40 @@ int32 FScene::AddMesh(FMeshPtr Mesh)
 
 	Meshes.insert({MeshCounter, Mesh});
 	return MeshCounter++;
+}
+
+FModelPtr FScene::GetModelByIdx(uint16 Idx) const
+{
+	auto foundModel = Models.find(Idx);
+	if(foundModel == Models.end()) return nullptr;
+	
+	return foundModel->second;
+}
+
+FMeshPtr FScene::GetMeshByIdx(uint16 Idx) const
+{
+	auto foundMesh = Meshes.find(Idx);
+	if(foundMesh == Meshes.end()) return nullptr;
+	
+	return foundMesh->second;
+}
+
+bool FScene::RemoveModelByIdx(uint16 Idx)
+{
+	auto foundModel = Models.find(Idx);
+	if(foundModel == Models.end()) return false;
+	
+	Models.erase(foundModel);
+	return true;
+}
+
+bool FScene::RemoveMeshByIdx(uint16 Idx)
+{
+	auto foundMesh = Meshes.find(Idx);
+	if(foundMesh == Meshes.end()) return false;
+	
+	Meshes.erase(foundMesh);
+	return true;
 }
 
 void FScene::Draw(FShaderProgram& Shader)
@@ -47,22 +96,4 @@ void FScene::Draw(FShaderProgram& Shader)
 			mesh.second->Draw(Shader);
 		}
 	}
-}
-
-bool FScene::RemoveModelByIdx(uint16 Idx)
-{
-	auto foundModel = Models.find(Idx);
-	if(foundModel == Models.end()) return false;
-	
-	Models.erase(foundModel);
-	return true;
-}
-
-bool FScene::RemoveMeshByIdx(uint16 Idx)
-{
-	auto foundMesh = Meshes.find(Idx);
-	if(foundMesh == Meshes.end()) return false;
-	
-	Meshes.erase(foundMesh);
-	return true;
 }
