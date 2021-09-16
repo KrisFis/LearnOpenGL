@@ -160,7 +160,12 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 
 	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glViewport(0, 0, GWindowWidth, GWindowHeight);
-	glEnable(GL_DEPTH_TEST);
+
+	// DEPTH
+	{
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+	}
 
 	return true;
 }
