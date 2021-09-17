@@ -37,7 +37,7 @@ static bool HasErrors(const unsigned int& Id, const std::string& ShaderType)
 }
 
 FShaderProgram::FShaderProgram(const char* VertexFilePath, const char* FragmentFilePath)
-	: ProgramId(0)
+	: Id(0)
 	, bIsUsed(false)
 	, bIsInitialized(false)
 {
@@ -99,12 +99,12 @@ FShaderProgram::FShaderProgram(const char* VertexFilePath, const char* FragmentF
 	hasErrors = hasErrors || HasErrors(fragmentId, "FRAGMENT");
 
 	// shader Program
-	ProgramId = glCreateProgram();
-	glAttachShader(ProgramId, vertexId);
-	glAttachShader(ProgramId, fragmentId);
-	glLinkProgram(ProgramId);
+	Id = glCreateProgram();
+	glAttachShader(Id, vertexId);
+	glAttachShader(Id, fragmentId);
+	glLinkProgram(Id);
 
-	hasErrors = hasErrors || HasErrors(ProgramId, "PROGRAM");
+	hasErrors = hasErrors || HasErrors(Id, "PROGRAM");
 
 	// delete the shaders as they're linked into our program now and no longer necessary
 	glDeleteShader(vertexId);
@@ -118,11 +118,14 @@ FShaderProgram::FShaderProgram(const char* VertexFilePath, const char* FragmentF
 }
 
 FShaderProgram::~FShaderProgram()
-{}
+{
+	if(Id != NRenderConsts::Invalid::ShaderProgramId)
+		glDeleteProgram(Id);
+}
 
 void FShaderProgram::Use()
 {
-	glUseProgram(ProgramId);
+	glUseProgram(Id);
 
 	bIsUsed = true;
 }
@@ -136,40 +139,40 @@ void FShaderProgram::Clear()
 
 void FShaderProgram::SetBool(const char* Name, bool Value) const
 {
-	glUniform1i(glGetUniformLocation(ProgramId, Name), (int)Value);
+	glUniform1i(glGetUniformLocation(Id, Name), (int)Value);
 }
 
 void FShaderProgram::SetInt32(const char* Name, const int32& Value) const
 {
-	glUniform1i(glGetUniformLocation(ProgramId, Name), Value);
+	glUniform1i(glGetUniformLocation(Id, Name), Value);
 }
 
 void FShaderProgram::SetUInt32(const char* Name, const uint32& Value) const
 {
-	glUniform1ui(glGetUniformLocation(ProgramId, Name), Value);
+	glUniform1ui(glGetUniformLocation(Id, Name), Value);
 }
 
 void FShaderProgram::SetFloat(const char* Name, float Value) const
 {
-	glUniform1f(glGetUniformLocation(ProgramId, Name), Value);
+	glUniform1f(glGetUniformLocation(Id, Name), Value);
 }
 
 void FShaderProgram::SetVec3(const char *Name, const glm::vec3& Value) const
 {
-	glUniform3fv(glGetUniformLocation(ProgramId, Name), 1, &Value[0]);
+	glUniform3fv(glGetUniformLocation(Id, Name), 1, &Value[0]);
 }
 
 void FShaderProgram::SetVec4(const char *Name, const glm::vec4& Value) const
 {
-	glUniform4fv(glGetUniformLocation(ProgramId, Name), 1, &Value[0]);
+	glUniform4fv(glGetUniformLocation(Id, Name), 1, &Value[0]);
 }
 
 void FShaderProgram::SetMat3(const char *Name, const glm::mat3& Value) const
 {
-	glUniformMatrix3fv(glGetUniformLocation(ProgramId, Name), 1, GL_FALSE, &Value[0][0]);
+	glUniformMatrix3fv(glGetUniformLocation(Id, Name), 1, GL_FALSE, &Value[0][0]);
 }
 
 void FShaderProgram::SetMat4(const char* Name, const glm::mat4& Value) const
 {
-	glUniformMatrix4fv(glGetUniformLocation(ProgramId, Name), 1, GL_FALSE, &Value[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(Id, Name), 1, GL_FALSE, &Value[0][0]);
 }

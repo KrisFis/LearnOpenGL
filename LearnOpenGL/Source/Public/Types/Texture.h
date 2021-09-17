@@ -22,7 +22,7 @@ enum class ETextureType : uint8
 	EmissionColor,
 	Metalness,
 	DiffuseRoughness,
-	AmbientOcclusion,
+	AmbientOcclusion
 };
 
 ETextureType ToTextureType(const aiTextureType Type);
@@ -34,6 +34,10 @@ public: // Constructors
 
 	FTexture(const char* InFilePath, const ETextureType InType, bool ClampToEdge = false);
 	virtual ~FTexture();
+	
+public: // Static constructions
+
+	static FTexture CreateRenderTexture(uint16 Width, uint16 Height, bool ForDepth, bool ForStencil);
 
 public: // Getters
 

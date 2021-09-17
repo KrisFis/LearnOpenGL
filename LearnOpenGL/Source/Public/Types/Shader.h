@@ -22,7 +22,7 @@ public: // Getters
 
 	inline bool IsInitialized() const { return bIsInitialized; }
 	inline bool IsUsed() const { return bIsUsed; }
-    inline const FShaderId& GetProgramId() const { return ProgramId; }
+    inline const FShaderProgramId& GetProgramId() const { return Id; }
 
 public: // External methods
 
@@ -40,7 +40,7 @@ public: // External methods
 
 private: // Fields
 
-    FShaderId ProgramId;
+    FShaderProgramId Id;
 
 	bool bIsUsed;
 	bool bIsInitialized;

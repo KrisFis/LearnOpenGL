@@ -36,3 +36,6 @@ class FCamera;
 class FMesh;
 class FModel;
 class FScene;
+class FFramebuffer;
+class FRenderTexture;
+class FRenderBuffer;

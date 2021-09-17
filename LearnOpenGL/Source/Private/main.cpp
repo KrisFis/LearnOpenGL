@@ -10,6 +10,7 @@
 #include "Timer.h"
 #include "Camera.h"
 #include "Model.h"
+#include "Framebuffer.h"
 
 #include <iostream>
 #include <vector>
@@ -32,9 +33,10 @@ bool GbAltWasPressed = false;
 float GLastMouseX = GWindowWidth * 0.5f;
 float GLastMouseY = GWindowHeight * 0.5f;
 
-// Camera
+// Global instances
 FCamera GCamera;
 FScene GScene;
+FFramebuffer GRenderTarget;
 
 uint16 GetFramesPerSecond()
 {
@@ -265,6 +267,13 @@ void ProcessInput()
 	}
 }
 
+bool ConstructRenderTarget(FFramebuffer& OutTarget)
+{
+	
+
+	return false;
+}
+
 void ProcessRender(FShaderProgram& Shader)
 {
 	// Setup render tick
@@ -327,6 +336,11 @@ int32 GuardedMain()
 	if(!ConstructScene(GScene))
 	{
 		return -3;
+	}
+
+	if(!ConstructRenderTarget(GRenderTarget))
+	{
+		return -4;
 	}
 
 	// Main render loop
