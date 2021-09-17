@@ -23,9 +23,10 @@ namespace NRenderUtils
 
 	void DeleteVertexArray(FBufferId Id);
 	void DeleteBuffer(FBufferId Id);
+	void DeleteFramebuffer(FFramebufferId Id);
 
 	void DeleteVertexArrays(const std::vector<FVertexArrayId>& Ids);
-	void DeleteBuffers(const std::vector<FVertexArrayId>& Ids);
+	void DeleteBuffers(const std::vector<FBufferId>& Ids);
 
 	void BindVertexArray(FVertexArrayId Id);
 	void BindBuffer(EBufferTarget Target, FBufferId Id);

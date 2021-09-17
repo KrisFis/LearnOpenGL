@@ -3,13 +3,15 @@
 
 namespace NRenderUtils
 {
+	using namespace NRenderConsts;
+	
 	class FPrivateCache
 	{
 
 	public: // Getters
 
 		inline FVertexArrayId GetBoundArray() const { return BoundArrayId; }
-		inline FBufferId GetBoundBuffer(EBufferTarget Target) const { auto search = BoundBufferIds.find(Target); return (search != BoundBufferIds.end()) ? search->second : EmptyBuffer; }
+		inline FBufferId GetBoundBuffer(EBufferTarget Target) const { auto search = BoundBufferIds.find(Target); return (search != BoundBufferIds.end()) ? search->second : Invalid::BufferId; }
 		inline bool IsUnbindAllowed() const { return bAllowUnbind; }
 		inline void AllowUnbind(bool Value) { bAllowUnbind = Value; }
 
@@ -51,10 +53,10 @@ namespace NRenderUtils
 		{
 			if(!Force && !bAllowUnbind) return;
 
-			if(BoundArrayId == EmptyVertexArray) return;
+			if(BoundArrayId == Invalid::VertexArrayId) return;
 
-			glBindVertexArray(EmptyVertexArray);
-			BoundArrayId = EmptyVertexArray;
+			glBindVertexArray(Invalid::VertexArrayId);
+			BoundArrayId = Invalid::VertexArrayId;
 		}
 
 		void BindBuffer(EBufferTarget Target, FBufferId Id)
@@ -77,7 +79,7 @@ namespace NRenderUtils
 			auto search = BoundBufferIds.find(Target);
 			if(search == BoundBufferIds.end()) return;
 
-			glBindBuffer(Target, EmptyBuffer);
+			glBindBuffer(Target, Invalid::BufferId);
 			BoundBufferIds.erase(search);
 		}
 
@@ -89,12 +91,12 @@ namespace NRenderUtils
 
 			for(FVertexArrayId id : Ids)
 			{
-				assert(id != EmptyVertexArray);
+				assert(id != Invalid::VertexArrayId);
 
 				if(BoundArrayId == id)
 				{
-					glBindVertexArray(EmptyVertexArray);
-					BoundArrayId = EmptyVertexArray;
+					glBindVertexArray(Invalid::VertexArrayId);
+					BoundArrayId = Invalid::VertexArrayId;
 				}
 
 				for(auto it = ArrayIds.begin(); it != ArrayIds.end(); ++it)
@@ -116,13 +118,13 @@ namespace NRenderUtils
 
 			for(FBufferId id : Ids)
 			{
-				assert(id != EmptyBuffer);
+				assert(id != Invalid::BufferId);
 
 				for(auto it = BoundBufferIds.begin(); it != BoundBufferIds.end(); ++it)
 				{
 					if(it->second == id)
 					{
-						glBindBuffer(it->first, EmptyBuffer);
+						glBindBuffer(it->first, Invalid::BufferId);
 						BoundBufferIds.erase(it);
 						break;
 					}

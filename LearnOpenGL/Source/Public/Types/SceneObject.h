@@ -25,6 +25,11 @@ struct FTransform
 class ISceneObject
 {
 
+public: // Culling
+
+	virtual bool CullsFaces() const = 0;
+	virtual void SetCullFaces(bool Value) = 0;
+
 public: // Outline
 
 	virtual bool IsOutlined() const = 0;

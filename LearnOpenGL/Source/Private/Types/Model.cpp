@@ -8,6 +8,7 @@
 FModel::FModel(const char* FilePath) 
 	: OutlineSize(0.f)
 	, OutlineColor(NColors::Transparent)
+	, bCullFaces(true)
 	, bIsInitialized(false)
 {
 	Assimp::Importer importer;
@@ -33,6 +34,15 @@ FModel::FModel(const char* FilePath)
 void FModel::Draw(FShaderProgram& Shader) 
 {
 	if(!IsValid()) return;
+	
+	if(CullsFaces())
+	{
+		glEnable(GL_CULL_FACE);
+	}
+	else
+	{
+		glDisable(GL_CULL_FACE);
+	}
 	
 	if(IsOutlined())
 	{

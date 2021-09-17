@@ -14,6 +14,7 @@ FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& 
 	, Indices(InIndices)
 	, Textures(InTextures)
 	, bIsOwned(Owned)
+	, bCullFaces(true)
 	, bIsInitialized(false)
 {
 	// Generate buffers
@@ -66,6 +67,16 @@ void FMesh::Draw(FShaderProgram& Shader)
 	if(!IsValid()) return;
 	
 	const bool shouldOutline = !IsOwned() && IsOutlined(); 
+	const bool shouldCull = !IsOwned() && CullsFaces(); 
+	
+	if(shouldCull)
+	{
+		glEnable(GL_CULL_FACE);
+	}
+	else
+	{
+		glDisable(GL_CULL_FACE);
+	}
 	
 	if(shouldOutline)
 	{

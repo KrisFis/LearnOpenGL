@@ -34,6 +34,9 @@ public: // Setters
 
 public: // ISceneObject overrides
 
+	inline virtual bool CullsFaces() const override { return bCullFaces; }
+	inline virtual void SetCullFaces(bool Value) override { bCullFaces = Value; }
+	
 	inline virtual bool IsOutlined() const override { return (OutlineSize > 0.f) && !OutlineColor.IsTransparent(); }
 	inline virtual void SetOutlineColor(const FColor& Value) override { OutlineColor = Value; }
 	inline virtual void SetOutlineSize(float Value) override { OutlineSize = Value; }
@@ -73,5 +76,6 @@ private: // Cache
 private: // Primitive Fields
 	
 	uint8 bIsOwned : 1;
+	uint8 bCullFaces : 1;
 	uint8 bIsInitialized : 1;
 };

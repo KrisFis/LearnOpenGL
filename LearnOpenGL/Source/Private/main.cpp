@@ -111,15 +111,21 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glViewport(0, 0, GWindowWidth, GWindowHeight);
 
-	// TESTS
+	// Features enable
 	{
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_STENCIL_TEST);
 		glEnable(GL_BLEND);
+		glEnable(GL_CULL_FACE);
 	}
-	
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Features set
+	{
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glCullFace(GL_BACK);
+		glFrontFace(GL_CCW);
+	}
 
 	return true;
 }
@@ -189,6 +195,7 @@ bool ConstructScene(FScene& OutScene)
 	});
 	
 	meshes.push_back(NMeshUtils::ConstructPlane(grassTexture));
+	meshes[meshes.size()-1]->SetCullFaces(false);
 	meshes[meshes.size()-1]->SetTransform({
 			{2.f, -0.499f, 0.f},
 			{-90.f, 0.f, 90.f},
@@ -196,6 +203,7 @@ bool ConstructScene(FScene& OutScene)
 	});
 	
 	meshes.push_back(NMeshUtils::ConstructPlane(windowTexture));
+	meshes[meshes.size()-1]->SetCullFaces(false);
 	meshes[meshes.size()-1]->SetTransform({
 			{1.f, 0.f, 0.f},
 			{-90.f, 0.f, 90.f},
