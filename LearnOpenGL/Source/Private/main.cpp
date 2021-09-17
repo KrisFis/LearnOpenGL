@@ -115,9 +115,11 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	{
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_STENCIL_TEST);
+		glEnable(GL_BLEND);
 	}
 	
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	return true;
 }
@@ -128,7 +130,9 @@ bool ConstructScene(FScene& OutScene)
 	FTexture wallTexture = { NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse };
 	FTexture brickTexture = { NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse };
 	FTexture carpetTexture = { NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse };
-	if(!wallTexture.IsInitialized() || !brickTexture.IsInitialized() || !carpetTexture.IsInitialized())
+	FTexture grassTexture = { NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, true };
+	FTexture windowTexture = { NFileUtils::ContentPath("Textures/transparent_window.png").c_str(), ETextureType::Diffuse };
+	if(!wallTexture.IsInitialized() || !brickTexture.IsInitialized() || !carpetTexture.IsInitialized() || !grassTexture.IsInitialized() || !windowTexture.IsInitialized())
 	{
 		return false;
 	}
@@ -150,7 +154,7 @@ bool ConstructScene(FScene& OutScene)
 	
 	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
 	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
-	meshes[meshes.size()-1]->SetOutlineColor(NColors::Blue);
+	meshes[meshes.size()-1]->SetOutlineColor(NColors::Navy);
 	meshes[meshes.size()-1]->SetTransform({
 			{10.f, 0.f, 0.f},
 			{0.f, 0.f, 0.f},
@@ -159,7 +163,7 @@ bool ConstructScene(FScene& OutScene)
 
 	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
 	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
-	meshes[meshes.size()-1]->SetOutlineColor(NColors::Blue);
+	meshes[meshes.size()-1]->SetOutlineColor(NColors::Navy);
 	meshes[meshes.size()-1]->SetTransform({
 			{8.f, 0.f, 2.f},
 			{0.f, 0.f, 0.f},
@@ -168,7 +172,7 @@ bool ConstructScene(FScene& OutScene)
 
 	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
 	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
-	meshes[meshes.size()-1]->SetOutlineColor(NColors::Blue);
+	meshes[meshes.size()-1]->SetOutlineColor(NColors::Navy);
 	meshes[meshes.size()-1]->SetTransform({
 			{6.f, 0.f, -2.f},
 			{0.f, 0.f, 0.f},
@@ -177,11 +181,25 @@ bool ConstructScene(FScene& OutScene)
 
 	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
 	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
-	meshes[meshes.size()-1]->SetOutlineColor(NColors::Blue);
+	meshes[meshes.size()-1]->SetOutlineColor(NColors::Navy);
 	meshes[meshes.size()-1]->SetTransform({
 			{4.f, 0.f, 0.f},
 			{0.f, 0.f, 0.f},
 			{1.25f, 1.f, 0.25f}
+	});
+	
+	meshes.push_back(NMeshUtils::ConstructPlane(grassTexture));
+	meshes[meshes.size()-1]->SetTransform({
+			{2.f, -0.499f, 0.f},
+			{-90.f, 0.f, 90.f},
+			{0.5f, 0.5f, 0.5f}
+	});
+	
+	meshes.push_back(NMeshUtils::ConstructPlane(windowTexture));
+	meshes[meshes.size()-1]->SetTransform({
+			{1.f, 0.f, 0.f},
+			{-90.f, 0.f, 90.f},
+			{1.f, 1.f, 1.f}
 	});
 	
 	OutScene.AddMeshes(meshes);
@@ -263,7 +281,7 @@ void ProcessRender(FShaderProgram& Shader)
 	Shader.SetMat4("projection", projection);
 	Shader.SetMat4("model", glm::mat4(1.f));
 	
-	GScene.Draw(Shader);
+	GScene.Draw(Shader, GCamera);
 }
 
 void EngineTick()

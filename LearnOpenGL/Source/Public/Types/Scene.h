@@ -41,7 +41,7 @@ public: // Remove
 
 public: // Draw
 
-	void Draw(FShaderProgram& Shader);
+	void Draw(FShaderProgram& Shader, const FCamera& Camera);
 
 private: // Fields
 
@@ -49,5 +49,4 @@ private: // Fields
 
 	std::unordered_map<uint16, FModelPtr> Models;
 	std::unordered_map<uint16, FMeshPtr> Meshes;
-	
 };

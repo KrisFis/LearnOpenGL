@@ -52,7 +52,7 @@ ETextureType ToTextureType(const aiTextureType Type)
 	}
 }
 
-FTexture::FTexture(const char* InFilePath, const ETextureType InType)
+FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool ClampToEdge)
 	: Id(0)
 	, UseIndex(-1)
 	, Type(ETextureType::Invalid)
@@ -101,8 +101,8 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType)
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		// set the texture wrapping parameters
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (ClampToEdge) ? GL_CLAMP_TO_EDGE : GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (ClampToEdge) ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 
 		// set texture filtering parameters
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

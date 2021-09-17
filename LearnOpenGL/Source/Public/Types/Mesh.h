@@ -25,6 +25,7 @@ public: // Getters
 	inline bool IsInitialized() const { return bIsInitialized; }
 	inline bool IsValid() const { return Vertices.size() > 0; }
 	inline bool IsOwned() const { return bIsOwned; };
+	inline const std::vector<FTexture>& GetTextures() const { return Textures; }
 
 public: // Setters
 	

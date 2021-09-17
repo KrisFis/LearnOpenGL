@@ -32,7 +32,7 @@ class FTexture
 
 public: // Constructors
 
-	FTexture(const char* InFilePath, const ETextureType InType);
+	FTexture(const char* InFilePath, const ETextureType InType, bool ClampToEdge = false);
 	virtual ~FTexture();
 
 public: // Getters
