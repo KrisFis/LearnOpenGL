@@ -5,6 +5,7 @@
 #include "IntegerTypes.h"
 #include "RenderTypes.h"
 #include "SceneTypes.h"
+#include "SharedObject.h"
 
 // STL
 #include <vector>
