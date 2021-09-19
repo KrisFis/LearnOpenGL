@@ -57,12 +57,28 @@ namespace NSharedObject_Private
 	
 	struct FNullType {};
 	
-	template<typename T, typename R, typename... A>
-	struct TSharedConstructor
+	template<typename T, typename R>
+	struct TSharedMake
 	{
 	public:
 		using ObjectType = T;
 		using ReferencerType = R;
+	};
+	
+	template<typename T, typename R>
+	struct TSharedCast
+	{ 
+	
+	public:
+	
+		using FromType = T;
+		using ToType = R;
+	
+		enum 
+		{
+			IsCastable = std::is_convertible<FromType, ToType>::value,
+			IsSame = std::is_same<FromType, ToType>::value
+		};
 	};
 }
 
@@ -88,31 +104,6 @@ public: // Constructor
 	{
 		if(Referencer)
 			Referencer->AddShared();
-	}
-	
-public: // Static construction
-
-	// INTERNAL PURPOSE ONLY
-	template<typename ConstructorType, typename... ArgTypes>
-	inline static TSharedPtr<typename ConstructorType::ObjectType> PrivateMake(ArgTypes&&... Args)
-	{
-		TSharedPtr<typename ConstructorType::ObjectType> resultPtr;
-		resultPtr.Object = new typename ConstructorType::ObjectType(std::forward<ArgTypes>(Args)...);
-		resultPtr.Referencer = new typename ConstructorType::ReferencerType();
-		resultPtr.Referencer->AddShared();
-		
-		return resultPtr;
-	}
-	
-	template<typename ConstructorType>
-	inline static TSharedPtr<typename ConstructorType::ObjectType> PrivateMake(typename ConstructorType::ObjectType* Instance)
-	{
-		TSharedPtr<typename ConstructorType::ObjectType> resultPtr;
-		resultPtr.Object = Instance;
-		resultPtr.Referencer = new typename ConstructorType::ReferencerType();
-		resultPtr.Referencer->AddShared();
-		
-		return resultPtr;
 	}
 	
 public: // Copy/Move constructors [SharedPtr]
@@ -176,13 +167,14 @@ public: // External methods
 
 	inline void Reset()
 	{
+		assert(IsValid());
 		RemoveReference();
 	}
 
 	inline const ObjectType* Get() const { return Object; }
 	inline ObjectType* Get() { return Object; }
 
-private: // Internal methods
+private: // Helper methods
 
 	inline void RemoveReference()
 	{
@@ -198,13 +190,51 @@ private: // Internal methods
 		Referencer = nullptr;
 	}
 	
+public: // Internal static methods
+
+	template<typename MakeType, typename... ArgTypes>
+	inline static TSharedPtr<typename MakeType::ObjectType> Internal_Make(ArgTypes&&... Args)
+	{
+		TSharedPtr<typename MakeType::ObjectType> resultPtr;
+		resultPtr.Object = new typename MakeType::ObjectType(std::forward<ArgTypes>(Args)...);
+		resultPtr.Referencer = new typename MakeType::ReferencerType();
+		resultPtr.Referencer->AddShared();
+		
+		return resultPtr;
+	}
+	
+	template<typename MakeType>
+	inline static TSharedPtr<typename MakeType::ObjectType> Internal_Make(typename MakeType::ObjectType* Instance)
+	{
+		TSharedPtr<typename MakeType::ObjectType> resultPtr;
+		resultPtr.Object = Instance;
+		resultPtr.Referencer = new typename MakeType::ReferencerType();
+		resultPtr.Referencer->AddShared();
+		
+		return resultPtr;
+	}
+	
+	template<typename CastType, typename = typename std::enable_if<CastType::IsCastable>>
+	inline static TSharedPtr<typename CastType::ToType> Internal_Cast(const TSharedPtr<typename CastType::FromType>& From)
+	{
+		static_assert(!CastType::IsSame, "Invalid cast to same type");
+	
+		TSharedPtr<typename CastType::ToType> resultPtr;
+		resultPtr.Object = static_cast<typename CastType::ToType*>(From.Object);
+		resultPtr.Referencer = From.Referencer;
+		resultPtr.Referencer->AddShared();
+		
+		return resultPtr;
+	}
+
 private: // Fields
 
 	ObjectType* Object;
 	NSharedObject_Private::FSharedReferencer* Referencer;
 
-private: // Friend class
+private: // Friends
 
+	template<typename OtherT> friend class TSharedPtr;
 	template<typename OtherT> friend class TWeakPtr;
 };
 
@@ -301,16 +331,27 @@ private: // Fields
 private: // Friend class
 
 	template<typename OtherT> friend class TSharedPtr;
+	template<typename OtherT> friend class TWeakPtr;
 };
+
+//////////////////////////////////////////////////
+// Utils
+//////////////////////////////////////////////////
 
 template<typename T, typename... ArgTypes>
 inline TSharedPtr<T> MakeShared(ArgTypes&&... Args)
 {
-	return TSharedPtr<T>::template PrivateMake<NSharedObject_Private::TSharedConstructor<T, NSharedObject_Private::FSharedReferencer>>(std::forward<ArgTypes>(Args)...);
+	return TSharedPtr<T>::template Internal_Make<NSharedObject_Private::TSharedMake<T, NSharedObject_Private::FSharedReferencer>>(std::forward<ArgTypes>(Args)...);
 }
 
 template<typename T>
 inline TSharedPtr<T> MakeShareable(T* Instance)
 {
-	return TSharedPtr<T>::template PrivateMake<NSharedObject_Private::TSharedConstructor<T, NSharedObject_Private::FSharedReferencer>>(Instance);
+	return TSharedPtr<T>::template Internal_Make<NSharedObject_Private::TSharedMake<T, NSharedObject_Private::FSharedReferencer>>(Instance);
+}
+
+template<typename T, typename R>
+inline TSharedPtr<T> Cast(const TSharedPtr<R>& From)
+{
+	return TSharedPtr<R>::template Internal_Cast<NSharedObject_Private::TSharedCast<R, T>>(From);
 }
