@@ -8,35 +8,15 @@
 
 namespace NScene_Private
 {
-	template<typename ModelsType, typename MeshesType, typename Functor>
-	void IterateUnsortedObjects(const ModelsType& Models, const MeshesType& Meshes, Functor&& InFunctor)
-	{
-		for(auto& model : Models)
-		{
-			if(InFunctor((ISceneObject*)model.second.get())) return;
-		}
-		
-		for(auto& mesh : Meshes)
-		{
-			if(InFunctor((ISceneObject*)mesh.second.get())) return;
-		}
-	}
-
-	template<typename ModelsType, typename MeshesType, typename Functor>
-	void IterateSortedObjects(const ModelsType& Models, const MeshesType& Meshes, const FCamera& Camera, Functor&& InFunctor)
+	template<typename ObjectsMapType, typename FunctorType>
+	void IterateSortedObjects(const ObjectsMapType& Objects, const FCamera& Camera, FunctorType&& InFunctor)
 	{
 		std::map<float, ISceneObject*> sortedObj;
 		
-		for(auto& model : Models)
+		for(auto& obj : Objects)
 		{
-			const float distance = glm::length(Camera.GetPosition() - model.second->GetTransform().Position);
-			sortedObj[distance] = model.second.get();
-		}
-		
-		for(auto& mesh : Meshes)
-		{
-			const float distance = glm::length(Camera.GetPosition() - mesh.second->GetTransform().Position);
-			sortedObj[distance] = mesh.second.get();
+			const float distance = glm::length(Camera.GetPosition() - obj.second->GetTransform().Position);
+			sortedObj[distance] = obj.second.get();
 		}
 		
 		for(std::map<float, ISceneObject*>::reverse_iterator it = sortedObj.rbegin(); it != sortedObj.rend(); ++it)
@@ -47,87 +27,64 @@ namespace NScene_Private
 }
 
 FScene::FScene()
-		: ModelCounter(0), MeshCounter(0)
+		: Counter(0)
 {}
 
-FScene::FScene(const std::vector<FModelPtr>& InModels, const std::vector<FMeshPtr>& InMeshes)
-		: ModelCounter(0), MeshCounter(0)
+FScene::FScene(const std::vector<FSceneObjectPtr>& InObjects)
+	: Counter(0)
 {
-	AddModels(InModels);
-	AddMeshes(InMeshes);
+	AddObjects(InObjects);
 }
 
 FScene::~FScene()
 {}
 
-void FScene::AddModels(const std::vector<FModelPtr>& InModels)
+int32 FScene::AddObject(const FSceneObjectPtr& InObject)
 {
-	for (const FModelPtr& model: InModels) AddModel(model);
-}
-
-void FScene::AddMeshes(const std::vector<FMeshPtr>& InMeshes)
-{
-	for (const FMeshPtr& mesh: InMeshes) AddMesh(mesh);
-}
-
-int32 FScene::AddModel(FModelPtr Model)
-{
-	if (!(bool) Model || !Model->IsValid()) return -1;
-
-	Models.insert({ModelCounter, Model});
-	return ModelCounter++;
-}
-
-int32 FScene::AddMesh(FMeshPtr Mesh)
-{
-	if (!(bool) Mesh || !Mesh->IsValid()) return -1;
-
-	Meshes.insert({MeshCounter, Mesh});
-	return MeshCounter++;
-}
-
-FModelPtr FScene::GetModelByIdx(uint16 Idx) const
-{
-	auto foundModel = Models.find(Idx);
-	if (foundModel == Models.end()) return nullptr;
-
-	return foundModel->second;
-}
-
-FMeshPtr FScene::GetMeshByIdx(uint16 Idx) const
-{
-	auto foundMesh = Meshes.find(Idx);
-	if (foundMesh == Meshes.end()) return nullptr;
-
-	return foundMesh->second;
-}
-
-bool FScene::RemoveModelByIdx(uint16 Idx)
-{
-	auto foundModel = Models.find(Idx);
-	if (foundModel == Models.end()) return false;
-
-	Models.erase(foundModel);
+	if(!(bool)InObject) return -1;
+	
+	for(const auto& obj : Objects)
+	{
+		if(obj.second == InObject) return obj.first;
+	}
+	
+	Objects.insert({Counter++, InObject});
+	
 	return true;
 }
 
-bool FScene::RemoveMeshByIdx(uint16 Idx)
+void FScene::AddObjects(const std::vector<FSceneObjectPtr>& InObjects)
 {
-	auto foundMesh = Meshes.find(Idx);
-	if (foundMesh == Meshes.end()) return false;
+	for(const auto& obj : InObjects) AddObject(obj);
+}
 
-	Meshes.erase(foundMesh);
+FSceneObjectPtr FScene::GetObjectByIdx(uint16 Idx) const
+{
+	auto foundObj = Objects.find(Idx);
+	if(foundObj == Objects.end())
+		return nullptr;
+	
+	return foundObj->second;
+}
+
+bool FScene::RemoveObjectByIdx(uint16 Idx)
+{
+	auto foundObj = Objects.find(Idx);
+	if(foundObj == Objects.end())
+		return false;
+		
+	Objects.erase(foundObj);
+		
 	return true;
 }
 
 void FScene::Draw(FShaderProgram& Shader, const FCamera& Camera)
 {
 	// Draw terrain first
-	Meshes[0]->Draw(Shader);
+	Objects[0]->Draw(Shader);
 
 	NScene_Private::IterateSortedObjects(
-			Models,
-			Meshes,
+			Objects,
 			Camera,
 			[&](ISceneObject* Obj) -> bool
 			{

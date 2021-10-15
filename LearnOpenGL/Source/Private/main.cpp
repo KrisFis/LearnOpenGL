@@ -36,7 +36,6 @@ float GLastMouseY = GWindowHeight * 0.5f;
 // Global instances
 FCamera GCamera;
 FScene GScene;
-FFramebuffer GRenderTarget;
 
 uint16 GetFramesPerSecond()
 {
@@ -145,74 +144,74 @@ bool ConstructScene(FScene& OutScene)
 		return false;
 	}
 	
-	std::vector<FMeshPtr> meshes;
-	meshes.push_back(NMeshUtils::ConstructPlane(rocksFloorTexture));
-	meshes[meshes.size()-1]->SetTransform({
+	std::vector<FSceneObjectPtr> sceneObjects;
+	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructPlane(rocksFloorTexture)));
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{0.f, -1.f, 0.f},
 		{0.f, 0.f, 0.f},
 		{10.f, 1.f, 10.f}
 	});
 
-	meshes.push_back(NMeshUtils::ConstructSphere(wallTexture));
-	meshes[meshes.size()-1]->SetTransform({
+	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructSphere(wallTexture)));
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{10.f, 10.f, 10.f},
 			{0.f, 0.f, 0.f},
 			{2.f, 2.f, 2.f}
 	});
 	
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
-	meshes[meshes.size()-1]->SetOutlineColor(NColors::Navy);
-	meshes[meshes.size()-1]->SetTransform({
+	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructCube(brickTexture)));
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{10.f, 0.f, 0.f},
 			{0.f, 0.f, 0.f},
 			{0.25f, 1.f, 5.f}
 	});
 
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
-	meshes[meshes.size()-1]->SetOutlineColor(NColors::Navy);
-	meshes[meshes.size()-1]->SetTransform({
+	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructCube(brickTexture)));
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{8.f, 0.f, 2.f},
 			{0.f, 0.f, 0.f},
 			{0.25f, 1.f, 2.f}
 	});
 
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
-	meshes[meshes.size()-1]->SetOutlineColor(NColors::Navy);
-	meshes[meshes.size()-1]->SetTransform({
+	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructCube(brickTexture)));
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{6.f, 0.f, -2.f},
 			{0.f, 0.f, 0.f},
 			{0.25f, 1.f, 2.f}
 	});
 
-	meshes.push_back(NMeshUtils::ConstructCube(brickTexture));
-	meshes[meshes.size()-1]->SetOutlineSize(0.025f);
-	meshes[meshes.size()-1]->SetOutlineColor(NColors::Navy);
-	meshes[meshes.size()-1]->SetTransform({
+	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructCube(brickTexture)));
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{4.f, 0.f, 0.f},
 			{0.f, 0.f, 0.f},
 			{1.25f, 1.f, 0.25f}
 	});
 	
-	meshes.push_back(NMeshUtils::ConstructPlane(grassTexture));
-	meshes[meshes.size()-1]->SetCullFaces(false);
-	meshes[meshes.size()-1]->SetTransform({
+	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructPlane(grassTexture)));
+	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{2.f, -0.499f, 0.f},
 			{-90.f, 0.f, 90.f},
 			{0.5f, 0.5f, 0.5f}
 	});
 	
-	meshes.push_back(NMeshUtils::ConstructPlane(windowTexture));
-	meshes[meshes.size()-1]->SetCullFaces(false);
-	meshes[meshes.size()-1]->SetTransform({
+	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructPlane(windowTexture)));
+	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{1.f, 0.f, 0.f},
 			{-90.f, 0.f, 90.f},
 			{1.f, 1.f, 1.f}
 	});
 	
-	OutScene.AddMeshes(meshes);
+	OutScene.AddObjects(sceneObjects);
 	return true;
 }
 
@@ -265,13 +264,6 @@ void ProcessInput()
 		if (glfwGetKey(GWindow, GLFW_KEY_D) == GLFW_PRESS)
 			GCamera.ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
-}
-
-bool ConstructRenderTarget(FFramebuffer& OutTarget)
-{
-	
-
-	return false;
 }
 
 void ProcessRender(FShaderProgram& Shader)
@@ -336,11 +328,6 @@ int32 GuardedMain()
 	if(!ConstructScene(GScene))
 	{
 		return -3;
-	}
-
-	if(!ConstructRenderTarget(GRenderTarget))
-	{
-		return -4;
 	}
 
 	// Main render loop

@@ -21,6 +21,16 @@ namespace NMeshUtils
 		}
 	}
 
+	FSceneObjectPtr AsScene(const FModelPtr& Model)
+	{
+		return (bool)Model ? std::static_pointer_cast<ISceneObject>(Model) : nullptr;
+	}
+
+	FSceneObjectPtr AsScene(const FMeshPtr& Mesh)
+	{
+		return (bool)Mesh ? std::static_pointer_cast<ISceneObject>(Mesh) : nullptr;
+	}
+
 	FMeshPtr ConstructCube(const FTexture Texture)
 	{
 		return NPrivate::ConstructShape("Models/Primitive/Cube/Cube.obj", {Texture});

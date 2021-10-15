@@ -12,32 +12,25 @@ class FScene
 public: // Constructors
 
 	FScene();
-	FScene(const std::vector<FModelPtr>& InModels, const std::vector<FMeshPtr>& InMeshes);
+	FScene(const std::vector<FSceneObjectPtr>& InObjects);
 	virtual ~FScene();
 	
 public: // Count
 
-	inline uint16 GetNumOfModels() const { return (uint16)Models.size(); }
-	inline uint16 GetNumOfMeshes() const { return (uint16)Meshes.size(); }
+	inline uint16 GetNumOfObjects() const { return (uint16)Objects.size(); }
 	
 public: // Add
 
-	void AddModels(const std::vector<FModelPtr>& InModels);
-	void AddMeshes(const std::vector<FMeshPtr>& InMeshes);
-	
-	// returns index
-	int32 AddModel(FModelPtr Model);
-	int32 AddMesh(FMeshPtr Mesh);
+	int32 AddObject(const FSceneObjectPtr& InObject);
+	void AddObjects(const std::vector<FSceneObjectPtr>& InObjects);
 
 public: // Get
 
-	FModelPtr GetModelByIdx(uint16 Idx) const;
-	FMeshPtr GetMeshByIdx(uint16 Idx) const;
+	FSceneObjectPtr GetObjectByIdx(uint16 Idx) const;
 
 public: // Remove
 
-	bool RemoveModelByIdx(uint16 Idx);
-	bool RemoveMeshByIdx(uint16 Idx);
+	bool RemoveObjectByIdx(uint16 Idx);
 
 public: // Draw
 
@@ -45,8 +38,6 @@ public: // Draw
 
 private: // Fields
 
-	uint16 ModelCounter, MeshCounter;
-
-	std::unordered_map<uint16, FModelPtr> Models;
-	std::unordered_map<uint16, FMeshPtr> Meshes;
+	uint16 Counter;
+	std::unordered_map<uint16, FSceneObjectPtr> Objects;
 };

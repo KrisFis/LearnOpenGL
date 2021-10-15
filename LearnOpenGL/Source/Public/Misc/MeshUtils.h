@@ -5,7 +5,8 @@
 
 namespace NMeshUtils
 {
-	typedef std::shared_ptr<FMesh> FMeshPtr;
+	FSceneObjectPtr AsScene(const FModelPtr& Model);
+	FSceneObjectPtr AsScene(const FMeshPtr& Mesh);
 
 	FMeshPtr ConstructCube(const FTexture Texture);
 	FMeshPtr ConstructPlane(const FTexture Texture);
