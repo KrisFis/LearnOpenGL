@@ -3,6 +3,9 @@
 
 #include "ModuleMinimal.h"
 
+// Forward declaration
+class IRenderTarget;
+
 class FFramebuffer
 {
 	
@@ -17,7 +20,7 @@ public: // Getters
 	inline bool IsUsed() const { return bIsUsed; }
 	
 	inline FFramebufferId GetId() const { return Id; }
-	inline EFramebufferTarget GetTarget() const { return Target; }
+	inline EFramebufferType GetType() const { return Type; }
 
 public: // Use methods
 
@@ -26,24 +29,22 @@ public: // Use methods
 
 public: // Attach methods
 
-	void Attach(const EFramebufferTarget InTargetType, const FRenderTexturePtr& InTexTarget);
-	void Attach(const EFramebufferTarget InTargetType, const FRenderBufferPtr& InBuffTarget);
+	void Attach(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget);
 
 private: // Helper methods
 
-	bool AttachImpl(const EFramebufferTarget InTargetType, class IRenderTarget* InTarget);
-	void AddUniqueTarget(const EFramebufferTarget InTargetType);
+	bool AttachImpl(const EFramebufferType InTargetType, IRenderTarget* InTarget);
+	void AddUniqueTarget(const EFramebufferType InTargetType);
 
 private: // Fields
 
 	FFramebufferId Id;
-	EFramebufferTarget Target;
+	EFramebufferType Type;
 
 private: // Targets
 
-	std::vector<EFramebufferTarget> UsedTargetTypes;
-	std::vector<FRenderTexturePtr> TexTargets;
-	std::vector<FRenderBufferPtr> BuffTargets;
+	std::vector<EFramebufferType> UsedTargetTypes;
+	std::vector<FRenderTargetPtr> RenderTargets;
 
 private: // Primitive fields
 

@@ -108,7 +108,7 @@ void FModel::ProcessNode(aiNode* Node, const aiScene* Scene)
 	}
 }
 
-std::shared_ptr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene) 
+TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene) 
 {
 	// Vertices
 	std::vector<FVertex> vertices;
@@ -156,7 +156,7 @@ std::shared_ptr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 	
-	return std::make_shared<FMesh>(vertices, indices, textures, true);
+	return MakeShared<FMesh>(vertices, indices, textures, true);
 }
 
 std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextureType Type) 

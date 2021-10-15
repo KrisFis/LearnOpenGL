@@ -4,7 +4,7 @@
 FRenderBuffer::FRenderBuffer(uint16 InWidth, uint16 InHeight, ERenderTargetType InType)
 	: Id(0)
 	, Type(ERenderTargetType::Invalid)
-	, Target(0)
+	, FBType(0)
 	, Width(0)
 	, Height(0)
 {
@@ -38,7 +38,7 @@ FRenderBuffer::~FRenderBuffer()
 		glDeleteRenderbuffers(1, &Id);
 }
 
-bool FRenderBuffer::AttachFramebuffer(const EFramebufferTarget FBTarget)
+bool FRenderBuffer::AttachFramebuffer(const EFramebufferType FBTarget)
 {
 	if(!IsInitialized() || IsAttached())
 	{
@@ -61,7 +61,7 @@ bool FRenderBuffer::AttachFramebuffer(const EFramebufferTarget FBTarget)
 	}
 	
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, internalFormat, GL_RENDERBUFFER, Id);
-	Target = FBTarget;
+	FBType = FBTarget;
 	
 	return true;
 }
@@ -74,6 +74,6 @@ bool FRenderBuffer::DetachFramebuffer()
 		return false;
 	}
 	
-	Target = 0;
+	FBType = 0;
 	return true;
 }

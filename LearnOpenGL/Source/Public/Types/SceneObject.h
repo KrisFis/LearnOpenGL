@@ -22,7 +22,7 @@ struct FTransform
 	glm::vec3 Scale;
 };
 
-class ISceneObject
+class ISceneObject : public TSharedClass<ISceneObject>
 {
 
 public: // Culling

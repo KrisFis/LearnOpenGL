@@ -16,7 +16,7 @@ namespace NScene_Private
 		for(auto& obj : Objects)
 		{
 			const float distance = glm::length(Camera.GetPosition() - obj.second->GetTransform().Position);
-			sortedObj[distance] = obj.second.get();
+			sortedObj[distance] = obj.second.Get();
 		}
 		
 		for(std::map<float, ISceneObject*>::reverse_iterator it = sortedObj.rbegin(); it != sortedObj.rend(); ++it)
@@ -41,7 +41,7 @@ FScene::~FScene()
 
 int32 FScene::AddObject(const FSceneObjectPtr& InObject)
 {
-	if(!(bool)InObject) return -1;
+	if(!InObject.IsValid()) return -1;
 	
 	for(const auto& obj : Objects)
 	{

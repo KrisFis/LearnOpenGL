@@ -5,7 +5,7 @@
 
 FFramebuffer::FFramebuffer()
 	: Id(0)
-	, Target(0)
+	, Type(0)
 	, bIsUsed(false)
 	, bIsInitialized(false)
 {
@@ -20,7 +20,7 @@ FFramebuffer::~FFramebuffer()
 	if(bIsUsed)
 	{
 		// Assign default framebuffer
-		glBindFramebuffer(Target, 0);
+		glBindFramebuffer(Type, 0);
 	}
 }
 
@@ -56,31 +56,19 @@ void FFramebuffer::Clear()
 	bIsUsed = false;
 }
 
-void FFramebuffer::Attach(const EFramebufferTarget InTargetType, const FRenderTexturePtr& InTexTarget)
+void FFramebuffer::Attach(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget)
 {	
-	if(!AttachImpl(InTargetType, InTexTarget.get()))
+	if(!AttachImpl(InTargetType, InTarget.Get()))
 	{
 		assert(false);
 		return;
 	}
 	
 	AddUniqueTarget(InTargetType);
-	TexTargets.push_back(InTexTarget);
+	RenderTargets.push_back(InTarget);
 }
 
-void FFramebuffer::Attach(const EFramebufferTarget InTargetType, const FRenderBufferPtr& InBuffTarget)
-{
-	if(!AttachImpl(InTargetType, InBuffTarget.get()))
-	{
-		assert(false);
-		return;
-	}
-
-	AddUniqueTarget(InTargetType);
-	BuffTargets.push_back(InBuffTarget);
-}
-
-bool FFramebuffer::AttachImpl(const EFramebufferTarget InTargetType, IRenderTarget* InTarget)
+bool FFramebuffer::AttachImpl(const EFramebufferType InTargetType, IRenderTarget* InTarget)
 {
 	if(!bIsInitialized || !InTarget) return false;
 	
@@ -91,7 +79,7 @@ bool FFramebuffer::AttachImpl(const EFramebufferTarget InTargetType, IRenderTarg
 	return result;
 }
 
-void FFramebuffer::AddUniqueTarget(const EFramebufferTarget InTargetType)
+void FFramebuffer::AddUniqueTarget(const EFramebufferType InTargetType)
 {
 	bool found = false;
 	for(auto targetType : UsedTargetTypes)

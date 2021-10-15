@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <memory>
+#include "AlternityShared.h"
 #include "IntegerTypes.h"
 
 typedef uint32 FShaderProgramId;
@@ -12,7 +12,7 @@ typedef uint32 FRenderBufferId;
 typedef uint32 FTextureId;
 
 typedef uint32 EBufferTarget;
-typedef uint32 EFramebufferTarget;
+typedef uint32 EFramebufferType;
 
 namespace NRenderConsts
 {
@@ -30,5 +30,6 @@ namespace NRenderConsts
 	}
 }
 
-typedef std::shared_ptr<class FRenderTexture> FRenderTexturePtr;
-typedef std::shared_ptr<class FRenderBuffer> FRenderBufferPtr;
+typedef TSharedPtr<class IRenderTarget> FRenderTargetPtr;
+typedef TSharedPtr<class FRenderTexture> FRenderTexturePtr;
+typedef TSharedPtr<class FRenderBuffer> FRenderBufferPtr;

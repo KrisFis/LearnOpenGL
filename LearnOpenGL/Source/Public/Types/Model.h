@@ -18,7 +18,7 @@ public: // Getters
 	inline bool IsInitialized() const { return bIsInitialized; } 
 	inline bool IsValid() const { return Meshes.size() > 0; }
 	inline const std::string& GetPath() const { return Directory; }
-	inline const std::vector<std::shared_ptr<FMesh>>& GetMeshes() const { return Meshes; }
+	inline const std::vector<TSharedPtr<FMesh>>& GetMeshes() const { return Meshes; }
 
 public: // ISceneObject overrides
 	
@@ -39,7 +39,7 @@ private: // Helper methods
 	void DrawImpl(FShaderProgram& Shader);
 
 	void ProcessNode(aiNode* Node, const aiScene* Scene);
-	std::shared_ptr<FMesh> ProcessMesh(aiMesh* Mesh, const aiScene* Scene);
+	TSharedPtr<FMesh> ProcessMesh(aiMesh* Mesh, const aiScene* Scene);
 	std::vector<FTexture> LoadMaterialTextures(aiMaterial* Material, aiTextureType Type);
 	void RecalculateModel();
 
@@ -50,7 +50,7 @@ private: // Fields
 
 	FTransform Transform;
 
-	std::vector<std::shared_ptr<FMesh>> Meshes;
+	std::vector<TSharedPtr<FMesh>> Meshes;
 	std::string Directory;
 
 private: // Cache

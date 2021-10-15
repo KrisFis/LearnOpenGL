@@ -145,21 +145,21 @@ bool ConstructScene(FScene& OutScene)
 	}
 	
 	std::vector<FSceneObjectPtr> sceneObjects;
-	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructPlane(rocksFloorTexture)));
+	sceneObjects.push_back(NMeshUtils::ConstructPlane(rocksFloorTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{0.f, -1.f, 0.f},
 		{0.f, 0.f, 0.f},
 		{10.f, 1.f, 10.f}
 	});
 
-	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructSphere(wallTexture)));
+	sceneObjects.push_back(NMeshUtils::ConstructSphere(wallTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{10.f, 10.f, 10.f},
 			{0.f, 0.f, 0.f},
 			{2.f, 2.f, 2.f}
 	});
 	
-	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructCube(brickTexture)));
+	sceneObjects.push_back(NMeshUtils::ConstructCube(brickTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -168,7 +168,7 @@ bool ConstructScene(FScene& OutScene)
 			{0.25f, 1.f, 5.f}
 	});
 
-	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructCube(brickTexture)));
+	sceneObjects.push_back(NMeshUtils::ConstructCube(brickTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -177,7 +177,7 @@ bool ConstructScene(FScene& OutScene)
 			{0.25f, 1.f, 2.f}
 	});
 
-	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructCube(brickTexture)));
+	sceneObjects.push_back(NMeshUtils::ConstructCube(brickTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -186,7 +186,7 @@ bool ConstructScene(FScene& OutScene)
 			{0.25f, 1.f, 2.f}
 	});
 
-	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructCube(brickTexture)));
+	sceneObjects.push_back(NMeshUtils::ConstructCube(brickTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -195,7 +195,7 @@ bool ConstructScene(FScene& OutScene)
 			{1.25f, 1.f, 0.25f}
 	});
 	
-	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructPlane(grassTexture)));
+	sceneObjects.push_back(NMeshUtils::ConstructPlane(grassTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{2.f, -0.499f, 0.f},
@@ -203,7 +203,7 @@ bool ConstructScene(FScene& OutScene)
 			{0.5f, 0.5f, 0.5f}
 	});
 	
-	sceneObjects.push_back(NMeshUtils::AsScene(NMeshUtils::ConstructPlane(windowTexture)));
+	sceneObjects.push_back(NMeshUtils::ConstructPlane(windowTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{1.f, 0.f, 0.f},

@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include <memory>
+#include "AlternityShared.h"
 
-typedef std::shared_ptr<class ISceneObject> FSceneObjectPtr;
-typedef std::shared_ptr<class FMesh> FMeshPtr; 
-typedef std::shared_ptr<class FModel> FModelPtr;
-typedef std::shared_ptr<class FScene> FScenePtr;
+typedef TSharedPtr<class ISceneObject> FSceneObjectPtr;
+typedef TSharedPtr<class FMesh> FMeshPtr; 
+typedef TSharedPtr<class FModel> FModelPtr;
+typedef TSharedPtr<class FScene> FScenePtr;

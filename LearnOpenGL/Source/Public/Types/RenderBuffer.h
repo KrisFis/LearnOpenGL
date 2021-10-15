@@ -15,18 +15,18 @@ public: // Constructors
 public: // IRenderTarget overrides
 
 	inline virtual bool IsInitialized() const override { return Type != ERenderTargetType::Invalid; };
-	inline virtual bool IsAttached() const override { return Target != 0; };
+	inline virtual bool IsAttached() const override { return FBType != 0; };
 
 protected: // IRenderTarget overrides
 
-	virtual bool AttachFramebuffer(const EFramebufferTarget FBTarget) override;
+	virtual bool AttachFramebuffer(const EFramebufferType FBTarget) override;
 	virtual bool DetachFramebuffer() override;
 
 private: // Fields
 
 	FRenderBufferId Id;
 	ERenderTargetType Type;
-	EFramebufferTarget Target;
+	EFramebufferType FBType;
 
 	uint16 Width;
 	uint16 Height;

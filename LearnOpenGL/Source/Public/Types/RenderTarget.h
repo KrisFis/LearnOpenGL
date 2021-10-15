@@ -24,6 +24,6 @@ protected: // Setup
 
 	friend class FFramebuffer;
 
-	virtual bool AttachFramebuffer(const EFramebufferTarget FBTarget) = 0;
+	virtual bool AttachFramebuffer(const EFramebufferType FBTarget) = 0;
 	virtual bool DetachFramebuffer() = 0;
 };

@@ -4,7 +4,7 @@
 
 FRenderTexture::FRenderTexture(uint16 InWidth, uint16 InHeight, ERenderTargetType InType)
 	: Id(0)
-	, Target(0)
+	, FBType(0)
 	, Width(0)
 	, Height(0)
 {
@@ -50,7 +50,7 @@ FRenderTexture::~FRenderTexture()
 		glDeleteTextures(1, &Id);
 }
 
-bool FRenderTexture::AttachFramebuffer(const EFramebufferTarget FBTarget)
+bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget)
 {
 	if(!IsInitialized() || IsAttached())
 	{
@@ -76,7 +76,7 @@ bool FRenderTexture::AttachFramebuffer(const EFramebufferTarget FBTarget)
 	}
 	
 	glFramebufferTexture2D(FBTarget, attachment, GL_TEXTURE_2D, Id, 0);
-	Target = FBTarget;
+	FBType = FBTarget;
 	
 	return true;
 }
@@ -89,6 +89,6 @@ bool FRenderTexture::DetachFramebuffer()
 		return false;
 	}
 
-	Target = 0;
+	FBType = 0;
 	return true;
 }
