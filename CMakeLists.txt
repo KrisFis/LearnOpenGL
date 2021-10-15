@@ -47,15 +47,22 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_definitions(-DRELEASE=1)
 endif()
 
+# Modules
+# -----------------------------------------------------------
+
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../ASTD" [EXCLUDE_FROM_ALL])
+
+ASTD_file_public_directories(${CMAKE_CURRENT_LIST_DIR}/../ASTD/Scripts/CMake ASTD_INCLUDE_DIRS)
+ASTD_file_private_files(${CMAKE_CURRENT_LIST_DIR}/../ASTD/Scripts/CMake ASTD_SOURCES)
 
 # Project Files
 # -----------------------------------------------------------
 
 include_directories(
+    "${ASTD_INCLUDE_DIRS}"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Misc"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Types"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Types/Library"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/include"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/STB/include"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/include"
@@ -67,7 +74,7 @@ link_directories(
 )
 
 # Sources
-file(GLOB_RECURSE "ALL_SOURCE_FILES"
+file(GLOB_RECURSE "PROJECT_SOURCES"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/src/*.c"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/src/*.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/STB/src/*.cpp"
@@ -77,13 +84,14 @@ file(GLOB_RECURSE "ALL_SOURCE_FILES"
 # Libs
 set(OpenGLLibs opengl32 glfw/glfw3)
 set(AssimpLibs assimp)
+set(ASTDLibs ASTD)
 
 # Executable and linking
 # -----------------------------------------------------------
 
-add_executable(${PROJECT_NAME} "${ALL_SOURCE_FILES}")
+add_executable(${PROJECT_NAME} "${PROJECT_SOURCES}" "${ASTD_SOURCES}")
 
-target_link_libraries(${PROJECT_NAME} ${OpenGLLibs} ${AssimpLibs})
+target_link_libraries(${PROJECT_NAME} ${OpenGLLibs} ${AssimpLibs} ${ASTDLibs})
 
 # Commands
 # -----------------------------------------------------------

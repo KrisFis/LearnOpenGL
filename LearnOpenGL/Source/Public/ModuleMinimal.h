@@ -1,11 +1,12 @@
 
 #pragma once
 
+// ASTD
+#include "ASTD.h"
+
 // Core
-#include "IntegerTypes.h"
 #include "RenderTypes.h"
 #include "SceneTypes.h"
-#include "SharedObject.h"
 
 // STL
 #include <vector>
