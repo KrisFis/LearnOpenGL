@@ -307,8 +307,8 @@ void EngineTick()
 	
 	// Position log
 	{
-		const glm::vec3& currentPos = GCamera.GetPosition(); 
-		std::cout << "Current position: [" << currentPos.x << ',' << currentPos.y << ',' << currentPos.z << ']' << std::endl;
+		//const glm::vec3& currentPos = GCamera.GetPosition(); 
+		//std::cout << "Current position: [" << currentPos.x << ',' << currentPos.y << ',' << currentPos.z << ']' << std::endl;
 	}
 }
 

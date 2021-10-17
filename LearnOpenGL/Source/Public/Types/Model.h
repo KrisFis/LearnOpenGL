@@ -36,8 +36,6 @@ public: // ISceneObject overrides
 
 private: // Helper methods
 
-	void DrawImpl(FShaderProgram& Shader);
-
 	void ProcessNode(aiNode* Node, const aiScene* Scene);
 	TSharedPtr<FMesh> ProcessMesh(aiMesh* Mesh, const aiScene* Scene);
 	std::vector<FTexture> LoadMaterialTextures(aiMaterial* Material, aiTextureType Type);

@@ -50,8 +50,13 @@ void FModel::Draw(FShaderProgram& Shader)
 		glStencilMask(0xFF);
 	}
 
-	DrawImpl(Shader);
-	
+	Shader.SetMat4("model", CachedModel);
+
+	for(auto& mesh : Meshes)
+	{
+		mesh->Draw(Shader);
+	}
+
 	if(IsOutlined())
 	{
 		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -80,16 +85,6 @@ void FModel::Draw(FShaderProgram& Shader)
 		glStencilMask(0xFF);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glEnable(GL_DEPTH_TEST);
-	}
-}
-
-void FModel::DrawImpl(FShaderProgram& Shader)
-{
-	Shader.SetMat4("model", CachedModel);
-
-	for(auto& mesh : Meshes)
-	{
-		mesh->Draw(Shader);
 	}
 }
 
