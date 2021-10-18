@@ -37,6 +37,7 @@ float GLastMouseY = GWindowHeight * 0.5f;
 // Global instances
 FCameraPtr GCamera = FCamera::Create();
 FScenePtr GScene = FScene::Create();
+FFramebufferPtr GFramebuffer = FFramebuffer::Create();
 
 uint16 GetFramesPerSecond()
 {
@@ -129,6 +130,12 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 		glFrontFace(GL_CCW);
 	}
 
+	return true;
+}
+
+bool ConstructFramebuffer(const FFramebufferPtr& OutFramebuffer)
+{
+	// TODO(kristian.fisera): IMPLEMENT
 	return true;
 }
 

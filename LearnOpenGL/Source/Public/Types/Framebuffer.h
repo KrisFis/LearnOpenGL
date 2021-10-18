@@ -28,7 +28,6 @@ public: // Getters
 	FORCEINLINE bool IsUsed() const { return bIsUsed; }
 	
 	FORCEINLINE FFramebufferId GetId() const { return Id; }
-	FORCEINLINE EFramebufferType GetType() const { return Type; }
 
 public: // Use methods
 
@@ -37,17 +36,15 @@ public: // Use methods
 
 public: // Attach methods
 
-	void Attach(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget);
+	void Attach(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget, bool Overwrite = true);
 
 private: // Helper methods
 
-	bool AttachImpl(const EFramebufferType InTargetType, IRenderTarget* InTarget);
-	void AddUniqueTarget(const EFramebufferType InTargetType);
+	bool AttachImpl(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget, bool Overwrite);
 
 private: // Fields
 
 	FFramebufferId Id;
-	EFramebufferType Type;
 
 private: // Targets
 

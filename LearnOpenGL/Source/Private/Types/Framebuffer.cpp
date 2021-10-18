@@ -5,7 +5,6 @@
 
 FFramebuffer::FFramebuffer()
 	: Id(0)
-	, Type(0)
 	, bIsUsed(false)
 	, bIsInitialized(false)
 {
@@ -15,13 +14,9 @@ FFramebuffer::FFramebuffer()
 
 FFramebuffer::~FFramebuffer()
 {
-	glDeleteFramebuffers(1, &Id);
+	Clear();
 	
-	if(bIsUsed)
-	{
-		// Assign default framebuffer
-		glBindFramebuffer(Type, 0);
-	}
+	glDeleteFramebuffers(1, &Id);
 }
 
 void FFramebuffer::Use()
@@ -56,35 +51,50 @@ void FFramebuffer::Clear()
 	bIsUsed = false;
 }
 
-void FFramebuffer::Attach(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget)
+void FFramebuffer::Attach(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget, bool Overwrite)
 {	
-	if(!AttachImpl(InTargetType, InTarget.Get()))
+	if(!AttachImpl(InTargetType, InTarget, Overwrite))
 	{
 		assert(false);
 		return;
 	}
 	
-	AddUniqueTarget(InTargetType);
 	RenderTargets.push_back(InTarget);
 }
 
-bool FFramebuffer::AttachImpl(const EFramebufferType InTargetType, IRenderTarget* InTarget)
+bool FFramebuffer::AttachImpl(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget, bool Overwrite)
 {
-	if(!bIsInitialized || !InTarget) return false;
+	if(!bIsInitialized || !InTarget.IsValid()) return false;
+	
+	{
+		auto getActionType =
+		[](EFramebufferType Type) -> uint8
+		{
+			enum { Read = 0x1, Draw = 0x2 }; 
+			
+			if(Type == GL_FRAMEBUFFER) return (Read | Draw);
+			else if(Type == GL_READ_FRAMEBUFFER) return Read;
+			else if(Type == GL_DRAW_FRAMEBUFFER) return Draw;
+			else return 0;
+		};
+	
+		const uint8 wantsActions = getActionType(InTargetType);
+		for(auto it = UsedTargetTypes.begin(); it != UsedTargetTypes.end(); ++it)
+		{
+			const uint8 usedAction = getActionType(*it);
+			if(wantsActions & usedAction)
+			{
+				if(Overwrite)
+					UsedTargetTypes.erase(it);
+				else
+					return false;
+			}
+		}
+	}
 	
 	glBindFramebuffer(InTargetType, Id);
 	const bool result = InTarget->AttachFramebuffer(InTargetType);
 	glBindFramebuffer(InTargetType, 0);
 	
 	return result;
-}
-
-void FFramebuffer::AddUniqueTarget(const EFramebufferType InTargetType)
-{
-	bool found = false;
-	for(auto targetType : UsedTargetTypes)
-		if(targetType == InTargetType) found = true;
-		
-	if(!found)
-		UsedTargetTypes.push_back(InTargetType);
 }
