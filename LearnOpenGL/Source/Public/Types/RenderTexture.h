@@ -6,13 +6,19 @@
 
 class FRenderTexture : public IRenderTarget
 {
-	
-public: // Constructors
 
-	FRenderTexture(uint16 InWidth, uint16 InHeight, ERenderTargetType InType);
+private: // Constructors
+
+	explicit FRenderTexture(uint16 InWidth, uint16 InHeight, ERenderTargetType InType);
+
+public: // Destructor
+	
 	virtual ~FRenderTexture();
 
-	void AssignFramebuffer();
+public: // Static creation
+
+	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetType Type)
+	{ return MakeShareable(new FRenderTexture(Width, Height, Type)); }
 
 public: // IRenderTarget overrides
 
@@ -34,3 +40,5 @@ private: // Fields
 	uint16 Width;
 	uint16 Height;
 };
+
+typedef TSharedPtr<FRenderTexture> FRenderTexturePtr;
