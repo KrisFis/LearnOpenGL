@@ -14,8 +14,8 @@ public: // Constructors
 	
 public: // IRenderTarget overrides
 
-	inline virtual bool IsInitialized() const override { return Type != ERenderTargetType::Invalid; };
-	inline virtual bool IsAttached() const override { return FBType != 0; };
+	FORCEINLINE virtual bool IsInitialized() const override { return Type != ERenderTargetType::Invalid; };
+	FORCEINLINE virtual bool IsAttached() const override { return FBType != 0; };
 
 protected: // IRenderTarget overrides
 

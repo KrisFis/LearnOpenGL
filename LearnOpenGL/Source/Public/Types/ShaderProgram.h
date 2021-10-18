@@ -13,16 +13,24 @@ enum class EShaderType
 class FShaderProgram
 {
 
-public: // Constructors
+private: // Constructors
 
-    FShaderProgram(const char* VertexFilePath, const char* FragmentFilePath);
+    explicit FShaderProgram(const char* VertexFilePath, const char* FragmentFilePath);
+
+public: // Destructors
+    
     virtual ~FShaderProgram();
+
+public: // Static constructions
+
+	FORCEINLINE static TSharedPtr<FShaderProgram> Create(const char* VertexFilePath, const char* FragmentFilePath)
+	{ return MakeShareable(new FShaderProgram(VertexFilePath, FragmentFilePath)); }
 
 public: // Getters
 
-	inline bool IsInitialized() const { return bIsInitialized; }
-	inline bool IsUsed() const { return bIsUsed; }
-    inline const FShaderProgramId& GetProgramId() const { return Id; }
+	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
+	FORCEINLINE bool IsUsed() const { return bIsUsed; }
+    FORCEINLINE const FShaderProgramId& GetProgramId() const { return Id; }
 
 public: // External methods
 
@@ -45,3 +53,5 @@ private: // Fields
 	bool bIsUsed;
 	bool bIsInitialized;
 };
+
+typedef TSharedPtr<FShaderProgram> FShaderProgramPtr;

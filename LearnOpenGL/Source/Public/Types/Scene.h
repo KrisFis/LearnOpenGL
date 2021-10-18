@@ -9,24 +9,35 @@ class ISceneObject;
 class FScene
 {
 	
-public: // Constructors
+private: // Constructors
 
-	FScene();
-	FScene(const std::vector<FSceneObjectPtr>& InObjects);
+	explicit FScene();
+	explicit FScene(const std::vector<TSharedPtr<ISceneObject>>& InObjects);
+
+public: // Destructor
+
 	virtual ~FScene();
-	
+
+public: // Static constructions
+
+	FORCEINLINE static TSharedPtr<FScene> Create()
+	{ return MakeShareable(new FScene()); }
+
+	FORCEINLINE static TSharedPtr<FScene> Create(const std::vector<TSharedPtr<ISceneObject>>& Objects)
+	{ return MakeShareable(new FScene(Objects)); }
+
 public: // Count
 
-	inline uint16 GetNumOfObjects() const { return (uint16)Objects.size(); }
+	FORCEINLINE uint16 GetNumOfObjects() const { return (uint16)Objects.size(); }
 	
 public: // Add
 
-	int32 AddObject(const FSceneObjectPtr& InObject);
-	void AddObjects(const std::vector<FSceneObjectPtr>& InObjects);
+	int32 AddObject(const TSharedPtr<ISceneObject>& InObject);
+	void AddObjects(const std::vector<TSharedPtr<ISceneObject>>& InObjects);
 
 public: // Get
 
-	FSceneObjectPtr GetObjectByIdx(uint16 Idx) const;
+	TSharedPtr<ISceneObject> GetObjectByIdx(uint16 Idx) const;
 
 public: // Remove
 
@@ -34,10 +45,12 @@ public: // Remove
 
 public: // Draw
 
-	void Draw(FShaderProgram& Shader, const FCamera& Camera);
+	void Draw(const TSharedPtr<FShaderProgram>& Shader, const TSharedPtr<FCamera>& Camera);
 
 private: // Fields
 
 	uint16 Counter;
-	std::unordered_map<uint16, FSceneObjectPtr> Objects;
+	std::unordered_map<uint16, TSharedPtr<ISceneObject>> Objects;
 };
+
+typedef TSharedPtr<class FScene> FScenePtr;

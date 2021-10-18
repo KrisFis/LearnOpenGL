@@ -6,7 +6,8 @@
 #include "ColorUtils.h"
 #include "Scene.h"
 
-#include "Shader.h"
+#include "ShaderProgram.h"
+#include "Texture.h"
 #include "Timer.h"
 #include "Camera.h"
 #include "Model.h"
@@ -34,8 +35,8 @@ float GLastMouseX = GWindowWidth * 0.5f;
 float GLastMouseY = GWindowHeight * 0.5f;
 
 // Global instances
-FCamera GCamera;
-FScene GScene;
+FCameraPtr GCamera = FCamera::Create();
+FScenePtr GScene = FScene::Create();
 
 uint16 GetFramesPerSecond()
 {
@@ -44,7 +45,7 @@ uint16 GetFramesPerSecond()
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
-	GCamera.ProcessScroll((float)ScrollY);
+	GCamera->ProcessScroll((float)ScrollY);
 }
 
 void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
@@ -62,7 +63,7 @@ void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
 	GLastMouseX = (float)MouseX;
 	GLastMouseY = (float)MouseY;
 
-	GCamera.ProcessMouseMove(offsetX, offsetY);
+	GCamera->ProcessMouseMove(offsetX, offsetY);
 }
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
@@ -131,15 +132,15 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
-bool ConstructScene(FScene& OutScene)
+bool ConstructScene(const FScenePtr& OutScene)
 {
-	FTexture rocksFloorTexture = { NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse };
-	FTexture wallTexture = { NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse };
-	FTexture brickTexture = { NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse };
-	FTexture carpetTexture = { NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse };
-	FTexture grassTexture = { NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, true };
-	FTexture windowTexture = { NFileUtils::ContentPath("Textures/transparent_window.png").c_str(), ETextureType::Diffuse };
-	if(!wallTexture.IsInitialized() || !brickTexture.IsInitialized() || !carpetTexture.IsInitialized() || !grassTexture.IsInitialized() || !windowTexture.IsInitialized())
+	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse);
+	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
+	FTexturePtr brickTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse);
+	FTexturePtr carpetTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse);
+	FTexturePtr grassTexture = FTexture::Create(NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, true);
+	FTexturePtr windowTexture = FTexture::Create(NFileUtils::ContentPath("Textures/transparent_window.png").c_str(), ETextureType::Diffuse);
+	if(!wallTexture->IsInitialized() || !brickTexture->IsInitialized() || !carpetTexture->IsInitialized() || !grassTexture->IsInitialized() || !windowTexture->IsInitialized())
 	{
 		return false;
 	}
@@ -211,7 +212,7 @@ bool ConstructScene(FScene& OutScene)
 			{1.f, 1.f, 1.f}
 	});
 	
-	OutScene.AddObjects(sceneObjects);
+	OutScene->AddObjects(sceneObjects);
 	return true;
 }
 
@@ -241,9 +242,9 @@ void ProcessInput()
 	{
 		if(altWasJustPressed)
 		{
-			const bool isProcessingInput = GCamera.GetShouldProcessInput();
+			const bool isProcessingInput = GCamera->GetShouldProcessInput();
 
-			GCamera.SetShouldProcessInput(!isProcessingInput);
+			GCamera->SetShouldProcessInput(!isProcessingInput);
 			glfwSetInputMode(GWindow, GLFW_CURSOR, (isProcessingInput) ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 		}
 	}
@@ -251,22 +252,22 @@ void ProcessInput()
 	// Rotation && Translation && Opacity
 	{
 		if(shiftWasJustPressed)
-			GCamera.SetMoveSensitivity(GCamera.GetMoveSensitivity()*2.f);
+			GCamera->SetMoveSensitivity(GCamera->GetMoveSensitivity()*2.f);
 		if(shiftWasJustReleased)
-			GCamera.SetMoveSensitivity(GCamera.GetMoveSensitivity()*0.5f);
+			GCamera->SetMoveSensitivity(GCamera->GetMoveSensitivity()*0.5f);
 
 		if (glfwGetKey(GWindow, GLFW_KEY_W) == GLFW_PRESS)
-			GCamera.ProcessMoveInput(ECameraMoveDirection::Forward, GDeltaSeconds);
+			GCamera->ProcessMoveInput(ECameraMoveDirection::Forward, GDeltaSeconds);
 		if (glfwGetKey(GWindow, GLFW_KEY_S) == GLFW_PRESS)
-			GCamera.ProcessMoveInput(ECameraMoveDirection::Backward, GDeltaSeconds);
+			GCamera->ProcessMoveInput(ECameraMoveDirection::Backward, GDeltaSeconds);
 		if (glfwGetKey(GWindow, GLFW_KEY_A) == GLFW_PRESS)
-			GCamera.ProcessMoveInput(ECameraMoveDirection::Left, GDeltaSeconds);
+			GCamera->ProcessMoveInput(ECameraMoveDirection::Left, GDeltaSeconds);
 		if (glfwGetKey(GWindow, GLFW_KEY_D) == GLFW_PRESS)
-			GCamera.ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
+			GCamera->ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
 }
 
-void ProcessRender(FShaderProgram& Shader)
+void ProcessRender(const FShaderProgramPtr& Shader)
 {
 	// Setup render tick
 	{
@@ -281,16 +282,16 @@ void ProcessRender(FShaderProgram& Shader)
 	}
 	
 	// Mat4
-	const glm::mat4 projection = glm::perspective(glm::radians(GCamera.GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
-	const glm::mat4 view = GCamera.GetViewMatrix();
+	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
+	const glm::mat4 view = GCamera->GetViewMatrix();
 
-	Shader.Use();
+	Shader->Use();
 
-	Shader.SetMat4("view", view);
-	Shader.SetMat4("projection", projection);
-	Shader.SetMat4("model", glm::mat4(1.f));
+	Shader->SetMat4("view", view);
+	Shader->SetMat4("projection", projection);
+	Shader->SetMat4("model", glm::mat4(1.f));
 	
-	GScene.Draw(Shader, GCamera);
+	GScene->Draw(Shader, GCamera);
 }
 
 void EngineTick()
@@ -307,7 +308,7 @@ void EngineTick()
 	
 	// Position log
 	{
-		//const glm::vec3& currentPos = GCamera.GetPosition(); 
+		//const glm::vec3& currentPos = GCamera->GetPosition(); 
 		//std::cout << "Current position: [" << currentPos.x << ',' << currentPos.y << ',' << currentPos.z << ']' << std::endl;
 	}
 }
@@ -319,8 +320,8 @@ int32 GuardedMain()
 		return -1;
 	}
 
-	FShaderProgram shaderToUse = { NFileUtils::ContentPath("Shaders/Vertex/Mesh.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh.frag").c_str() };
-	if(!shaderToUse.IsInitialized())
+	FShaderProgramPtr shaderToUse = FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Mesh.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh.frag").c_str());
+	if(!shaderToUse->IsInitialized())
 	{
 		return -2;
 	}

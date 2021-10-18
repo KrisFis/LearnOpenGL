@@ -9,12 +9,12 @@ struct FColor
 public: // Static constructions
 
 	// Construct color from RGB model
-	inline static constexpr FColor RGB(uint8 Red, uint8 Green, uint8 Blue, uint8 Alpha) { return FColor(Red, Green, Blue, Alpha); }
-	inline static constexpr FColor RGB(uint8 RGBA) { return FColor(RGBA, RGBA, RGBA, RGBA); }
-	inline static constexpr FColor RGB(uint8 Red, uint8 Green, uint8 Blue) { return FColor(Red, Green, Blue, UINT8_MAX); }
+	FORCEINLINE static constexpr FColor RGB(uint8 Red, uint8 Green, uint8 Blue, uint8 Alpha) { return FColor(Red, Green, Blue, Alpha); }
+	FORCEINLINE static constexpr FColor RGB(uint8 RGBA) { return FColor(RGBA, RGBA, RGBA, RGBA); }
+	FORCEINLINE static constexpr FColor RGB(uint8 Red, uint8 Green, uint8 Blue) { return FColor(Red, Green, Blue, UINT8_MAX); }
 	
 	// Construct color from CMYK model 
-	inline static constexpr FColor CMYK(float Cyan, float Magenta, float Yellow, float Black)
+	FORCEINLINE static constexpr FColor CMYK(float Cyan, float Magenta, float Yellow, float Black)
 	{ 
 		return FColor(
 			(uint8)(UINT8_MAX * (1-Cyan) * (1-Black)),
@@ -54,7 +54,7 @@ public: // Arithmetic operators (uint8)
 
 public: // Checks
 
-	inline bool IsTransparent() const { return A == 0; } 
+	FORCEINLINE bool IsTransparent() const { return A == 0; } 
 
 public: // Casts
 

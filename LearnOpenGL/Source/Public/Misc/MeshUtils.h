@@ -2,11 +2,15 @@
 #pragma once
 
 #include "ModuleMinimal.h"
+#include "SceneObject.h"
+
+// Forward declaration
+class FTexture;
 
 namespace NMeshUtils
 {
-	FSceneObjectPtr ConstructCube(const FTexture Texture);
-	FSceneObjectPtr ConstructPlane(const FTexture Texture);
-	FSceneObjectPtr ConstructSphere(const FTexture Texture);
-	FSceneObjectPtr ConstructCylinder(const FTexture Texture);
+	FSceneObjectPtr ConstructCube(const TSharedPtr<FTexture> Texture);
+	FSceneObjectPtr ConstructPlane(const TSharedPtr<FTexture> Texture);
+	FSceneObjectPtr ConstructSphere(const TSharedPtr<FTexture> Texture);
+	FSceneObjectPtr ConstructCylinder(const TSharedPtr<FTexture> Texture);
 }

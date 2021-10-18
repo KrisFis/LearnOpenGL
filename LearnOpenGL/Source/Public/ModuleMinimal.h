@@ -6,7 +6,6 @@
 
 // Core
 #include "RenderTypes.h"
-#include "SceneTypes.h"
 
 // STL
 #include <vector>

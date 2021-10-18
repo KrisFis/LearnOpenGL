@@ -30,25 +30,29 @@ ETextureType ToTextureType(const aiTextureType Type);
 class FTexture
 {
 
-public: // Constructors
+private: // Constructors
 
-	FTexture(const char* InFilePath, const ETextureType InType, bool ClampToEdge = false);
+	explicit FTexture(const char* InFilePath, const ETextureType InType, bool ClampToEdge);
+	
+public: // Destructors
+	
 	virtual ~FTexture();
 	
 public: // Static constructions
 
-	static FTexture CreateRenderTexture(uint16 Width, uint16 Height, bool ForDepth, bool ForStencil);
+	FORCEINLINE static TSharedPtr<FTexture> Create(const char* FilePath, const ETextureType Type, bool ClampToEdge = false) 
+	{ return MakeShareable(new FTexture(FilePath, Type, ClampToEdge));}
 
 public: // Getters
 
-	inline bool IsInitialized() const { return Type != ETextureType::Invalid; }
-	inline bool IsUsed() const { return UseIndex != -1; }
+	FORCEINLINE bool IsInitialized() const { return Type != ETextureType::Invalid; }
+	FORCEINLINE bool IsUsed() const { return UseIndex != -1; }
 
-	inline const FTextureId& GetId() const { return Id; }
-	inline int16 GetUseIndex() const { return UseIndex; }
+	FORCEINLINE const FTextureId& GetId() const { return Id; }
+	FORCEINLINE int16 GetUseIndex() const { return UseIndex; }
 	
-	inline ETextureType GetType() const { return Type; }
-	inline const std::string& GetPath() const { return FilePath; }
+	FORCEINLINE ETextureType GetType() const { return Type; }
+	FORCEINLINE const std::string& GetPath() const { return FilePath; }
 
 public: // External methods
 
@@ -62,3 +66,5 @@ private: // Fields
 	ETextureType Type;
 	std::string FilePath;
 };
+
+typedef TSharedPtr<FTexture> FTexturePtr;

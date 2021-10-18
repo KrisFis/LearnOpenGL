@@ -3,10 +3,10 @@
 
 #include "Texture.h"
 #include "RenderUtils.h"
-#include "Shader.h"
+#include "ShaderProgram.h"
 #include "ColorUtils.h"
 
-FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<FTexture>& InTextures, bool Owned) 
+FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<TSharedPtr<FTexture>>& InTextures, bool Owned) 
 	: OutlineSize(0.f)
 	, OutlineColor(NColors::Transparent)
 	, Transform(FTransform())
@@ -57,12 +57,12 @@ FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& 
 FMesh::~FMesh()
 {}
 
-void FMesh::SetTextures(const std::vector<FTexture>& InTextures)
+void FMesh::SetTextures(const std::vector<TSharedPtr<FTexture>>& InTextures)
 {
 	Textures = InTextures;
 }
 
-void FMesh::Draw(FShaderProgram& Shader)
+void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
 {
 	if(!IsValid()) return;
 	
@@ -92,10 +92,10 @@ void FMesh::Draw(FShaderProgram& Shader)
 		glStencilMask(0x0);
 		glDisable(GL_DEPTH_TEST);
 	
-		Shader.SetBool("useOverrideColor", true);
-		Shader.SetVec4("overrideColor", OutlineColor.ToVec4());
+		Shader->SetBool("useOverrideColor", true);
+		Shader->SetVec4("overrideColor", OutlineColor.ToVec4());
 		
-		Shader.SetMat4("model",
+		Shader->SetMat4("model",
 			glm::scale(
 				CachedModel,
 				glm::vec3(1 + OutlineSize)
@@ -108,7 +108,7 @@ void FMesh::Draw(FShaderProgram& Shader)
 		
 		NRenderUtils::UnbindVertexArray();
 		
-		Shader.SetBool("useOverrideColor", false);
+		Shader->SetBool("useOverrideColor", false);
 		
 		glStencilMask(0xFF);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -123,14 +123,14 @@ void FMesh::RecalculateModel()
 	CachedModel = Transform.CalculateModelMatrix();
 }
 
-void FMesh::DrawImpl(FShaderProgram& Shader)
+void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 {
 	uint8 diffuseCounter = 0;
 	uint8 specularCounter = 0;
 	for(uint8 i = 0; i < Textures.size(); ++i)
 	{
 		std::string nameOfTexture;
-		switch (Textures[i].GetType()) 
+		switch (Textures[i]->GetType()) 
 		{
 			case ETextureType::Diffuse:
 				nameOfTexture = "diffuse" + std::to_string(diffuseCounter++);
@@ -142,12 +142,12 @@ void FMesh::DrawImpl(FShaderProgram& Shader)
 				continue;
 		}
 		
-		Shader.SetInt32(("material." + nameOfTexture).c_str(), i);
-		Textures[i].Use(i);
+		Shader->SetInt32(("material." + nameOfTexture).c_str(), i);
+		Textures[i]->Use(i);
 	}
 	
 	if(!IsOwned())
-		Shader.SetMat4("model", CachedModel);
+		Shader->SetMat4("model", CachedModel);
 
 	NRenderUtils::BindVertexArray(VAO);
 	

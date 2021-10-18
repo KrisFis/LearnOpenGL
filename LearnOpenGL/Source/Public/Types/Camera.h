@@ -18,44 +18,55 @@ public: // Static
 
 	static constexpr float MaxPitch = 89.f;
 
-public: // Constructors
+private: // Constructors
 
-	FCamera(); // Default camera in 0.0.0 pos
-	FCamera(const glm::vec3& InPosition, const glm::vec3& InRotation);
+	explicit FCamera(); // Default camera in 0.0.0 pos
+	explicit FCamera(const glm::vec3& InPosition, const glm::vec3& InRotation);
+	
+public: // Destructors
+	
 	virtual ~FCamera();
+
+public: // Static constructions
+
+	FORCEINLINE static TSharedPtr<FCamera> Create()
+	{ return MakeShareable(new FCamera()); }
+	
+	FORCEINLINE static TSharedPtr<FCamera> Create(const glm::vec3& Position, const glm::vec3& Rotation)
+	{ return MakeShareable(new FCamera(Position, Rotation)); }
 
 public: // Getters for render
 
-	inline float GetFieldOfView() const { return FieldOfView; }
+	FORCEINLINE float GetFieldOfView() const { return FieldOfView; }
 	glm::mat4 GetViewMatrix() const;
 
 public: // Sensitivity
 
-	inline float GetLookSensitivity() const { return LookSensitivity; }
-	inline void SetLookSensitivity(float Value) { LookSensitivity = Value; }
+	FORCEINLINE float GetLookSensitivity() const { return LookSensitivity; }
+	FORCEINLINE void SetLookSensitivity(float Value) { LookSensitivity = Value; }
 
-	inline float GetMoveSensitivity() const { return MoveSensitivity; }
-	inline void SetMoveSensitivity(float Value) { MoveSensitivity = Value; }
+	FORCEINLINE float GetMoveSensitivity() const { return MoveSensitivity; }
+	FORCEINLINE void SetMoveSensitivity(float Value) { MoveSensitivity = Value; }
 
 public: // Position and rotation
 
-	inline const glm::vec3& GetPosition() const { return Position; }
-	inline const glm::vec3& GetRotation() const { return Rotation; }
+	FORCEINLINE const glm::vec3& GetPosition() const { return Position; }
+	FORCEINLINE const glm::vec3& GetRotation() const { return Rotation; }
 
 	void SetPosition(const glm::vec3& Value);
 	void SetRotation(const glm::vec3& Value);
 
 public: // Cache getters
 
-	inline glm::vec3 GetFront() const { return CameraCache[0]; }
-	inline glm::vec3 GetRight() const { return CameraCache[1]; }
-	inline glm::vec3 GetLeft() const { return -1.f * CameraCache[1]; }
-	inline glm::vec3 GetUp() const { return CameraCache[2]; }
+	FORCEINLINE glm::vec3 GetFront() const { return CameraCache[0]; }
+	FORCEINLINE glm::vec3 GetRight() const { return CameraCache[1]; }
+	FORCEINLINE glm::vec3 GetLeft() const { return -1.f * CameraCache[1]; }
+	FORCEINLINE glm::vec3 GetUp() const { return CameraCache[2]; }
 
 public: // Input
 
-	inline bool GetShouldProcessInput() const { return bShouldProcessInput; }
-	inline void SetShouldProcessInput(bool Value) { bShouldProcessInput = Value; }
+	FORCEINLINE bool GetShouldProcessInput() const { return bShouldProcessInput; }
+	FORCEINLINE void SetShouldProcessInput(bool Value) { bShouldProcessInput = Value; }
 
 	void ProcessMoveInput(const ECameraMoveDirection Direction, float DeltaSeconds);
 	void ProcessMouseMove(float OffsetX, float OffsetY, bool ConstrainPitch = true);
@@ -82,3 +93,5 @@ private: // Configuration
 	uint8 bShouldProcessInput : 1;
 
 };
+
+typedef TSharedPtr<FCamera> FCameraPtr;

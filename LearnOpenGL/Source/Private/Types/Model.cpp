@@ -2,7 +2,7 @@
 #include "Model.h"
 #include "Mesh.h"
 #include "Texture.h"
-#include "Shader.h"
+#include "ShaderProgram.h"
 #include "ColorUtils.h"
 
 FModel::FModel(const char* FilePath) 
@@ -31,7 +31,7 @@ FModel::FModel(const char* FilePath)
 	bIsInitialized = true;
 }
 
-void FModel::Draw(FShaderProgram& Shader) 
+void FModel::Draw(const TSharedPtr<FShaderProgram>& Shader) 
 {
 	if(!IsValid()) return;
 	
@@ -50,7 +50,7 @@ void FModel::Draw(FShaderProgram& Shader)
 		glStencilMask(0xFF);
 	}
 
-	Shader.SetMat4("model", CachedModel);
+	Shader->SetMat4("model", CachedModel);
 
 	for(auto& mesh : Meshes)
 	{
@@ -63,8 +63,8 @@ void FModel::Draw(FShaderProgram& Shader)
 		glStencilMask(0x0);
 		glDisable(GL_DEPTH_TEST);
 	
-		Shader.SetBool("useOverrideColor", true);
-		Shader.SetVec4("overrideColor", OutlineColor.ToVec4());
+		Shader->SetBool("useOverrideColor", true);
+		Shader->SetVec4("overrideColor", OutlineColor.ToVec4());
 		
 		for(auto& mesh : Meshes)
 		{
@@ -80,7 +80,7 @@ void FModel::Draw(FShaderProgram& Shader)
 			mesh->SetTransform(tmpTransform);
 		}
 		
-		Shader.SetBool("useOverrideColor", false);
+		Shader->SetBool("useOverrideColor", false);
 		
 		glStencilMask(0xFF);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -141,25 +141,25 @@ TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 		}
 	}
 	
-	std::vector<FTexture> textures;
+	std::vector<FTexturePtr> textures;
 	if(Mesh->mMaterialIndex >= 0)
 	{
 		aiMaterial* material = Scene->mMaterials[Mesh->mMaterialIndex];
-		std::vector<FTexture> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE);
+		std::vector<FTexturePtr> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE);
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-		std::vector<FTexture> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR);
+		std::vector<FTexturePtr> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR);
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 	
-	return MakeShared<FMesh>(vertices, indices, textures, true);
+	return FMesh::Create(vertices, indices, textures, true);
 }
 
-std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextureType Type) 
+std::vector<TSharedPtr<FTexture>> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextureType Type) 
 {
 	const uint32 numOfTextures = Material->GetTextureCount(Type);
 	const ETextureType friendlyType = ToTextureType(Type);
 
-	std::vector<FTexture> result;
+	std::vector<FTexturePtr> result;
 	result.reserve(numOfTextures);
 	for(uint32 i = 0; i < numOfTextures; ++i)
 	{
@@ -168,9 +168,9 @@ std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextu
 		std::string filePath = Directory + '/' + std::string(path.C_Str());
 		
 		bool skip = false;
-		for(const FTexture& texture : LoadedTextures)
+		for(const TSharedPtr<FTexture>& texture : LoadedTextures)
 		{
-			if(filePath == texture.GetPath())
+			if(filePath == texture->GetPath())
 			{
 				result.push_back(texture);
 				skip = true;
@@ -180,7 +180,7 @@ std::vector<FTexture> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextu
 		
 		if(!skip)
 		{
-			FTexture newTexture = {filePath.c_str(), friendlyType};
+			FTexturePtr newTexture = FTexture::Create(filePath.c_str(), friendlyType);
 			
 			result.push_back(newTexture);
 			LoadedTextures.push_back(newTexture);

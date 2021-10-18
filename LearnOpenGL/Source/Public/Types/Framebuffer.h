@@ -9,18 +9,26 @@ class IRenderTarget;
 class FFramebuffer
 {
 	
-public: // Constructors
+private: // Constructors
 
-	FFramebuffer();
+	explicit FFramebuffer();
+	
+public: // Destructor
+	
 	virtual ~FFramebuffer();
+
+public: // Static constructions
+
+	FORCEINLINE static TSharedPtr<FFramebuffer> Create()
+	{ return MakeShareable(new FFramebuffer()); }
 
 public: // Getters
 
-	inline bool IsInitialized() const { return bIsInitialized; }
-	inline bool IsUsed() const { return bIsUsed; }
+	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
+	FORCEINLINE bool IsUsed() const { return bIsUsed; }
 	
-	inline FFramebufferId GetId() const { return Id; }
-	inline EFramebufferType GetType() const { return Type; }
+	FORCEINLINE FFramebufferId GetId() const { return Id; }
+	FORCEINLINE EFramebufferType GetType() const { return Type; }
 
 public: // Use methods
 
@@ -51,3 +59,5 @@ private: // Primitive fields
 	uint8 bIsUsed : 1;
 	uint8 bIsInitialized : 1;
 };
+
+typedef TSharedPtr<FFramebuffer> FFramebufferPtr;

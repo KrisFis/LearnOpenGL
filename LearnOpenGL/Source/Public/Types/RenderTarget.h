@@ -11,7 +11,7 @@ enum class ERenderTargetType : uint8
 	DepthAndStencil
 };
 
-class IRenderTarget
+class IRenderTarget : public TSharedClass<IRenderTarget>
 {
 
 public: // Getters
@@ -27,3 +27,5 @@ protected: // Setup
 	virtual bool AttachFramebuffer(const EFramebufferType FBTarget) = 0;
 	virtual bool DetachFramebuffer() = 0;
 };
+
+typedef TSharedPtr<IRenderTarget> FRenderTargetPtr;

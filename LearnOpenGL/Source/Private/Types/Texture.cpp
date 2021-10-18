@@ -1,6 +1,8 @@
 
 #include "Texture.h"
 #include "FileUtils.h"
+#include "../../Public/Types/Texture.h"
+
 
 #include <stb_image.h>
 
@@ -120,8 +122,8 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool Clamp
 
 FTexture::~FTexture()
 {
-//	if(Id != NRenderConsts::Invalid::TextureId)
-//		glDeleteTextures(1, &Id);
+	if(Id != NRenderConsts::Invalid::TextureId)
+		glDeleteTextures(1, &Id);
 }
 
 void FTexture::Use(const uint8 Index)

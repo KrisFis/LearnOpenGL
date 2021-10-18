@@ -3,6 +3,7 @@
 
 #include "ModuleMinimal.h"
 
+// Forward declare
 class FShaderProgram;
 struct FColor;
 
@@ -43,6 +44,8 @@ public: // Transform
 
 public: // Draw methods
 
-	virtual void Draw(FShaderProgram& Shader) = 0;
+	virtual void Draw(const TSharedPtr<FShaderProgram>& Shader) = 0;
 
 };
+
+typedef TSharedPtr<class ISceneObject> FSceneObjectPtr;

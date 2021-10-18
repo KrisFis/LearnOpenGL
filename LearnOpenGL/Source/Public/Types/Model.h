@@ -2,43 +2,55 @@
 #pragma once
 
 #include "ModuleMinimal.h"
-#include "Mesh.h"
-#include "Texture.h"
+#include "SceneObject.h"
 #include "Color.h"
+
+// Forward declaration
+class FTexture;
+class FMesh;
 
 class FModel : public ISceneObject
 {
 
-public: // Constructors
+private: // Constructors
 
-	FModel(const char* FilePath);
+	explicit FModel(const char* FilePath);
+
+public: // Destructor
+
+	virtual ~FModel() {}
+	
+public: // Static constructions
+
+	FORCEINLINE static TSharedPtr<FModel> Create(const char* FilePath)
+	{ return MakeShareable(new FModel(FilePath)); }
 	
 public: // Getters
 
-	inline bool IsInitialized() const { return bIsInitialized; } 
-	inline bool IsValid() const { return Meshes.size() > 0; }
-	inline const std::string& GetPath() const { return Directory; }
-	inline const std::vector<TSharedPtr<FMesh>>& GetMeshes() const { return Meshes; }
+	FORCEINLINE bool IsInitialized() const { return bIsInitialized; } 
+	FORCEINLINE bool IsValid() const { return Meshes.size() > 0; }
+	FORCEINLINE const std::string& GetPath() const { return Directory; }
+	FORCEINLINE const std::vector<TSharedPtr<FMesh>>& GetMeshes() const { return Meshes; }
 
 public: // ISceneObject overrides
 	
-	inline virtual bool CullsFaces() const override { return bCullFaces; }
-	inline virtual void SetCullFaces(bool Value) override { bCullFaces = Value; }
+	FORCEINLINE virtual bool CullsFaces() const override { return bCullFaces; }
+	FORCEINLINE virtual void SetCullFaces(bool Value) override { bCullFaces = Value; }
 	
-	inline virtual bool IsOutlined() const override { return (OutlineSize > 0.f) && !OutlineColor.IsTransparent(); }
-	inline virtual void SetOutlineColor(const FColor& Value) override { OutlineColor = Value; }
-	inline virtual void SetOutlineSize(float Value) override { OutlineSize = Value; }
+	FORCEINLINE virtual bool IsOutlined() const override { return (OutlineSize > 0.f) && !OutlineColor.IsTransparent(); }
+	FORCEINLINE virtual void SetOutlineColor(const FColor& Value) override { OutlineColor = Value; }
+	FORCEINLINE virtual void SetOutlineSize(float Value) override { OutlineSize = Value; }
 	
-	inline virtual FTransform GetTransform() const override { return Transform; }
-	inline virtual void SetTransform(const FTransform& Value) override { Transform = Value; RecalculateModel(); }
+	FORCEINLINE virtual FTransform GetTransform() const override { return Transform; }
+	FORCEINLINE virtual void SetTransform(const FTransform& Value) override { Transform = Value; RecalculateModel(); }
 	
-	virtual void Draw(FShaderProgram& Shader) override;
+	virtual void Draw(const TSharedPtr<FShaderProgram>& Shader) override;
 
 private: // Helper methods
 
 	void ProcessNode(aiNode* Node, const aiScene* Scene);
 	TSharedPtr<FMesh> ProcessMesh(aiMesh* Mesh, const aiScene* Scene);
-	std::vector<FTexture> LoadMaterialTextures(aiMaterial* Material, aiTextureType Type);
+	std::vector<TSharedPtr<FTexture>> LoadMaterialTextures(aiMaterial* Material, aiTextureType Type);
 	void RecalculateModel();
 
 private: // Fields
@@ -53,7 +65,7 @@ private: // Fields
 
 private: // Cache
 
-	std::vector<FTexture> LoadedTextures;
+	std::vector<TSharedPtr<FTexture>> LoadedTextures;
 	glm::mat4 CachedModel;
 
 private: // Primitive fields
@@ -61,3 +73,5 @@ private: // Primitive fields
 	uint8 bCullFaces : 1;
 	uint8 bIsInitialized : 1;
 };
+
+typedef TSharedPtr<class FModel> FModelPtr;
