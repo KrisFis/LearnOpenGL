@@ -36,7 +36,7 @@ float GLastMouseY = GWindowHeight * 0.5f;
 // Global instances
 FCameraPtr GCamera = FCamera::Create();
 FScenePtr GScene = FScene::Create();
-//FFramebufferPtr GFramebuffer = FFramebuffer::Create();
+FFramebufferPtr GFramebuffer = FFramebuffer::Create();
 
 uint16 GetFramesPerSecond()
 {
@@ -134,8 +134,13 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 
 bool ConstructFramebuffer(const FFramebufferPtr& OutFramebuffer)
 {
-	FRenderTexturePtr texturePtr = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color);
-	OutFramebuffer->Attach(GL_FRAMEBUFFER, texturePtr->AsShared());
+	OutFramebuffer->Attach(GL_FRAMEBUFFER,
+		FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color)->AsShared()
+	);
+	
+	OutFramebuffer->Attach(GL_FRAMEBUFFER,
+		FRenderBuffer::Create(GWindowWidth, GWindowHeight, ERenderTargetType::DepthAndStencil)->AsShared()
+	);
 	
 	return true;
 }
@@ -293,6 +298,9 @@ void ProcessRender(const FShaderProgramPtr& Shader)
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera->GetViewMatrix();
 
+	GFramebuffer->Use();
+	ENSURE(GFramebuffer->IsUsed());
+	
 	Shader->Use();
 
 	Shader->SetMat4("view", view);
@@ -300,6 +308,8 @@ void ProcessRender(const FShaderProgramPtr& Shader)
 	Shader->SetMat4("model", glm::mat4(1.f));
 	
 	GScene->Draw(Shader, GCamera);
+	
+	GFramebuffer->Clear();
 }
 
 void EngineTick()
@@ -337,6 +347,11 @@ int32 GuardedMain()
 	if(!ConstructScene(GScene))
 	{
 		return -3;
+	}
+	
+	if(!ConstructFramebuffer(GFramebuffer))
+	{
+		return -4;
 	}
 
 	// Main render loop

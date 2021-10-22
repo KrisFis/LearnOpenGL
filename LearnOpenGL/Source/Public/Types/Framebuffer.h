@@ -5,6 +5,7 @@
 
 // Forward declaration
 class IRenderTarget;
+enum class ERenderTargetType : uint8;
 
 class FFramebuffer
 {
@@ -24,9 +25,7 @@ public: // Static constructions
 
 public: // Getters
 
-	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
 	FORCEINLINE bool IsUsed() const { return bIsUsed; }
-	
 	FORCEINLINE FFramebufferId GetId() const { return Id; }
 
 public: // Use methods
@@ -36,11 +35,7 @@ public: // Use methods
 
 public: // Attach methods
 
-	void Attach(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget, bool Overwrite = true);
-
-private: // Helper methods
-
-	bool AttachImpl(const EFramebufferType InTargetType, const FRenderTargetPtr& InTarget, bool Overwrite);
+	bool Attach(const EFramebufferType FBTargetType, const FRenderTargetPtr& Target, bool Overwrite = true);
 
 private: // Fields
 
@@ -48,13 +43,12 @@ private: // Fields
 
 private: // Targets
 
-	TArray<EFramebufferType> UsedTargetTypes;
-	TArray<FRenderTargetPtr> RenderTargets;
+	TArray<EFramebufferType> UsedFBTypes;
+	TFastMap<ERenderTargetType, FRenderTargetPtr> RenderTargets;
 
 private: // Primitive fields
 
 	uint8 bIsUsed : 1;
-	uint8 bIsInitialized : 1;
 };
 
 typedef TSharedPtr<FFramebuffer> FFramebufferPtr;
