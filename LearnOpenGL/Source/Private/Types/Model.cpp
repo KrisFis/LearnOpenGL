@@ -20,7 +20,7 @@ FModel::FModel(const char* FilePath)
 		return;
 	}
 	
-	const std::string pathAsString = FilePath;
+	const FString pathAsString = FilePath;
 	Directory = pathAsString.substr(0, pathAsString.find_last_of('/'));
 
 	ProcessNode(scene->mRootNode, scene);
@@ -106,7 +106,7 @@ void FModel::ProcessNode(aiNode* Node, const aiScene* Scene)
 TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene) 
 {
 	// Vertices
-	std::vector<FVertex> vertices;
+	TArray<FVertex> vertices;
 	vertices.reserve(Mesh->mNumVertices);
 	for(uint32 i = 0; i < Mesh->mNumVertices; ++i)
 	{
@@ -131,7 +131,7 @@ TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 		vertices.push_back(vertex);
 	}
 	
-	std::vector<uint32> indices;
+	TArray<uint32> indices;
 	for(uint32 i = 0; i < Mesh->mNumFaces; ++i)
 	{
 		const aiFace& face = Mesh->mFaces[i];
@@ -141,31 +141,31 @@ TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 		}
 	}
 	
-	std::vector<FTexturePtr> textures;
+	TArray<FTexturePtr> textures;
 	if(Mesh->mMaterialIndex >= 0)
 	{
 		aiMaterial* material = Scene->mMaterials[Mesh->mMaterialIndex];
-		std::vector<FTexturePtr> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE);
+		TArray<FTexturePtr> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE);
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-		std::vector<FTexturePtr> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR);
+		TArray<FTexturePtr> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR);
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 	
 	return FMesh::Create(vertices, indices, textures, true);
 }
 
-std::vector<TSharedPtr<FTexture>> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextureType Type) 
+TArray<TSharedPtr<FTexture>> FModel::LoadMaterialTextures(aiMaterial* Material, aiTextureType Type) 
 {
 	const uint32 numOfTextures = Material->GetTextureCount(Type);
 	const ETextureType friendlyType = ToTextureType(Type);
 
-	std::vector<FTexturePtr> result;
+	TArray<FTexturePtr> result;
 	result.reserve(numOfTextures);
 	for(uint32 i = 0; i < numOfTextures; ++i)
 	{
 		aiString path;
 		Material->GetTexture(Type, i, &path);
-		std::string filePath = Directory + '/' + std::string(path.C_Str());
+		FString filePath = Directory + '/' + FString(path.C_Str());
 		
 		bool skip = false;
 		for(const TSharedPtr<FTexture>& texture : LoadedTextures)

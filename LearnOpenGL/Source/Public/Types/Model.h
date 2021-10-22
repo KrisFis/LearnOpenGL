@@ -29,8 +29,8 @@ public: // Getters
 
 	FORCEINLINE bool IsInitialized() const { return bIsInitialized; } 
 	FORCEINLINE bool IsValid() const { return Meshes.size() > 0; }
-	FORCEINLINE const std::string& GetPath() const { return Directory; }
-	FORCEINLINE const std::vector<TSharedPtr<FMesh>>& GetMeshes() const { return Meshes; }
+	FORCEINLINE const FString& GetPath() const { return Directory; }
+	FORCEINLINE const TArray<TSharedPtr<FMesh>>& GetMeshes() const { return Meshes; }
 
 public: // ISceneObject overrides
 	
@@ -50,7 +50,7 @@ private: // Helper methods
 
 	void ProcessNode(aiNode* Node, const aiScene* Scene);
 	TSharedPtr<FMesh> ProcessMesh(aiMesh* Mesh, const aiScene* Scene);
-	std::vector<TSharedPtr<FTexture>> LoadMaterialTextures(aiMaterial* Material, aiTextureType Type);
+	TArray<TSharedPtr<FTexture>> LoadMaterialTextures(aiMaterial* Material, aiTextureType Type);
 	void RecalculateModel();
 
 private: // Fields
@@ -60,12 +60,12 @@ private: // Fields
 
 	FTransform Transform;
 
-	std::vector<TSharedPtr<FMesh>> Meshes;
-	std::string Directory;
+	TArray<TSharedPtr<FMesh>> Meshes;
+	FString Directory;
 
 private: // Cache
 
-	std::vector<TSharedPtr<FTexture>> LoadedTextures;
+	TArray<TSharedPtr<FTexture>> LoadedTextures;
 	glm::mat4 CachedModel;
 
 private: // Primitive fields

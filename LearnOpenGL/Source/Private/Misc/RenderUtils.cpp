@@ -10,16 +10,16 @@ namespace NRenderUtils
 
 	public: // Getters
 
-		inline FVertexArrayId GetBoundArray() const { return BoundArrayId; }
-		inline FBufferId GetBoundBuffer(EBufferTarget Target) const { auto search = BoundBufferIds.find(Target); return (search != BoundBufferIds.end()) ? search->second : Invalid::BufferId; }
-		inline bool IsUnbindAllowed() const { return bAllowUnbind; }
-		inline void AllowUnbind(bool Value) { bAllowUnbind = Value; }
+		FORCEINLINE FVertexArrayId GetBoundArray() const { return BoundArrayId; }
+		FORCEINLINE FBufferId GetBoundBuffer(EBufferTarget Target) const { auto search = BoundBufferIds.find(Target); return (search != BoundBufferIds.end()) ? search->second : Invalid::BufferId; }
+		FORCEINLINE bool IsUnbindAllowed() const { return bAllowUnbind; }
+		FORCEINLINE void AllowUnbind(bool Value) { bAllowUnbind = Value; }
 
 	public: // Generating
 
-		std::vector<FVertexArrayId> GenerateArrays(const uint8 Num)
+		TArray<FVertexArrayId> GenerateArrays(const uint8 Num)
 		{
-			std::vector<FVertexArrayId> result(Num);
+			TArray<FVertexArrayId> result(Num);
 			glGenVertexArrays(Num, result.data());
 
 			for(const FVertexArrayId& arrayId : result)
@@ -28,9 +28,9 @@ namespace NRenderUtils
 			return result;
 		}
 
-		std::vector<FBufferId> GenerateBuffers(const uint8 Num)
+		TArray<FBufferId> GenerateBuffers(const uint8 Num)
 		{
-			std::vector<FBufferId> result(Num);
+			TArray<FBufferId> result(Num);
 			glGenBuffers(Num, result.data());
 
 			for(const FBufferId & bufferId : result)
@@ -85,7 +85,7 @@ namespace NRenderUtils
 
 	public: // Delete
 
-		void DeleteArrays(const std::vector<FVertexArrayId>& Ids)
+		void DeleteArrays(const TArray<FVertexArrayId>& Ids)
 		{
 			assert(Ids.size() > 0);
 
@@ -112,7 +112,7 @@ namespace NRenderUtils
 			glDeleteVertexArrays((GLsizei)Ids.size(), Ids.data());
 		}
 
-		void DeleteBuffers(const std::vector<FBufferId>& Ids)
+		void DeleteBuffers(const TArray<FBufferId>& Ids)
 		{
 			assert(Ids.size() > 0);
 
@@ -162,10 +162,10 @@ namespace NRenderUtils
 	private: // Fields
 
 		FVertexArrayId BoundArrayId;
-		std::unordered_map<EBufferTarget, FBufferId> BoundBufferIds;
+		TFastMap<EBufferTarget, FBufferId> BoundBufferIds;
 
-		std::vector<FVertexArrayId> ArrayIds;
-		std::vector<FBufferId> BufferIds;
+		TArray<FVertexArrayId> ArrayIds;
+		TArray<FBufferId> BufferIds;
 
 	private: // Primitive fields
 
@@ -209,12 +209,12 @@ namespace NRenderUtils
 		return GCache->GenerateBuffers(1)[0];
 	}
 
-	std::vector<FVertexArrayId> GenerateVertexArrays(const uint8 Num)
+	TArray<FVertexArrayId> GenerateVertexArrays(const uint8 Num)
 	{
 		return GCache->GenerateArrays(Num);
 	}
 
-	std::vector<FBufferId> GenerateBuffers(const uint8 Num)
+	TArray<FBufferId> GenerateBuffers(const uint8 Num)
 	{
 		return GCache->GenerateBuffers(Num);
 	}
@@ -229,12 +229,12 @@ namespace NRenderUtils
 		GCache->DeleteBuffers({Id});
 	}
 
-	void DeleteVertexArrays(const std::vector<FVertexArrayId>& Ids)
+	void DeleteVertexArrays(const TArray<FVertexArrayId>& Ids)
 	{
 		GCache->DeleteArrays(Ids);
 	}
 
-	void DeleteBuffers(const std::vector<FVertexArrayId>& Ids)
+	void DeleteBuffers(const TArray<FVertexArrayId>& Ids)
 	{
 		GCache->DeleteBuffers(Ids);
 	}

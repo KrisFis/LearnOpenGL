@@ -5,5 +5,5 @@
 
 namespace NStringUtils
 {
-	std::vector<uint8> HexToBytes(const char* Hex);
+	TArray<uint8> HexToBytes(const char* Hex);
 }

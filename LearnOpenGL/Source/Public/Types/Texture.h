@@ -52,7 +52,7 @@ public: // Getters
 	FORCEINLINE int16 GetUseIndex() const { return UseIndex; }
 	
 	FORCEINLINE ETextureType GetType() const { return Type; }
-	FORCEINLINE const std::string& GetPath() const { return FilePath; }
+	FORCEINLINE const FString& GetPath() const { return FilePath; }
 
 public: // External methods
 
@@ -64,7 +64,7 @@ private: // Fields
 	FTextureId Id;
 	int16 UseIndex;
 	ETextureType Type;
-	std::string FilePath;
+	FString FilePath;
 };
 
 typedef TSharedPtr<FTexture> FTexturePtr;

@@ -12,7 +12,7 @@ namespace NScene_Private
 	template<typename ObjectsMapType, typename FunctorType>
 	void IterateSortedObjects(const ObjectsMapType& Objects, const glm::vec3& CameraPos, FunctorType&& InFunctor)
 	{
-		std::map<float, ISceneObject*> sortedObj;
+		TMap<float, ISceneObject*> sortedObj;
 		
 		for(auto& obj : Objects)
 		{
@@ -20,7 +20,7 @@ namespace NScene_Private
 			sortedObj[distance] = obj.second.Get();
 		}
 		
-		for(std::map<float, ISceneObject*>::reverse_iterator it = sortedObj.rbegin(); it != sortedObj.rend(); ++it)
+		for(TMap<float, ISceneObject*>::reverse_iterator it = sortedObj.rbegin(); it != sortedObj.rend(); ++it)
 		{
 			if(InFunctor(it->second)) return;
 		}
@@ -31,7 +31,7 @@ FScene::FScene()
 		: Counter(0)
 {}
 
-FScene::FScene(const std::vector<TSharedPtr<ISceneObject>>& InObjects)
+FScene::FScene(const TArray<TSharedPtr<ISceneObject>>& InObjects)
 	: Counter(0)
 {
 	AddObjects(InObjects);
@@ -54,7 +54,7 @@ int32 FScene::AddObject(const TSharedPtr<ISceneObject>& InObject)
 	return true;
 }
 
-void FScene::AddObjects(const std::vector<TSharedPtr<ISceneObject>>& InObjects)
+void FScene::AddObjects(const TArray<TSharedPtr<ISceneObject>>& InObjects)
 {
 	for(const auto& obj : InObjects) AddObject(obj);
 }

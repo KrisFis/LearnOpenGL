@@ -12,9 +12,8 @@
 #include "Camera.h"
 #include "Model.h"
 #include "Framebuffer.h"
-
-#include <iostream>
-#include <vector>
+#include "RenderTexture.h"
+#include "RenderBuffer.h"
 
 // Window
 GLFWwindow* GWindow = nullptr;
@@ -37,7 +36,7 @@ float GLastMouseY = GWindowHeight * 0.5f;
 // Global instances
 FCameraPtr GCamera = FCamera::Create();
 FScenePtr GScene = FScene::Create();
-FFramebufferPtr GFramebuffer = FFramebuffer::Create();
+//FFramebufferPtr GFramebuffer = FFramebuffer::Create();
 
 uint16 GetFramesPerSecond()
 {
@@ -135,7 +134,9 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 
 bool ConstructFramebuffer(const FFramebufferPtr& OutFramebuffer)
 {
-	// TODO(kristian.fisera): IMPLEMENT
+	FRenderTexturePtr texturePtr = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color);
+	OutFramebuffer->Attach(GL_FRAMEBUFFER, texturePtr->AsShared());
+	
 	return true;
 }
 
@@ -152,7 +153,7 @@ bool ConstructScene(const FScenePtr& OutScene)
 		return false;
 	}
 	
-	std::vector<FSceneObjectPtr> sceneObjects;
+	TArray<FSceneObjectPtr> sceneObjects;
 	sceneObjects.push_back(NMeshUtils::ConstructPlane(rocksFloorTexture));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{0.f, -1.f, 0.f},
@@ -305,7 +306,7 @@ void EngineTick()
 {
 	// Update FPS
 	{
-		std::string resultTitle;
+		FString resultTitle;
 		resultTitle.append("LearnOpenGL: FPS [");
 		resultTitle.append(std::to_string(GetFramesPerSecond()));
 		resultTitle.append("]");

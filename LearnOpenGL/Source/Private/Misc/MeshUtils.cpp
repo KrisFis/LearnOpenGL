@@ -9,7 +9,7 @@ namespace NMeshUtils
 {
 	namespace NPrivate
 	{
-		FSceneObjectPtr ConstructShape(const char* PathFromContent, const std::vector<TSharedPtr<FTexture>>& Textures)
+		FSceneObjectPtr ConstructShape(const char* PathFromContent, const TArray<TSharedPtr<FTexture>>& Textures)
 		{
 			FMeshPtr resultMesh = FModel::Create(NFileUtils::ContentPath(PathFromContent).c_str())->GetMeshes()[0];
 			resultMesh->SetIsOwned(false);

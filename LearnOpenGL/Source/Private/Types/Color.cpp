@@ -4,7 +4,7 @@
 
 namespace NColorPrivate
 {
-	inline FColor& FillFrom(FColor& OutColor, const FColor& Other)
+	FORCEINLINE FColor& FillFrom(FColor& OutColor, const FColor& Other)
 	{
 		OutColor.R = Other.R;
 		OutColor.G = Other.G;
@@ -126,7 +126,7 @@ FColor& FColor::operator/=(float Value)
 
 FColor FColor::FromHex(const char* Value)
 {
-	std::vector<uint8> bytes = NStringUtils::HexToBytes(Value);
+	TArray<uint8> bytes = NStringUtils::HexToBytes(Value);
 	const uint16 bytesNum = (uint16)bytes.size();
 	
 	return FColor(

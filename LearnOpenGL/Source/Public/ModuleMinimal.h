@@ -8,13 +8,9 @@
 #include "RenderTypes.h"
 
 // STL
-#include <vector>
-#include <unordered_map>
 #include <assert.h>
-#include <string>
 #include <iostream>
 #include <memory>
-#include <map>
 
 // GLAD + GLFW
 #include <glad/glad.h>

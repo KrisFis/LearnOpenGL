@@ -5,7 +5,7 @@
 
 namespace NTimerPrivate
 {
-	inline bool IsTimepointValid(const std::chrono::time_point<std::chrono::high_resolution_clock> Timepoint)
+	bool IsTimepointValid(const std::chrono::time_point<std::chrono::high_resolution_clock> Timepoint)
 	{
 		return Timepoint.time_since_epoch().count() > 0;
 	}

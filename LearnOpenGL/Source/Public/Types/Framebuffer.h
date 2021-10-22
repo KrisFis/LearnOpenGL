@@ -48,8 +48,8 @@ private: // Fields
 
 private: // Targets
 
-	std::vector<EFramebufferType> UsedTargetTypes;
-	std::vector<FRenderTargetPtr> RenderTargets;
+	TArray<EFramebufferType> UsedTargetTypes;
+	TArray<FRenderTargetPtr> RenderTargets;
 
 private: // Primitive fields
 

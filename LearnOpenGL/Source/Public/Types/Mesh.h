@@ -22,7 +22,7 @@ class FMesh : public ISceneObject
 
 private: // Constructors
 
-	explicit FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<TSharedPtr<FTexture>>& InTextures, bool Owned);
+	explicit FMesh(const TArray<FVertex>& InVertices, const TArray<uint32>& InIndices, const TArray<TSharedPtr<FTexture>>& InTextures, bool Owned);
 
 public: // Destructors
 
@@ -30,7 +30,7 @@ public: // Destructors
 
 public: // Static constructions
 
-	FORCEINLINE static TSharedPtr<FMesh> Create(const std::vector<FVertex>& Vertices, const std::vector<uint32>& Indices, const std::vector<TSharedPtr<FTexture>>& Textures, bool Owned = false)
+	FORCEINLINE static TSharedPtr<FMesh> Create(const TArray<FVertex>& Vertices, const TArray<uint32>& Indices, const TArray<TSharedPtr<FTexture>>& Textures, bool Owned = false)
 	{ return MakeShareable(new FMesh(Vertices, Indices, Textures, Owned)); }
 
 public: // Getters
@@ -38,11 +38,11 @@ public: // Getters
 	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
 	FORCEINLINE bool IsValid() const { return Vertices.size() > 0; }
 	FORCEINLINE bool IsOwned() const { return bIsOwned; };
-	FORCEINLINE const std::vector<TSharedPtr<FTexture>>& GetTextures() const { return Textures; }
+	FORCEINLINE const TArray<TSharedPtr<FTexture>>& GetTextures() const { return Textures; }
 
 public: // Setters
 	
-	void SetTextures(const std::vector<TSharedPtr<FTexture>>& InTextures);
+	void SetTextures(const TArray<TSharedPtr<FTexture>>& InTextures);
 	FORCEINLINE void SetIsOwned(bool Value) { bIsOwned = Value; RecalculateModel(); }
 
 public: // ISceneObject overrides
@@ -75,9 +75,9 @@ private: // Fields
 
 	FTransform Transform;
 
-	std::vector<FVertex> Vertices;
-	std::vector<uint32> Indices;
-	std::vector<TSharedPtr<FTexture>> Textures;
+	TArray<FVertex> Vertices;
+	TArray<uint32> Indices;
+	TArray<TSharedPtr<FTexture>> Textures;
 	
 	FVertexArrayId VAO;
 	FBufferId VBO, EBO;

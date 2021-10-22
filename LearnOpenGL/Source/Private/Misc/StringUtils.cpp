@@ -3,11 +3,11 @@
 
 namespace NStringUtils
 {
-	std::vector<uint8> HexToBytes(const char* Hex)
+	TArray<uint8> HexToBytes(const char* Hex)
 	{
 		if(Hex[0] == '\0') return {};
 		
-		std::vector<uint8> resultBytes;
+		TArray<uint8> resultBytes;
 		
 		const char* curPtr = Hex;
 		if(Hex[0] == '#') // "#" prefix

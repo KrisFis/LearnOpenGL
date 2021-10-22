@@ -12,7 +12,7 @@ class FScene
 private: // Constructors
 
 	explicit FScene();
-	explicit FScene(const std::vector<TSharedPtr<ISceneObject>>& InObjects);
+	explicit FScene(const TArray<TSharedPtr<ISceneObject>>& InObjects);
 
 public: // Destructor
 
@@ -23,7 +23,7 @@ public: // Static constructions
 	FORCEINLINE static TSharedPtr<FScene> Create()
 	{ return MakeShareable(new FScene()); }
 
-	FORCEINLINE static TSharedPtr<FScene> Create(const std::vector<TSharedPtr<ISceneObject>>& Objects)
+	FORCEINLINE static TSharedPtr<FScene> Create(const TArray<TSharedPtr<ISceneObject>>& Objects)
 	{ return MakeShareable(new FScene(Objects)); }
 
 public: // Count
@@ -33,7 +33,7 @@ public: // Count
 public: // Add
 
 	int32 AddObject(const TSharedPtr<ISceneObject>& InObject);
-	void AddObjects(const std::vector<TSharedPtr<ISceneObject>>& InObjects);
+	void AddObjects(const TArray<TSharedPtr<ISceneObject>>& InObjects);
 
 public: // Get
 
@@ -50,7 +50,7 @@ public: // Draw
 private: // Fields
 
 	uint16 Counter;
-	std::unordered_map<uint16, TSharedPtr<ISceneObject>> Objects;
+	TFastMap<uint16, TSharedPtr<ISceneObject>> Objects;
 };
 
 typedef TSharedPtr<class FScene> FScenePtr;

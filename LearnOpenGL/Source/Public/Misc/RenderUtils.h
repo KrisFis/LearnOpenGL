@@ -16,17 +16,17 @@ namespace NRenderUtils
 	// TODO(JKF): FShaderId GenerateShader();
 	// TODO(JKF): FTextureId GenerateTexture();
 
-	std::vector<FVertexArrayId> GenerateVertexArrays(const uint8 Num);
-	std::vector<FBufferId> GenerateBuffers(const uint8 Num);
-	// TODO(JKF): std::vector<FShaderId> GenerateShaders(const uint8 Num);
-	// TODO(JKF): std::vector<FTextureId> GenerateTextures(const uint8 Num);
+	TArray<FVertexArrayId> GenerateVertexArrays(const uint8 Num);
+	TArray<FBufferId> GenerateBuffers(const uint8 Num);
+	// TODO(JKF): TArray<FShaderId> GenerateShaders(const uint8 Num);
+	// TODO(JKF): TArray<FTextureId> GenerateTextures(const uint8 Num);
 
 	void DeleteVertexArray(FBufferId Id);
 	void DeleteBuffer(FBufferId Id);
 	void DeleteFramebuffer(FFramebufferId Id);
 
-	void DeleteVertexArrays(const std::vector<FVertexArrayId>& Ids);
-	void DeleteBuffers(const std::vector<FBufferId>& Ids);
+	void DeleteVertexArrays(const TArray<FVertexArrayId>& Ids);
+	void DeleteBuffers(const TArray<FBufferId>& Ids);
 
 	void BindVertexArray(FVertexArrayId Id);
 	void BindBuffer(EBufferTarget Target, FBufferId Id);

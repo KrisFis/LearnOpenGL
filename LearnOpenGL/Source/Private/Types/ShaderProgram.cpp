@@ -8,7 +8,7 @@
 #include <iostream>
 #include <assert.h>
 
-static bool HasErrors(const unsigned int& Id, const std::string& ShaderType)
+static bool HasErrors(const unsigned int& Id, const FString& ShaderType)
 {
     int success;
     char infoLog[1024];
@@ -42,8 +42,8 @@ FShaderProgram::FShaderProgram(const char* VertexFilePath, const char* FragmentF
 	, bIsInitialized(false)
 {
 	// 1. retrieve the vertex/fragment source code from filePath
-	std::string vertexCode;
-	std::string fragmentCode;
+	FString vertexCode;
+	FString fragmentCode;
 	std::ifstream vShaderFile;
 	std::ifstream fShaderFile;
 
@@ -52,8 +52,8 @@ FShaderProgram::FShaderProgram(const char* VertexFilePath, const char* FragmentF
 	fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
 
 	// Prepand with shaders folder
-	//std::string fullVertexPath = NFileUtils::ContentPath() + std::string("/Shaders/Vertex/") + std::string(VertexFilePath);
-	//std::string fullFragmentPath = NFileUtils::ContentPath() + std::string("/Shaders/Fragment/") + std::string(FragmentFilePath);
+	//FString fullVertexPath = NFileUtils::ContentPath() + FString("/Shaders/Vertex/") + FString(VertexFilePath);
+	//FString fullFragmentPath = NFileUtils::ContentPath() + FString("/Shaders/Fragment/") + FString(FragmentFilePath);
 
 	try
 	{

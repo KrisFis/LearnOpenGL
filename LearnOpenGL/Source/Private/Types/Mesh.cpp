@@ -6,7 +6,7 @@
 #include "ShaderProgram.h"
 #include "ColorUtils.h"
 
-FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& InIndices, const std::vector<TSharedPtr<FTexture>>& InTextures, bool Owned) 
+FMesh::FMesh(const TArray<FVertex>& InVertices, const TArray<uint32>& InIndices, const TArray<TSharedPtr<FTexture>>& InTextures, bool Owned) 
 	: OutlineSize(0.f)
 	, OutlineColor(NColors::Transparent)
 	, Transform(FTransform())
@@ -57,7 +57,7 @@ FMesh::FMesh(const std::vector<FVertex>& InVertices, const std::vector<uint32>& 
 FMesh::~FMesh()
 {}
 
-void FMesh::SetTextures(const std::vector<TSharedPtr<FTexture>>& InTextures)
+void FMesh::SetTextures(const TArray<TSharedPtr<FTexture>>& InTextures)
 {
 	Textures = InTextures;
 }
@@ -129,7 +129,7 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	uint8 specularCounter = 0;
 	for(uint8 i = 0; i < Textures.size(); ++i)
 	{
-		std::string nameOfTexture;
+		FString nameOfTexture;
 		switch (Textures[i]->GetType()) 
 		{
 			case ETextureType::Diffuse:
