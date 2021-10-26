@@ -1,28 +1,22 @@
 
-#include "Mesh.h"
-
-#include "Texture.h"
+#include "Mesh2D.h"
 #include "RenderUtils.h"
 #include "ShaderProgram.h"
+#include "Texture.h"
 #include "ColorUtils.h"
 
-FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndices, const TArray<TSharedPtr<FTexture>>& InTextures, bool Owned) 
+FMesh2D::FMesh2D(const TArray <FMesh2DVertex>& InVertices, const TArray<TSharedPtr<FTexture>>& InTextures)
 	: OutlineSize(0.f)
 	, OutlineColor(NColors::Transparent)
 	, Transform(FTransform())
 	, Vertices(InVertices)
-	, Indices(InIndices)
 	, Textures(InTextures)
-	, bIsOwned(Owned)
 	, bCullFaces(true)
 	, bIsInitialized(false)
 {
 	// Generate buffers
 	VAO = NRenderUtils::GenerateVertexArray();
-	
-	auto buffers = NRenderUtils::GenerateBuffers(2);
-	VBO = buffers[0];
-	EBO = buffers[1];
+	VBO = NRenderUtils::GenerateBuffer();
 	
 	// Initialize
 	NRenderUtils::BindVertexArray(VAO);
@@ -30,22 +24,15 @@ FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndi
 	// Setup data
 	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, VBO);
 	
-	glBufferData(GL_ARRAY_BUFFER, Vertices.size() * sizeof(FMeshVertex), &Vertices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, Vertices.size() * sizeof(FMesh2DVertex), &Vertices[0], GL_STATIC_DRAW);
 	
 	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
-	NRenderUtils::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.size() * sizeof(uint32), &Indices[0], GL_STATIC_DRAW);
-	
-	NRenderUtils::UnbindBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	
 	// Attributes
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(FMesh2DVertex), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)offsetof(FMeshVertex, Normal));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(FMesh2DVertex), (void*)offsetof(FMesh2DVertex, TexCoord));
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)offsetof(FMeshVertex, TexCoord));
-	glEnableVertexAttribArray(2);
 	
 	NRenderUtils::UnbindVertexArray(VAO);
 	
@@ -54,20 +41,20 @@ FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndi
 	bIsInitialized = true;
 }
 
-FMesh::~FMesh()
+FMesh2D::~FMesh2D()
 {}
 
-void FMesh::SetTextures(const TArray<TSharedPtr<FTexture>>& InTextures)
+void FMesh2D::SetTextures(const TArray<TSharedPtr<FTexture>>& InTextures)
 {
 	Textures = InTextures;
 }
 
-void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
+void FMesh2D::Draw(const TSharedPtr<FShaderProgram>& Shader)
 {
 	if(!IsValid()) return;
-	
-	const bool shouldOutline = !IsOwned() && IsOutlined(); 
-	const bool shouldCull = !IsOwned() && CullsFaces(); 
+		
+	const bool shouldOutline = IsOutlined(); 
+	const bool shouldCull = CullsFaces(); 
 	
 	if(shouldCull)
 	{
@@ -104,7 +91,7 @@ void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
 		
 		NRenderUtils::BindVertexArray(VAO);
 		
-		glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, (GLsizei)Vertices.size());
 		
 		NRenderUtils::UnbindVertexArray();
 		
@@ -116,14 +103,12 @@ void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
 	}
 }
 
-void FMesh::RecalculateModel()
+void FMesh2D::RecalculateModel()
 {
-	if(bIsOwned) return;
-	
 	CachedModel = Transform.CalculateModelMatrix();
 }
 
-void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
+void FMesh2D::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 {
 	uint8 diffuseCounter = 0;
 	uint8 specularCounter = 0;
@@ -146,12 +131,11 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 		Textures[i]->Use(i);
 	}
 	
-	if(!IsOwned())
-		Shader->SetMat4("model", CachedModel);
+	//Shader->SetMat4("model", CachedModel);
 
 	NRenderUtils::BindVertexArray(VAO);
 	
-	glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
+	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)Vertices.size());
 	
 	NRenderUtils::UnbindVertexArray();
 }

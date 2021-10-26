@@ -6,6 +6,8 @@
 #include "Camera.h"
 #include "FileUtils.h"
 #include "Texture.h"
+#include "../../Public/Types/Scene.h"
+
 
 namespace NScene_Private
 {
@@ -96,6 +98,14 @@ bool FScene::RemoveObjectByIdx(uint16 Idx)
 	}
 		
 	return false;
+}
+
+void FScene::Draw(const TSharedPtr <FShaderProgram>& Shader)
+{
+	for(const auto& obj : Objects)
+	{
+		obj->Draw(Shader);
+	}
 }
 
 void FScene::Draw(const TSharedPtr<FShaderProgram>& Shader, const TSharedPtr<FCamera>& Camera)

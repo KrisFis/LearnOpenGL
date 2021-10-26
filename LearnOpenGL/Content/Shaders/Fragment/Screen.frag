@@ -18,19 +18,14 @@ struct Material
 };
 
 out vec4 FragColor;
+  
 in vec2 TexCoord;
 
 uniform Material material;
-
 uniform bool useOverrideColor;
 uniform vec4 overrideColor;
 
 void main()
 {
-	// for now use only 0 index
-	vec4 resultColor = (useOverrideColor) ? overrideColor : texture(material.diffuse0, TexCoord);
-	if(resultColor.a < 0.1f)
-		discard;
-
-	FragColor = vec4(vec3(1.f - resultColor.rgb), resultColor.a);
+    FragColor = texture(material.diffuse0, TexCoord);
 }

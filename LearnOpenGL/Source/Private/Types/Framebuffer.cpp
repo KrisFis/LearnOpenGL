@@ -40,6 +40,8 @@ void FFramebuffer::Enable()
 
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
+		ENSURE_NO_ENTRY();
+		
 		for(auto targetType : UsedFBTypes)
 		{
 			glBindFramebuffer(targetType, 0);

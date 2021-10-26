@@ -11,6 +11,8 @@
 #include "Timer.h"
 #include "Camera.h"
 #include "Model.h"
+#include "Mesh.h"
+#include "Mesh2D.h"
 #include "Framebuffer.h"
 #include "RenderTexture.h"
 #include "RenderBuffer.h"
@@ -34,14 +36,11 @@ float GLastMouseX = GWindowWidth * 0.5f;
 float GLastMouseY = GWindowHeight * 0.5f;
 
 // Global instances
-FCameraPtr GCamera = FCamera::Create();
-FScenePtr GScene = FScene::Create();
-FFramebufferPtr GFramebuffer = FFramebuffer::Create();
+FCameraPtr GCamera;
+FScenePtr GScene;
 
-uint16 GetFramesPerSecond()
-{
-	return (uint16)std::floor(60.f / GDeltaSeconds);
-}
+FFramebufferPtr GScreenFramebuffer;
+FSceneObjectPtr GScreenObject;
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
@@ -132,8 +131,9 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
-bool PrepareScene(const FScenePtr& OutScene, const FFramebufferPtr& OutFramebuffer)
+bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutFramebuffer)
 {
+
 	FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color);
 	FRenderBufferPtr sceneBufferTarget = FRenderBuffer::Create(GWindowWidth, GWindowHeight, ERenderTargetType::DepthAndStencil);
 	if(!sceneTextureTarget->IsInitialized() || !sceneBufferTarget->IsInitialized())
@@ -141,16 +141,44 @@ bool PrepareScene(const FScenePtr& OutScene, const FFramebufferPtr& OutFramebuff
 		return false;
 	}
 	
+	FTexturePtr screenQuad = FTexture::Create(sceneTextureTarget.Get(), ETextureType::Diffuse);
+	if(!screenQuad->IsInitialized())
+	{
+		return false;
+	}
+
+	OutFramebuffer = FFramebuffer::Create();
 	OutFramebuffer->Attach(GL_FRAMEBUFFER, sceneTextureTarget->AsShared());
 	OutFramebuffer->Attach(GL_FRAMEBUFFER, sceneBufferTarget->AsShared());
 	
+	static const TArray<FMesh2DVertex> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+		{ glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
+		{ glm::vec2( -1.0f, -1.0f), glm::vec2(0.0f, 0.0f)},
+		{ glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 0.0f)},
+		{ glm::vec2( -1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
+		{ glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 0.0f)},
+		{ glm::vec2( 1.0f,  1.0f), glm::vec2(1.0f, 1.)}
+	};
+	
+	OutScreenObj = FMesh2D::Create(quadVertices, {screenQuad})->AsShared();
+	OutScreenObj->SetCullFaces(false);
+//	OutScreenObj->SetTransform({
+//			{1.f, 0.f, 0.f},
+//			{-90.f, 180.f, -90.f},
+//			{1.f, 1.f, 1.f}
+//	});
+	
+	return true;
+}
+
+bool PrepareScene(FScenePtr& OutScene)
+{
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr brickTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr carpetTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr grassTexture = FTexture::Create(NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, true);
-	FTexturePtr windowTexture = FTexture::Create(sceneTextureTarget.Get(), ETextureType::Diffuse);
-	if(!wallTexture->IsInitialized() || !brickTexture->IsInitialized() || !carpetTexture->IsInitialized() || !grassTexture->IsInitialized() || !windowTexture->IsInitialized())
+	if(!wallTexture->IsInitialized() || !brickTexture->IsInitialized() || !carpetTexture->IsInitialized() || !grassTexture->IsInitialized())
 	{
 		return false;
 	}
@@ -214,15 +242,7 @@ bool PrepareScene(const FScenePtr& OutScene, const FFramebufferPtr& OutFramebuff
 			{0.5f, 0.5f, 0.5f}
 	});
 	
-	sceneObjects.push_back(NMeshUtils::ConstructPlane(windowTexture));
-	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
-	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{1.f, 0.f, 0.f},
-			{-90.f, 0.f, 90.f},
-			{1.f, 1.f, 1.f}
-	});
-	
-	OutScene->AddObjects(sceneObjects);
+	OutScene = FScene::Create(sceneObjects);
 	return true;
 }
 
@@ -277,47 +297,63 @@ void ProcessInput()
 	}
 }
 
-void ProcessRender(const FShaderProgramPtr& SceneShader, const FShaderProgramPtr& WindowShader)
+void ProcessRender(const FShaderProgramPtr& SceneShader, const FShaderProgramPtr& ScreenShader)
 {
-	// Mat4
+	// Init values
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera->GetViewMatrix();
 
 	// Custom framebuffer
 	{
-		WindowShader->Enable();
+		GScreenFramebuffer->Enable();
+
+		// Setup
+		{
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_STENCIL_TEST);
+			
+			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		}
 	
-		WindowShader->SetMat4("view", view);
-		WindowShader->SetMat4("projection", projection);
-		WindowShader->SetMat4("model", glm::mat4(1.f));
+		// Draw and shader
+		{
+			SceneShader->Enable();
+			
+			SceneShader->SetMat4("view", view);
+			SceneShader->SetMat4("projection", projection);
+			SceneShader->SetMat4("model", glm::mat4(1.f));
+			
+			GScene->Draw(SceneShader, GCamera);
+			
+			SceneShader->Disable();
+		}
 		
-		GFramebuffer->Enable();
-		
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glStencilMask(0x0);
-		
-		auto object = GScene->GetObjectByIdx(GScene->GetNumOfObjects()-1);
-		ENSURE_RET(GScene->RemoveObjectByIdx(GScene->GetNumOfObjects()-1));
-		GScene->Draw(WindowShader, GCamera);
-		GScene->AddObject(object);
-		
-		GFramebuffer->Disable();
+		GScreenFramebuffer->Disable();
 	}
 
 	// Default framebuffer
-	{			
-		SceneShader->Enable();
-		
-		SceneShader->SetMat4("view", view);
-		SceneShader->SetMat4("projection", projection);
-		SceneShader->SetMat4("model", glm::mat4(1.f));
-		
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glStencilMask(0x0);
-		
-		GScene->Draw(SceneShader, GCamera);
+	{
+		// Setup
+		{
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_STENCIL_TEST);
+			
+			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+		}
+
+		// Draw and shader
+		{
+			ScreenShader->Enable();
+//			ScreenShader->SetMat4("view", view);
+//			ScreenShader->SetMat4("projection", projection);
+//			ScreenShader->SetMat4("model", glm::mat4(1.f));
+
+			GScreenObject->Draw(ScreenShader);
+			
+			ScreenShader->Disable();
+		}
 	}
 }
 
@@ -327,7 +363,7 @@ void EngineTick()
 	{
 		FString resultTitle;
 		resultTitle.append("LearnOpenGL: FPS [");
-		resultTitle.append(std::to_string(GetFramesPerSecond()));
+		resultTitle.append(std::to_string((uint16)std::floor(60.f / GDeltaSeconds)));
 		resultTitle.append("]");
 	
 		glfwSetWindowTitle(GWindow, resultTitle.c_str());
@@ -342,19 +378,21 @@ void EngineTick()
 
 int32 GuardedMain()
 {
+	GCamera = FCamera::Create();
+	
 	if (!CreateInitWindow(GWindow))
 	{
 		return -1;
 	}
 
 	FShaderProgramPtr sceneShader = FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Mesh.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh.frag").c_str());
-	FShaderProgramPtr windowShader = FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Window.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Window.frag").c_str());
-	if(!sceneShader->IsInitialized() || !windowShader->IsInitialized())
+	FShaderProgramPtr screenShader = FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Screen.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Screen.frag").c_str());
+	if(!sceneShader->IsInitialized() || !screenShader->IsInitialized())
 	{
 		return -2;
 	}
 	
-	if(!PrepareScene(GScene, GFramebuffer))
+	if(!PrepareScene(GScene) || !PrepareScreenScene(GScreenObject, GScreenFramebuffer))
 	{
 		return -3;
 	}
@@ -371,7 +409,7 @@ int32 GuardedMain()
 
 		EngineTick();
 		ProcessInput();
-		ProcessRender(sceneShader, windowShader);
+		ProcessRender(sceneShader, screenShader);
 
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();

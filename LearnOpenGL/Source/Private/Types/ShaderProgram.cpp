@@ -115,6 +115,10 @@ FShaderProgram::FShaderProgram(const char* VertexFilePath, const char* FragmentF
 		std::cout << "Shader compiled successfully [vertex: " << VertexFilePath << ", fragment: " << FragmentFilePath << "]." << std::endl;
 		bIsInitialized = true;
 	}
+	else
+	{
+		std::cout << "Shader does not compile successfully [vertex: " << VertexFilePath << ", fragment: " << FragmentFilePath << "]." << std::endl;
+	}
 }
 
 FShaderProgram::~FShaderProgram()

@@ -5,45 +5,41 @@
 #include "SceneObject.h"
 #include "Color.h"
 
-// Forward declaration
-class FShaderProgram;
-class FModel;
+// Forward declarations
 class FTexture;
+class FShaderProgram;
 
-struct FMeshVertex
+struct FMesh2DVertex
 {
-	glm::vec3 Position;
-	glm::vec3 Normal;
+	glm::vec2 Position;
 	glm::vec2 TexCoord;
 };
 
-class FMesh : public ISceneObject
+class FMesh2D : public ISceneObject
 {
-
+	
 private: // Constructors
 
-	explicit FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndices, const TArray<TSharedPtr<FTexture>>& InTextures, bool Owned);
+	explicit FMesh2D(const TArray<FMesh2DVertex>& InVertices, const TArray<TSharedPtr<FTexture>>& InTextures);
 
-public: // Destructors
+public: // Destructor
 
-	virtual ~FMesh();
+	virtual ~FMesh2D();
 
 public: // Static constructions
 
-	FORCEINLINE static TSharedPtr<FMesh> Create(const TArray<FMeshVertex>& Vertices, const TArray<uint32>& Indices, const TArray<TSharedPtr<FTexture>>& Textures, bool Owned = false)
-	{ return MakeShareable(new FMesh(Vertices, Indices, Textures, Owned)); }
+	FORCEINLINE static TSharedPtr<FMesh2D> Create(const TArray<FMesh2DVertex>& Vertices, const TArray<TSharedPtr<FTexture>>& Textures)
+	{ return MakeShareable(new FMesh2D(Vertices, Textures)); }
 
 public: // Getters
 
 	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
 	FORCEINLINE bool IsValid() const { return Vertices.size() > 0; }
-	FORCEINLINE bool IsOwned() const { return bIsOwned; };
 	FORCEINLINE const TArray<TSharedPtr<FTexture>>& GetTextures() const { return Textures; }
 
 public: // Setters
 	
 	void SetTextures(const TArray<TSharedPtr<FTexture>>& InTextures);
-	FORCEINLINE void SetIsOwned(bool Value) { bIsOwned = Value; RecalculateModel(); }
 
 public: // ISceneObject overrides
 
@@ -56,17 +52,13 @@ public: // ISceneObject overrides
 	
 	FORCEINLINE virtual FTransform GetTransform() const override { return Transform; }
 	FORCEINLINE virtual void SetTransform(const FTransform& Value) override { Transform = Value; RecalculateModel(); }
-	
+
 	virtual void Draw(const TSharedPtr<FShaderProgram>& Shader) override;
 
-private: // Helper methods
+private: // Helper impl methods
 
 	void RecalculateModel();
 	void DrawImpl(const TSharedPtr<FShaderProgram>& Shader);
-
-private: // Owner
-
-	TSharedPtr<FModel> Owner;
 
 private: // Fields
 
@@ -75,12 +67,11 @@ private: // Fields
 
 	FTransform Transform;
 
-	TArray<FMeshVertex> Vertices;
-	TArray<uint32> Indices;
+	TArray<FMesh2DVertex> Vertices;
 	TArray<TSharedPtr<FTexture>> Textures;
 	
 	FVertexArrayId VAO;
-	FBufferId VBO, EBO;
+	FBufferId VBO;
 
 private: // Cache
 
@@ -88,9 +79,9 @@ private: // Cache
 
 private: // Primitive Fields
 	
-	uint8 bIsOwned : 1;
 	uint8 bCullFaces : 1;
 	uint8 bIsInitialized : 1;
+	
 };
 
-typedef TSharedPtr<class FMesh> FMeshPtr;
+typedef TSharedPtr<FMesh2D> FMesh2DPtr;

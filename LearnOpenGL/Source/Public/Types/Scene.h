@@ -45,6 +45,7 @@ public: // Remove
 
 public: // Draw
 
+	void Draw(const TSharedPtr<FShaderProgram>& Shader);
 	void Draw(const TSharedPtr<FShaderProgram>& Shader, const TSharedPtr<FCamera>& Camera);
 
 private: // Fields

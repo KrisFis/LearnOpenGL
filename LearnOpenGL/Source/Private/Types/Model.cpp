@@ -106,14 +106,14 @@ void FModel::ProcessNode(aiNode* Node, const aiScene* Scene)
 TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene) 
 {
 	// Vertices
-	TArray<FVertex> vertices;
+	TArray<FMeshVertex> vertices;
 	vertices.reserve(Mesh->mNumVertices);
 	for(uint32 i = 0; i < Mesh->mNumVertices; ++i)
 	{
 		const aiVector3D& currVertex = Mesh->mVertices[i];
 		const aiVector3D& currNormal = Mesh->mNormals[i];
 		
-		FVertex vertex;
+		FMeshVertex vertex;
 		vertex.Position = { currVertex.x, currVertex.y, currVertex.z };
 		vertex.Normal = { currNormal.x, currNormal.y, currNormal.z };
 		
@@ -121,11 +121,11 @@ TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 		if(Mesh->mTextureCoords[0])
 		{
 			const aiVector3D& currTexture = Mesh->mTextureCoords[0][i];
-			vertex.TexCoords = { currTexture.x, currTexture.y };
+			vertex.TexCoord = {currTexture.x, currTexture.y };
 		}
 		else
 		{
-			vertex.TexCoords = {0.f, 0.f};
+			vertex.TexCoord = {0.f, 0.f};
 		}
 		
 		vertices.push_back(vertex);
