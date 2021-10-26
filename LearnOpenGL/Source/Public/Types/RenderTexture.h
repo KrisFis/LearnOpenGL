@@ -20,6 +20,10 @@ public: // Static creation
 	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetType Type)
 	{ return MakeShareable(new FRenderTexture(Width, Height, Type)); }
 
+public: // Getters
+
+	FORCEINLINE FTextureId GetId() const { return Id; }
+
 public: // IRenderTarget overrides
 
 	FORCEINLINE virtual bool IsInitialized() const override { return Type != ERenderTargetType::Invalid; }

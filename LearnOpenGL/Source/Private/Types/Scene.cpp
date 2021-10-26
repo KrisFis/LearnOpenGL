@@ -9,15 +9,17 @@
 
 namespace NScene_Private
 {
-	template<typename ObjectsMapType, typename FunctorType>
-	void IterateSortedObjects(const ObjectsMapType& Objects, const glm::vec3& CameraPos, FunctorType&& InFunctor)
+	template<typename FunctorType>
+	void IterateSortedObjects(const TArray<FSceneObjectPtr>& Objects, const glm::vec3& CameraPos, FunctorType&& InFunctor)
 	{
 		TMap<float, ISceneObject*> sortedObj;
 		
-		for(auto& obj : Objects)
+		for(const auto& obj : Objects)
 		{
-			const float distance = glm::length(CameraPos - obj.second->GetTransform().Position);
-			sortedObj[distance] = obj.second.Get();
+			if(!obj.IsValid()) continue;
+			
+			const float distance = glm::length(CameraPos - obj->GetTransform().Position);
+			sortedObj[distance] = obj.Get();
 		}
 		
 		for(TMap<float, ISceneObject*>::reverse_iterator it = sortedObj.rbegin(); it != sortedObj.rend(); ++it)
@@ -28,11 +30,9 @@ namespace NScene_Private
 }
 
 FScene::FScene()
-		: Counter(0)
 {}
 
 FScene::FScene(const TArray<TSharedPtr<ISceneObject>>& InObjects)
-	: Counter(0)
 {
 	AddObjects(InObjects);
 }
@@ -44,39 +44,58 @@ int32 FScene::AddObject(const TSharedPtr<ISceneObject>& InObject)
 {
 	if(!InObject.IsValid()) return -1;
 	
-	for(const auto& obj : Objects)
+	int32 emptyIdx = -1;
+	for(uint16 i = 0; i < Objects.size(); ++i)
 	{
-		if(obj.second == InObject) return obj.first;
+		if(Objects[i] == InObject) return i;
+		else if(emptyIdx == -1 && !Objects[i].IsValid())
+		{
+			emptyIdx = i;
+		}
 	}
 	
-	Objects.insert({Counter++, InObject});
-	
-	return true;
+	if(emptyIdx != -1)
+	{
+		Objects[emptyIdx] = InObject;
+		return emptyIdx;
+	}
+	else
+	{
+		Objects.push_back(InObject);
+		return (int32)(Objects.size() - 1);
+	}
 }
 
-void FScene::AddObjects(const TArray<TSharedPtr<ISceneObject>>& InObjects)
+void FScene::AddObjects(const TArray<TSharedPtr<ISceneObject>>& InObjects, TArray<int32>* OutIndexes)
 {
-	for(const auto& obj : InObjects) AddObject(obj);
+	if(OutIndexes)
+	{
+		OutIndexes->clear();
+		OutIndexes->reserve(InObjects.size());
+	}
+	
+	for(const auto& obj : InObjects)
+	{
+		const int32 index = AddObject(obj);
+		if(OutIndexes) OutIndexes->push_back(index);
+	}
 }
 
 TSharedPtr<ISceneObject> FScene::GetObjectByIdx(uint16 Idx) const
 {
-	auto foundObj = Objects.find(Idx);
-	if(foundObj == Objects.end())
-		return nullptr;
-	
-	return foundObj->second;
+	if(Idx < Objects.size()) return Objects[Idx];
+	else return nullptr;
 }
 
 bool FScene::RemoveObjectByIdx(uint16 Idx)
 {
-	auto foundObj = Objects.find(Idx);
-	if(foundObj == Objects.end())
-		return false;
+	if(Idx < Objects.size())
+	{
+		Objects[Idx].Reset();
+		return true;
+	}
 		
-	Objects.erase(foundObj);
-		
-	return true;
+	return false;
 }
 
 void FScene::Draw(const TSharedPtr<FShaderProgram>& Shader, const TSharedPtr<FCamera>& Camera)

@@ -1,14 +1,10 @@
 
 #include "Texture.h"
 #include "FileUtils.h"
-#include "../../Public/Types/Texture.h"
-
+#include "RenderTexture.h"
 
 #include <stb_image.h>
-
-#include <string>
 #include <iostream>
-#include <assert.h>
 
 ETextureType ToTextureType(const aiTextureType Type) 
 {
@@ -53,6 +49,12 @@ ETextureType ToTextureType(const aiTextureType Type)
 			return ETextureType::Invalid;
 	}
 }
+
+FTexture::FTexture(const FRenderTexture* RenderTexture, const ETextureType InType)
+	: Id(RenderTexture->GetId())
+	, UseIndex(-1)
+	, Type(InType)
+{}
 
 FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool ClampToEdge)
 	: Id(0)

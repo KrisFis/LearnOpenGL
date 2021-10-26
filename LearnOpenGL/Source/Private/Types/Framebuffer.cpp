@@ -7,12 +7,12 @@
 
 FFramebuffer::FFramebuffer()
 	: Id(0)
-	, bIsUsed(false)
+	, bIsEnabled(false)
 {}
 
 FFramebuffer::~FFramebuffer()
 {
-	Clear();
+	Disable();
 	
 	if(Id != NRenderConsts::Default::FramebufferId)
 	{
@@ -20,9 +20,18 @@ FFramebuffer::~FFramebuffer()
 	}
 }
 
-void FFramebuffer::Use()
+FRenderTargetPtr FFramebuffer::GetAttachments(const ERenderTargetType Type) const
 {
-	if(bIsUsed) return;
+	auto foundTargets = RenderTargets.find(Type);
+	if(foundTargets == RenderTargets.end())
+		return {};
+		
+	return foundTargets->second;
+}
+
+void FFramebuffer::Enable()
+{
+	if(bIsEnabled) return;
 
 	for(auto targetType : UsedFBTypes)
 	{
@@ -38,18 +47,18 @@ void FFramebuffer::Use()
 	}
 	else
 	{
-		bIsUsed = true;
+		bIsEnabled = true;
 	}
 }
 
-void FFramebuffer::Clear()
+void FFramebuffer::Disable()
 {
-	if(!bIsUsed) return;
+	if(!bIsEnabled) return;
 	
 	for(auto targetType : UsedFBTypes)
 		glBindFramebuffer(targetType, 0);
-		
-	bIsUsed = false;
+
+	bIsEnabled = false;
 }
 
 bool FFramebuffer::Attach(const EFramebufferType FBTargetType, const FRenderTargetPtr& Target, bool Overwrite)

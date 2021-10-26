@@ -29,13 +29,13 @@ public: // Static constructions
 public: // Getters
 
 	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
-	FORCEINLINE bool IsUsed() const { return bIsUsed; }
+	FORCEINLINE bool IsEnabled() const { return bIsEnabled; }
     FORCEINLINE const FShaderProgramId& GetProgramId() const { return Id; }
 
 public: // External methods
 
-	void Use();
-	void Clear();
+	void Enable();
+	void Disable();
 
 	void SetBool(const char* Name, bool Value) const;
 	void SetInt32(const char* Name, const int32& Value) const;
@@ -50,7 +50,7 @@ private: // Fields
 
     FShaderProgramId Id;
 
-	bool bIsUsed;
+	bool bIsEnabled;
 	bool bIsInitialized;
 };
 

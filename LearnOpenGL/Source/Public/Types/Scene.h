@@ -33,7 +33,7 @@ public: // Count
 public: // Add
 
 	int32 AddObject(const TSharedPtr<ISceneObject>& InObject);
-	void AddObjects(const TArray<TSharedPtr<ISceneObject>>& InObjects);
+	void AddObjects(const TArray<TSharedPtr<ISceneObject>>& InObjects, TArray<int32>* OutIndexes = nullptr);
 
 public: // Get
 
@@ -49,8 +49,7 @@ public: // Draw
 
 private: // Fields
 
-	uint16 Counter;
-	TFastMap<uint16, TSharedPtr<ISceneObject>> Objects;
+	TArray<TSharedPtr<ISceneObject>> Objects;
 };
 
 typedef TSharedPtr<class FScene> FScenePtr;

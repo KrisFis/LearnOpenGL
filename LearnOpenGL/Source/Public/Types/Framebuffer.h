@@ -25,13 +25,17 @@ public: // Static constructions
 
 public: // Getters
 
-	FORCEINLINE bool IsUsed() const { return bIsUsed; }
+	FORCEINLINE bool IsEnabled() const { return bIsEnabled; }
 	FORCEINLINE FFramebufferId GetId() const { return Id; }
+	
+public: // Getters -> Attachment
+
+	FRenderTargetPtr GetAttachments(const ERenderTargetType Type) const;
 
 public: // Use methods
 
-	void Use();
-	void Clear();
+	void Enable();
+	void Disable();
 
 public: // Attach methods
 
@@ -48,7 +52,7 @@ private: // Targets
 
 private: // Primitive fields
 
-	uint8 bIsUsed : 1;
+	uint8 bIsEnabled : 1;
 };
 
 typedef TSharedPtr<FFramebuffer> FFramebufferPtr;

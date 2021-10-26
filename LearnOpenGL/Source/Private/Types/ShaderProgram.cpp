@@ -38,7 +38,7 @@ static bool HasErrors(const unsigned int& Id, const FString& ShaderType)
 
 FShaderProgram::FShaderProgram(const char* VertexFilePath, const char* FragmentFilePath)
 	: Id(0)
-	, bIsUsed(false)
+	, bIsEnabled(false)
 	, bIsInitialized(false)
 {
 	// 1. retrieve the vertex/fragment source code from filePath
@@ -123,18 +123,18 @@ FShaderProgram::~FShaderProgram()
 		glDeleteProgram(Id);
 }
 
-void FShaderProgram::Use()
+void FShaderProgram::Enable()
 {
 	glUseProgram(Id);
 
-	bIsUsed = true;
+	bIsEnabled = true;
 }
 
-void FShaderProgram::Clear()
+void FShaderProgram::Disable()
 {
 	glUseProgram(0);
 
-	bIsUsed = false;
+	bIsEnabled = false;
 }
 
 void FShaderProgram::SetBool(const char* Name, bool Value) const

@@ -139,14 +139,14 @@ FColor FColor::FromHex(const char* Value)
 
 FColor FColor::FromVec4(const glm::vec4& Value)
 {
-	glm::vec4 normValue = glm::normalize(Value);
+	glm::vec4 normValue = glm::clamp(Value, 0.f, 1.f);
 	normValue *= (float)UINT8_MAX;
 	return { (uint8)normValue.x, (uint8)normValue.y, (uint8)normValue.z, (uint8)normValue.w };
 }
 
 FColor FColor::FromVec3(const glm::vec3& Value)
 {
-	glm::vec3 normValue = glm::normalize(Value);
+	glm::vec3 normValue = glm::clamp(Value, 0.f, 1.f);
 	normValue *= (float)UINT8_MAX;
 	return { (uint8)normValue.x, (uint8)normValue.y, (uint8)normValue.z, UINT8_MAX };
 }
