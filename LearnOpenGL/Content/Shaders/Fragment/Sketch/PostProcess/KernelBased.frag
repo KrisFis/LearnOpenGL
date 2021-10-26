@@ -1,34 +1,22 @@
 #version 330 core
 
-struct Material
-{
-    sampler2D diffuse0;
-    sampler2D diffuse1;
-    sampler2D diffuse2;
-    
-    sampler2D specular0;
-    sampler2D specular1;
-    sampler2D specular2;
-    
-    sampler2D emission0;
-    sampler2D emission1;
-    sampler2D emission2;
-    
-    float shininess;
-};
-
 out vec4 FragColor;
   
 in vec2 TexCoord;
 
-uniform Material material;
-uniform bool useOverrideColor;
-uniform vec4 overrideColor;
+uniform sampler2D screenTexture;
 
-const float offset = 1.0 / 300.0;  
+// A kernel (or convolution matrix) is a small matrix-like array of values
+// * centered on the current pixel that multiplies surrounding pixel values by its kernel values and adds them all together to form a single value
+// Known kernel effects:
+// * [1, 1, 1, 1, −8, 1, 1, 1, 1] -> Edge-detection
+// * [1, 2, 1, 2, 4, 2, 1, 2, 1] / 16 -> Blur
+// * [2, 2, 2, 2, −15, 2, 2, 2, 2] -> Narcotic 
 
 void main()
 {
+	const float offset = 1.0 / 300.0;  
+	
 	vec2 offsets[9] = vec2[](
 		vec2(-offset,  offset), // top-left
 		vec2( 0.0f,    offset), // top-center
@@ -49,7 +37,7 @@ void main()
 	
 	vec3 sampleTex[9];
 	for(int i = 0; i < 9; i++)
-		sampleTex[i] = vec3(texture(material.diffuse0, TexCoord.xy + offsets[i]));
+		sampleTex[i] = vec3(texture(screenTexture, TexCoord.xy + offsets[i]));
 		
 	vec3 col = vec3(0.0);
 	
