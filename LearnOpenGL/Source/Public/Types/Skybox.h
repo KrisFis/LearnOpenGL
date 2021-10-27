@@ -26,6 +26,7 @@ public: // Static constructions
 public: // Getters
 
 	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
+	FORCEINLINE const TSharedPtr<FCubemap>& GetMap() const { return Map; }
 
 public: // Setters
 
