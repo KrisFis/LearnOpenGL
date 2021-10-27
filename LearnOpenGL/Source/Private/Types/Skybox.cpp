@@ -60,21 +60,21 @@ FSkybox::FSkybox(const TSharedPtr<FCubemap>& InMap)
 	ENSURE_VALID_RET(InMap);
 	ENSURE_RET(InMap->IsInitialized());
 	
-	VAO = NRenderUtils::GenerateVertexArray();
-	VBO = NRenderUtils::GenerateBuffer();
+	VAO = NRenderUtils::NVertexArray::Generate();
+	VBO = NRenderUtils::NBuffer::Generate();
 	
-	NRenderUtils::BindVertexArray(VAO);
-	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, VBO);
+	NRenderUtils::NVertexArray::Bind(VAO);
+	NRenderUtils::NBuffer::Bind(GL_ARRAY_BUFFER, VBO);
 	
 	glBufferData(GL_ARRAY_BUFFER, sizeof(NSkybox_Private::Vertices), &NSkybox_Private::Vertices, GL_STATIC_DRAW);
 	
-	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
+	NRenderUtils::NBuffer::Unbind(GL_ARRAY_BUFFER);
 	
 	// Attributes
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	
-	NRenderUtils::UnbindVertexArray();
+	NRenderUtils::NVertexArray::Unbind();
 	
 	bIsInitialized = true;
 }
@@ -83,8 +83,8 @@ FSkybox::~FSkybox()
 {
 	if(!bIsInitialized) return;
 
-	NRenderUtils::DeleteVertexArray(VAO);
-	NRenderUtils::DeleteBuffer(VBO);
+	NRenderUtils::NVertexArray::Delete(VAO);
+	NRenderUtils::NBuffer::Delete(VBO);
 }
 
 void FSkybox::SetMap(const TSharedPtr<FCubemap>& InMap)
@@ -105,9 +105,9 @@ void FSkybox::Draw(const TSharedPtr<FShaderProgram>& Shader)
 	Shader->SetInt32("material.texture", 0);
 	Map->Use(0);
 	
-	NRenderUtils::BindVertexArray(VAO);
+	NRenderUtils::NVertexArray::Bind(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
-	NRenderUtils::UnbindVertexArray();
+	NRenderUtils::NVertexArray::Unbind();
 	
 	Map->Clear();
 	

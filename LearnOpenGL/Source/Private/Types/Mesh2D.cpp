@@ -15,18 +15,18 @@ FMesh2D::FMesh2D(const TArray <FMesh2DVertex>& InVertices, const TArray<TSharedP
 	, bIsInitialized(false)
 {
 	// Generate buffers
-	VAO = NRenderUtils::GenerateVertexArray();
-	VBO = NRenderUtils::GenerateBuffer();
+	VAO = NRenderUtils::NVertexArray::Generate();
+	VBO = NRenderUtils::NBuffer::Generate();
 	
 	// Initialize
-	NRenderUtils::BindVertexArray(VAO);
+	NRenderUtils::NVertexArray::Bind(VAO);
 	
 	// Setup data
-	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, VBO);
+	NRenderUtils::NBuffer::Bind(GL_ARRAY_BUFFER, VBO);
 	
 	glBufferData(GL_ARRAY_BUFFER, Vertices.size() * sizeof(FMesh2DVertex), &Vertices[0], GL_STATIC_DRAW);
 	
-	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
+	NRenderUtils::NBuffer::Unbind(GL_ARRAY_BUFFER);
 	
 	// Attributes
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(FMesh2DVertex), (void*)0);
@@ -34,7 +34,7 @@ FMesh2D::FMesh2D(const TArray <FMesh2DVertex>& InVertices, const TArray<TSharedP
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(FMesh2DVertex), (void*)offsetof(FMesh2DVertex, TexCoord));
 	glEnableVertexAttribArray(1);
 	
-	NRenderUtils::UnbindVertexArray(VAO);
+	NRenderUtils::NVertexArray::Unbind();
 	
 	RecalculateModel();
 	
@@ -89,11 +89,11 @@ void FMesh2D::Draw(const TSharedPtr<FShaderProgram>& Shader)
 			)
 		);
 		
-		NRenderUtils::BindVertexArray(VAO);
+		NRenderUtils::NVertexArray::Bind(VAO);
 		
 		glDrawArrays(GL_TRIANGLES, 0, (GLsizei)Vertices.size());
 		
-		NRenderUtils::UnbindVertexArray();
+		NRenderUtils::NVertexArray::Unbind();
 		
 		Shader->SetBool("useOverrideColor", false);
 		
@@ -133,9 +133,9 @@ void FMesh2D::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	
 	//Shader->SetMat4("model", CachedModel);
 
-	NRenderUtils::BindVertexArray(VAO);
+	NRenderUtils::NVertexArray::Bind(VAO);
 	
 	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)Vertices.size());
 	
-	NRenderUtils::UnbindVertexArray();
+	NRenderUtils::NVertexArray::Unbind();
 }

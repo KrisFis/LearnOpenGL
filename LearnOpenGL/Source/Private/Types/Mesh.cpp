@@ -18,26 +18,26 @@ FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndi
 	, bIsInitialized(false)
 {
 	// Generate buffers
-	VAO = NRenderUtils::GenerateVertexArray();
+	VAO = NRenderUtils::NVertexArray::Generate();
 	
-	auto buffers = NRenderUtils::GenerateBuffers(2);
+	auto buffers = NRenderUtils::NBuffer::Generate(2);
 	VBO = buffers[0];
 	EBO = buffers[1];
 	
 	// Initialize
-	NRenderUtils::BindVertexArray(VAO);
+	NRenderUtils::NVertexArray::Bind(VAO);
 	
 	// Setup data
-	NRenderUtils::BindBuffer(GL_ARRAY_BUFFER, VBO);
+	NRenderUtils::NBuffer::Bind(GL_ARRAY_BUFFER, VBO);
 	
 	glBufferData(GL_ARRAY_BUFFER, Vertices.size() * sizeof(FMeshVertex), &Vertices[0], GL_STATIC_DRAW);
 	
-	NRenderUtils::UnbindBuffer(GL_ARRAY_BUFFER);
-	NRenderUtils::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	NRenderUtils::NBuffer::Unbind(GL_ARRAY_BUFFER);
+	NRenderUtils::NBuffer::Bind(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.size() * sizeof(uint32), &Indices[0], GL_STATIC_DRAW);
 	
-	NRenderUtils::UnbindBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	NRenderUtils::NBuffer::Unbind(GL_ELEMENT_ARRAY_BUFFER);
 	
 	// Attributes
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)0);
@@ -47,7 +47,7 @@ FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndi
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)offsetof(FMeshVertex, TexCoord));
 	glEnableVertexAttribArray(2);
 	
-	NRenderUtils::UnbindVertexArray(VAO);
+	NRenderUtils::NVertexArray::Unbind();
 	
 	RecalculateModel();
 	
@@ -58,8 +58,8 @@ FMesh::~FMesh()
 {
 	if(!bIsInitialized) return;
 	
-	NRenderUtils::DeleteVertexArray(VAO);
-	NRenderUtils::DeleteBuffers({VBO, EBO});
+	NRenderUtils::NVertexArray::Delete(VAO);
+	NRenderUtils::NBuffer::Delete({VBO, EBO});
 }
 
 void FMesh::SetTextures(const TArray<TSharedPtr<FTexture>>& InTextures)
@@ -107,11 +107,11 @@ void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
 			)
 		);
 		
-		NRenderUtils::BindVertexArray(VAO);
+		NRenderUtils::NVertexArray::Bind(VAO);
 		
 		glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
 		
-		NRenderUtils::UnbindVertexArray();
+		NRenderUtils::NVertexArray::Unbind();
 		
 		Shader->SetBool("useOverrideColor", false);
 		
@@ -154,9 +154,9 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	if(!IsOwned())
 		Shader->SetMat4("model", CachedModel);
 
-	NRenderUtils::BindVertexArray(VAO);
+	NRenderUtils::NVertexArray::Bind(VAO);
 	
 	glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
 	
-	NRenderUtils::UnbindVertexArray();
+	NRenderUtils::NVertexArray::Unbind();
 }

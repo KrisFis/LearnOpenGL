@@ -199,74 +199,81 @@ namespace NRenderUtils
 	{
 		return GCache ? GCache->IsUnbindAllowed() : false;
 	}
-
-	FVertexArrayId GenerateVertexArray()
+	
+	namespace NVertexArray 
 	{
-		return GCache ? GCache->GenerateArrays(1)[0] : Invalid::VertexArrayId;
+		FVertexArrayId Generate()
+		{
+			return GCache ? GCache->GenerateArrays(1)[0] : Invalid::VertexArrayId;
+		}
+
+		TArray<FVertexArrayId> Generate(const uint8 Num)
+		{
+			return GCache ? GCache->GenerateArrays(Num) : TArray<FVertexArrayId>();
+		}
+
+		void Delete(FVertexArrayId Id)
+		{
+			if(GCache) GCache->DeleteArrays({Id});
+		}
+
+		void Delete(const TArray<FVertexArrayId>& Ids)
+		{
+			if(GCache) GCache->DeleteArrays(Ids);
+		}
+
+		void Bind(FVertexArrayId Id)
+		{
+			if(GCache) GCache->BindArray(Id);
+		}
+
+		void Unbind(bool Force)
+		{
+			if(GCache) GCache->UnbindArray(Force);
+		}
+
+		FVertexArrayId GetBound()
+		{
+			return GCache ? GCache->GetBoundArray() : Invalid::VertexArrayId;
+		}
 	}
-
-	FBufferId GenerateBuffer()
+	
+	namespace NBuffer 
 	{
-		return GCache ? GCache->GenerateBuffers(1)[0] : Invalid::BufferId;
-	}
 
-	TArray<FVertexArrayId> GenerateVertexArrays(const uint8 Num)
-	{
-		return GCache ? GCache->GenerateArrays(Num) : TArray<FVertexArrayId>();
-	}
+		FBufferId Generate()
+		{
+			return GCache ? GCache->GenerateBuffers(1)[0] : Invalid::BufferId;
+		}
 
-	TArray<FBufferId> GenerateBuffers(const uint8 Num)
-	{
-		return GCache ? GCache->GenerateBuffers(Num) : TArray<FBufferId>();
-	}
+		TArray<FBufferId> Generate(const uint8 Num)
+		{
+			return GCache ? GCache->GenerateBuffers(Num) : TArray<FBufferId>();
+		}
 
-	void DeleteVertexArray(FBufferId Id)
-	{
-		if(GCache) GCache->DeleteArrays({Id});
-	}
+		void Delete(FBufferId Id)
+		{
+			if(GCache) GCache->DeleteBuffers({Id});
+		}
 
-	void DeleteBuffer(FBufferId Id)
-	{
-		if(GCache) GCache->DeleteBuffers({Id});
-	}
+		void Delete(const TArray<FBufferId>& Ids)
+		{
+			if(GCache) GCache->DeleteBuffers(Ids);
+		}
 
-	void DeleteVertexArrays(const TArray<FVertexArrayId>& Ids)
-	{
-		if(GCache) GCache->DeleteArrays(Ids);
-	}
+		void Bind(EBufferTarget Target, FBufferId Id)
+		{
+			if(GCache) GCache->BindBuffer(Target, Id);
+		}
 
-	void DeleteBuffers(const TArray<FVertexArrayId>& Ids)
-	{
-		if(GCache) GCache->DeleteBuffers(Ids);
-	}
+		void Unbind(EBufferTarget Target, bool Force)
+		{
+			if(GCache) GCache->UnbindBuffer(Target, Force);
+		}
 
-	void BindVertexArray(FVertexArrayId Id)
-	{
-		if(GCache) GCache->BindArray(Id);
-	}
-
-	void BindBuffer(EBufferTarget Target, FBufferId Id)
-	{
-		if(GCache) GCache->BindBuffer(Target, Id);
-	}
-
-	FVertexArrayId GetBoundVertexArray()
-	{
-		return GCache ? GCache->GetBoundArray() : Invalid::VertexArrayId;
-	}
-
-	FBufferId GetBoundBuffer(EBufferTarget Target)
-	{
-		return GCache ? GCache->GetBoundBuffer(Target) : Invalid::BufferId;
-	}
-
-	void UnbindVertexArray(bool Force)
-	{
-		if(GCache) GCache->UnbindArray(Force);
-	}
-
-	void UnbindBuffer(EBufferTarget Target, bool Force)
-	{
-		if(GCache) GCache->UnbindBuffer(Target, Force);
+		FBufferId GetBound(EBufferTarget Target)
+		{
+			return GCache ? GCache->GetBoundBuffer(Target) : Invalid::BufferId;
+		}
 	}
 }
