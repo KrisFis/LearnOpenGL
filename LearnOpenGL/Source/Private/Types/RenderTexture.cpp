@@ -25,7 +25,7 @@ FRenderTexture::FRenderTexture(uint16 InWidth, uint16 InHeight, ERenderTargetTyp
 			type = GL_UNSIGNED_INT_24_8;
 			break;
 		default:
-			assert(false);
+			ENSURE_NO_ENTRY();
 			return;
 	}
 
@@ -54,7 +54,7 @@ bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget)
 {
 	if(!IsInitialized() || IsAttached())
 	{
-		assert(false);
+		ENSURE_NO_ENTRY();
 		return false;
 	}
 
@@ -71,7 +71,7 @@ bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget)
 			attachment = GL_DEPTH_STENCIL_ATTACHMENT;
 			break;
 		default:
-			assert(false);
+			ENSURE_NO_ENTRY();
 			return false;
 	}
 	
@@ -85,7 +85,7 @@ bool FRenderTexture::DetachFramebuffer()
 {
 	if(!IsInitialized() || !IsAttached())
 	{
-		assert(false);
+		ENSURE_NO_ENTRY();
 		return false;
 	}
 

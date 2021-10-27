@@ -1,8 +1,6 @@
 
 #include "Timer.h"
 
-#include <assert.h>
-
 namespace NTimerPrivate
 {
 	bool IsTimepointValid(const std::chrono::time_point<std::chrono::high_resolution_clock> Timepoint)
@@ -44,13 +42,13 @@ double FTimer::GetSeconds() const
 
 void FTimer::Start()
 {
-	assert(!NTimerPrivate::IsTimepointValid(StartTimepoint));
+	ENSURE(!NTimerPrivate::IsTimepointValid(StartTimepoint));
 	StartTimepoint = std::chrono::high_resolution_clock::now();
 }
 
 void FTimer::Stop()
 {
-	assert(!NTimerPrivate::IsTimepointValid(EndTimepoint));
+	ENSURE(!NTimerPrivate::IsTimepointValid(EndTimepoint));
 	EndTimepoint = std::chrono::high_resolution_clock::now();
 }
 

@@ -18,7 +18,7 @@ FRenderBuffer::FRenderBuffer(uint16 InWidth, uint16 InHeight, ERenderTargetType 
 			internalFormat = GL_DEPTH24_STENCIL8;
 			break;
 		default:
-			assert(false);
+			ENSURE_NO_ENTRY();
 			return;
 	}
 	
@@ -42,7 +42,7 @@ bool FRenderBuffer::AttachFramebuffer(const EFramebufferType FBTarget)
 {
 	if(!IsInitialized() || IsAttached())
 	{
-		assert(false);
+		ENSURE_NO_ENTRY();
 		return false;
 	}
 
@@ -56,7 +56,7 @@ bool FRenderBuffer::AttachFramebuffer(const EFramebufferType FBTarget)
 			internalFormat = GL_DEPTH_STENCIL_ATTACHMENT;
 			break;
 		default:
-			assert(false);
+			ENSURE_NO_ENTRY();
 			return false;
 	}
 	
@@ -70,7 +70,7 @@ bool FRenderBuffer::DetachFramebuffer()
 {
 	if(!IsInitialized() || !IsAttached())
 	{
-		assert(false);
+		ENSURE_NO_ENTRY();
 		return false;
 	}
 	

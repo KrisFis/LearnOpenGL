@@ -5,6 +5,7 @@
 #include "MeshUtils.h"
 #include "ColorUtils.h"
 #include "Scene.h"
+#include "TextureUtils.h"
 
 #include "ShaderProgram.h"
 #include "Texture.h"
@@ -16,6 +17,9 @@
 #include "Framebuffer.h"
 #include "RenderTexture.h"
 #include "RenderBuffer.h"
+
+#include "Cubemap.h"
+#include "Skybox.h"
 
 // Window
 GLFWwindow* GWindow = nullptr;
@@ -38,6 +42,8 @@ float GLastMouseY = GWindowHeight * 0.5f;
 // Global instances
 FCameraPtr GCamera;
 FScenePtr GScene;
+
+FSceneObjectPtr GSkyboxObject;
 
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
@@ -131,9 +137,19 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	return true;
 }
 
+bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
+{
+	OutSkyboxObj = FSkybox::Create(
+		FCubemap::Create(
+			NTextureUtils::GetFacesPathFromRoot(NFileUtils::ContentPath("Textures/Cubemaps/Skybox_high"))
+		)
+	)->AsShared();
+
+	return true;
+}
+
 bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutFramebuffer)
 {
-
 	FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color);
 	FRenderBufferPtr sceneBufferTarget = FRenderBuffer::Create(GWindowWidth, GWindowHeight, ERenderTargetType::DepthAndStencil);
 	if(!sceneTextureTarget->IsInitialized() || !sceneBufferTarget->IsInitialized())
@@ -162,11 +178,6 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutFrame
 	
 	OutScreenObj = FMesh2D::Create(quadVertices, {screenQuad})->AsShared();
 	OutScreenObj->SetCullFaces(false);
-//	OutScreenObj->SetTransform({
-//			{1.f, 0.f, 0.f},
-//			{-90.f, 180.f, -90.f},
-//			{1.f, 1.f, 1.f}
-//	});
 	
 	return true;
 }
@@ -246,6 +257,15 @@ bool PrepareScene(FScenePtr& OutScene)
 	return true;
 }
 
+bool PrepareShaders(TArray<FShaderProgramPtr>& OutShaders)
+{
+	OutShaders.push_back(FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Mesh.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh.frag").c_str()));
+	OutShaders.push_back(FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Screen.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Screen.frag").c_str()));
+	OutShaders.push_back(FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str()));
+	
+	return OutShaders[0]->IsInitialized() && OutShaders[1]->IsInitialized() && OutShaders[2]->IsInitialized();
+}
+
 void ProcessInput()
 {
 	const bool shiftWasPreviouslyPressed = GbShiftWasPressed;
@@ -297,13 +317,14 @@ void ProcessInput()
 	}
 }
 
-void ProcessRender(const FShaderProgramPtr& SceneShader, const FShaderProgramPtr& ScreenShader)
+void ProcessRender(const TArray<FShaderProgramPtr>& Shaders)
 {
 	// Init values
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera->GetViewMatrix();
 
-	// Custom framebuffer
+	// Scene
+	// * To custom framebuffer
 	{
 		GScreenFramebuffer->Enable();
 
@@ -311,48 +332,54 @@ void ProcessRender(const FShaderProgramPtr& SceneShader, const FShaderProgramPtr
 		{
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_STENCIL_TEST);
-			
-			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		}
 	
-		// Draw and shader
+		// Draw scene
 		{
-			SceneShader->Enable();
+			Shaders[0]->Enable();
 			
-			SceneShader->SetMat4("view", view);
-			SceneShader->SetMat4("projection", projection);
-			SceneShader->SetMat4("model", glm::mat4(1.f));
+			Shaders[0]->SetMat4("view", view);
+			Shaders[0]->SetMat4("projection", projection);
+			Shaders[0]->SetMat4("model", glm::mat4(1.f));
 			
-			GScene->Draw(SceneShader, GCamera);
+			GScene->Draw(Shaders[0], GCamera);
 			
-			SceneShader->Disable();
+			Shaders[0]->Disable();
+		}
+		
+		// Draw skybox
+		{
+			Shaders[2]->Enable();
+	
+			Shaders[2]->SetMat4("projection", projection);
+			// Remove translation from view
+			Shaders[2]->SetMat4("view", glm::mat4(glm::mat3(view)));
+	
+			GSkyboxObject->Draw(Shaders[2]);
+	
+			Shaders[2]->Disable();
 		}
 		
 		GScreenFramebuffer->Disable();
 	}
 
-	// Default framebuffer
+	// Screen rendering
 	{
 		// Setup
 		{
 			glDisable(GL_DEPTH_TEST);
 			glDisable(GL_STENCIL_TEST);
-			
-			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 		}
 
-		// Draw and shader
+		// Draw
 		{
-			ScreenShader->Enable();
-//			ScreenShader->SetMat4("view", view);
-//			ScreenShader->SetMat4("projection", projection);
-//			ScreenShader->SetMat4("model", glm::mat4(1.f));
+			Shaders[1]->Enable();
 
-			GScreenObject->Draw(ScreenShader);
+			GScreenObject->Draw(Shaders[1]);
 			
-			ScreenShader->Disable();
+			Shaders[1]->Disable();
 		}
 	}
 }
@@ -385,16 +412,25 @@ int32 GuardedMain()
 		return -1;
 	}
 
-	FShaderProgramPtr sceneShader = FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Mesh.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh.frag").c_str());
-	FShaderProgramPtr screenShader = FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Screen.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Screen.frag").c_str());
-	if(!sceneShader->IsInitialized() || !screenShader->IsInitialized())
+	TArray<FShaderProgramPtr> Shaders;
+	if(!PrepareShaders(Shaders))
 	{
 		return -2;
 	}
 	
-	if(!PrepareScene(GScene) || !PrepareScreenScene(GScreenObject, GScreenFramebuffer))
+	if(!PrepareScreenScene(GScreenObject, GScreenFramebuffer))
 	{
 		return -3;
+	}
+	
+	if(!PrepareScene(GScene))
+	{
+		return -4;
+	}
+	
+	if(!PrepareSkybox(GSkyboxObject))
+	{
+		return -5;
 	}
 
 	// Main render loop
@@ -409,7 +445,7 @@ int32 GuardedMain()
 
 		EngineTick();
 		ProcessInput();
-		ProcessRender(sceneShader, screenShader);
+		ProcessRender(Shaders);
 
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();

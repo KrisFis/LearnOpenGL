@@ -5,6 +5,8 @@
 
 // Forward declaration
 class ISceneObject;
+class FShaderProgram;
+class FCamera;
 
 class FScene
 {

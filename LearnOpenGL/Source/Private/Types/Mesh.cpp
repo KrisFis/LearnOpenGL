@@ -55,7 +55,12 @@ FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndi
 }
 
 FMesh::~FMesh()
-{}
+{
+	if(!bIsInitialized) return;
+	
+	NRenderUtils::DeleteVertexArray(VAO);
+	NRenderUtils::DeleteBuffers({VBO, EBO});
+}
 
 void FMesh::SetTextures(const TArray<TSharedPtr<FTexture>>& InTextures)
 {

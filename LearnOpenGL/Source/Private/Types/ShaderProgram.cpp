@@ -2,11 +2,9 @@
 #include "ShaderProgram.h"
 #include "FileUtils.h"
 
-#include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <assert.h>
 
 static bool HasErrors(const unsigned int& Id, const FString& ShaderType)
 {

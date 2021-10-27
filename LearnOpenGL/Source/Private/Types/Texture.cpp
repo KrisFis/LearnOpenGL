@@ -45,7 +45,7 @@ ETextureType ToTextureType(const aiTextureType Type)
 		case aiTextureType_AMBIENT_OCCLUSION:
 			return ETextureType::AmbientOcclusion;
 		default:
-			assert(false);
+			ENSURE_NO_ENTRY();
 			return ETextureType::Invalid;
 	}
 }
@@ -61,14 +61,9 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool Clamp
 	, UseIndex(-1)
 	, Type(ETextureType::Invalid)
 {
-	assert(InType != ETextureType::Invalid);
-
-	static bool flipFixed = false;
-	if(!flipFixed)
-	{
-		stbi_set_flip_vertically_on_load(true);
-		flipFixed = true;
-	}
+	ENSURE(InType != ETextureType::Invalid);
+	
+	stbi_set_flip_vertically_on_load(true);
 
 	glGenTextures(1, &Id);
 
@@ -96,7 +91,7 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool Clamp
 				format = GL_RGBA;
 			break;
 			default:
-				assert(false);
+				ENSURE_NO_ENTRY();
 			return;
 		}
 

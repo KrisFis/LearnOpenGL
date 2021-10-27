@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <chrono>
+#include "ModuleMinimal.h"
 
 class FTimer
 {

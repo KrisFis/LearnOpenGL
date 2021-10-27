@@ -100,7 +100,7 @@ bool FScene::RemoveObjectByIdx(uint16 Idx)
 	return false;
 }
 
-void FScene::Draw(const TSharedPtr <FShaderProgram>& Shader)
+void FScene::Draw(const TSharedPtr<FShaderProgram>& Shader)
 {
 	for(const auto& obj : Objects)
 	{

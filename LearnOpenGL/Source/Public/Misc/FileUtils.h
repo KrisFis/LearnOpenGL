@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <string>
+#include "ModuleMinimal.h"
 
 namespace NFileUtils 
 {

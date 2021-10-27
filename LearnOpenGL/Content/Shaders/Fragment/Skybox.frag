@@ -2,16 +2,16 @@
 
 struct Material
 {
-    sampler2D diffuse0;
+	samplerCube texture;
 };
 
 out vec4 FragColor;
 
-in vec2 TexCoord;
+in vec3 TexCoord;
 
 uniform Material material;
 
 void main()
 {
-	FragColor = texture(material.diffuse0, TexCoord);
+	FragColor = texture(material.texture, TexCoord);
 }
