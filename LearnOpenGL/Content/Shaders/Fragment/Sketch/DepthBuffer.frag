@@ -1,4 +1,4 @@
-#version 330 core
+#version 460 core
 
 #define near 0.1f
 #define far 100.f

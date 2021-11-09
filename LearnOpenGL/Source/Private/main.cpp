@@ -17,6 +17,7 @@
 #include "Framebuffer.h"
 #include "RenderTexture.h"
 #include "RenderBuffer.h"
+#include "UniformBuffer.h"
 
 #include "Cubemap.h"
 #include "Skybox.h"
@@ -47,6 +48,8 @@ FSceneObjectPtr GSkyboxObject;
 
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
+
+FUniformBufferPtr GMatricesBuffer;
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
@@ -94,8 +97,8 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 		return false;
 	}
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	OutWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
@@ -117,6 +120,15 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 
 	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glViewport(0, 0, GWindowWidth, GWindowHeight);
+
+	// Log Info
+	{
+		std::cout << std::endl;
+		std::cout << "Rendering information:" << std::endl;
+		std::cout << "Graphic: " << glGetString(GL_RENDERER) << std::endl;
+		std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
+		std::cout << std::endl;
+	}
 
 	// Features enable
 	{
@@ -257,13 +269,19 @@ bool PrepareScene(FScenePtr& OutScene)
 	return true;
 }
 
-bool PrepareShaders(TArray<FShaderProgramPtr>& OutShaders)
+bool PrepareShaders(TArray<FShaderProgramPtr>& OutShaders, FUniformBufferPtr& OutMatBuffer)
 {
 	OutShaders.push_back(FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Mesh.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh.frag").c_str()));
 	OutShaders.push_back(FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Screen.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Screen.frag").c_str()));
 	OutShaders.push_back(FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str()));
 	
-	return OutShaders[0]->IsInitialized() && OutShaders[1]->IsInitialized() && OutShaders[2]->IsInitialized();
+	if(!(OutShaders[0]->IsInitialized() && OutShaders[1]->IsInitialized() && OutShaders[2]->IsInitialized())) return false;
+
+	OutMatBuffer = FUniformBuffer::Create(0, 2 * sizeof(glm::mat4));
+	OutShaders[0]->SetUniformBuffer("Matrices", OutMatBuffer.GetRef());
+	OutShaders[2]->SetUniformBuffer("Matrices", OutMatBuffer.GetRef());
+	
+	return true;
 }
 
 void ProcessInput()
@@ -322,7 +340,10 @@ void ProcessRender(const TArray<FShaderProgramPtr>& Shaders)
 	// Init values
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera->GetViewMatrix();
-
+	
+	GMatricesBuffer->SetValue(0, projection);
+	GMatricesBuffer->SetValue(sizeof(glm::mat4), view);
+	
 	// Scene
 	// * To custom framebuffer
 	{
@@ -338,26 +359,15 @@ void ProcessRender(const TArray<FShaderProgramPtr>& Shaders)
 		// Draw scene
 		{
 			Shaders[0]->Enable();
-			
-			Shaders[0]->SetMat4("view", view);
-			Shaders[0]->SetMat4("projection", projection);
 			Shaders[0]->SetMat4("model", glm::mat4(1.f));
-			
 			GScene->Draw(Shaders[0], GCamera);
-			
 			Shaders[0]->Disable();
 		}
 		
 		// Draw skybox
 		{
 			Shaders[2]->Enable();
-	
-			Shaders[2]->SetMat4("projection", projection);
-			// Remove translation from view
-			Shaders[2]->SetMat4("view", glm::mat4(glm::mat3(view)));
-	
 			GSkyboxObject->Draw(Shaders[2]);
-	
 			Shaders[2]->Disable();
 		}
 		
@@ -413,7 +423,7 @@ int32 GuardedMain()
 	}
 
 	TArray<FShaderProgramPtr> Shaders;
-	if(!PrepareShaders(Shaders))
+	if(!PrepareShaders(Shaders, GMatricesBuffer))
 	{
 		return -2;
 	}

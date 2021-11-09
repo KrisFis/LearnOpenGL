@@ -1,6 +1,7 @@
 
 #include "ShaderProgram.h"
 #include "FileUtils.h"
+#include "UniformBuffer.h"
 
 #include <fstream>
 #include <sstream>
@@ -139,42 +140,50 @@ void FShaderProgram::Disable()
 	bIsEnabled = false;
 }
 
-void FShaderProgram::SetBool(const char* Name, bool Value) const
+void FShaderProgram::SetBool(const char* Name, bool Value)
 {
 	glUniform1i(glGetUniformLocation(Id, Name), (int)Value);
 }
 
-void FShaderProgram::SetInt32(const char* Name, const int32& Value) const
+void FShaderProgram::SetInt32(const char* Name, const int32& Value)
 {
 	glUniform1i(glGetUniformLocation(Id, Name), Value);
 }
 
-void FShaderProgram::SetUInt32(const char* Name, const uint32& Value) const
+void FShaderProgram::SetUInt32(const char* Name, const uint32& Value)
 {
 	glUniform1ui(glGetUniformLocation(Id, Name), Value);
 }
 
-void FShaderProgram::SetFloat(const char* Name, float Value) const
+void FShaderProgram::SetFloat(const char* Name, float Value)
 {
 	glUniform1f(glGetUniformLocation(Id, Name), Value);
 }
 
-void FShaderProgram::SetVec3(const char *Name, const glm::vec3& Value) const
+void FShaderProgram::SetVec3(const char *Name, const glm::vec3& Value)
 {
 	glUniform3fv(glGetUniformLocation(Id, Name), 1, &Value[0]);
 }
 
-void FShaderProgram::SetVec4(const char *Name, const glm::vec4& Value) const
+void FShaderProgram::SetVec4(const char *Name, const glm::vec4& Value)
 {
 	glUniform4fv(glGetUniformLocation(Id, Name), 1, &Value[0]);
 }
 
-void FShaderProgram::SetMat3(const char *Name, const glm::mat3& Value) const
+void FShaderProgram::SetMat3(const char *Name, const glm::mat3& Value)
 {
 	glUniformMatrix3fv(glGetUniformLocation(Id, Name), 1, GL_FALSE, &Value[0][0]);
 }
 
-void FShaderProgram::SetMat4(const char* Name, const glm::mat4& Value) const
+void FShaderProgram::SetMat4(const char* Name, const glm::mat4& Value)
 {
 	glUniformMatrix4fv(glGetUniformLocation(Id, Name), 1, GL_FALSE, &Value[0][0]);
+}
+
+void FShaderProgram::SetUniformBuffer(const char* Name, const FUniformBuffer& Value)
+{
+	uint32 idx = glGetUniformBlockIndex(Id, Name);
+	if(idx == GL_INVALID_INDEX || idx == Value.GetPointIdx()) return;
+	
+	glUniformBlockBinding(Id, idx, Value.GetPointIdx());
 }
