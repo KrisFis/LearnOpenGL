@@ -355,6 +355,13 @@ void ProcessRender(const TArray<FShaderProgramPtr>& Shaders)
 			glEnable(GL_STENCIL_TEST);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		}
+		
+		// Draw skybox
+		{
+			Shaders[2]->Enable();
+			GSkyboxObject->Draw(Shaders[2]);
+			Shaders[2]->Disable();
+		}
 	
 		// Draw scene
 		{
@@ -362,13 +369,6 @@ void ProcessRender(const TArray<FShaderProgramPtr>& Shaders)
 			Shaders[0]->SetMat4("model", glm::mat4(1.f));
 			GScene->Draw(Shaders[0], GCamera);
 			Shaders[0]->Disable();
-		}
-		
-		// Draw skybox
-		{
-			Shaders[2]->Enable();
-			GSkyboxObject->Draw(Shaders[2]);
-			Shaders[2]->Disable();
 		}
 		
 		GScreenFramebuffer->Disable();

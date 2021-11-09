@@ -100,7 +100,9 @@ void FSkybox::Draw(const TSharedPtr<FShaderProgram>& Shader)
 	ENSURE_RET(Shader->IsEnabled());
 	ENSURE_RET(bIsInitialized);
 
-	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(0x0);
+	glStencilMask(0x0);
 	
 	Shader->SetInt32("material.texture", 0);
 	Map->Use(0);
@@ -111,5 +113,7 @@ void FSkybox::Draw(const TSharedPtr<FShaderProgram>& Shader)
 	
 	Map->Clear();
 	
-	glDepthFunc(GL_LESS);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(0xFF);
+	glStencilMask(0xFF);
 }
