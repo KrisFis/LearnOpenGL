@@ -17,10 +17,7 @@ public: // Destructors
 
 public: // Static constructions
 
-	FORCEINLINE static TSharedPtr<FRenderBuffer> Create(uint16 Width, uint16 Height, ERenderTargetType Type)
-	{ return MakeShareable(new FRenderBuffer(1, Width, Height, Type)); }
-	
-	FORCEINLINE static TSharedPtr<FRenderBuffer> CreateMultisampled(uint8 Samples, uint16 Width, uint16 Height, ERenderTargetType Type)
+	FORCEINLINE static TSharedPtr<FRenderBuffer> Create(uint16 Width, uint16 Height, ERenderTargetType Type, uint8 Samples = 1)
 	{ return MakeShareable(new FRenderBuffer(Samples, Width, Height, Type)); }
 	
 public: // IRenderTarget overrides

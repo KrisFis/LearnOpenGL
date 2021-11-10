@@ -17,10 +17,7 @@ public: // Destructor
 
 public: // Static creation
 
-	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetType Type)
-	{ return MakeShareable(new FRenderTexture(1, Width, Height, Type)); }
-	
-	FORCEINLINE static TSharedPtr<FRenderTexture> CreateMultisample(uint8 Samples, uint16 Width, uint16 Height, ERenderTargetType Type)
+	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetType Type, uint8 Samples = 1)
 	{ return MakeShareable(new FRenderTexture(Samples, Width, Height, Type)); }
 
 public: // Getters
