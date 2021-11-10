@@ -25,8 +25,8 @@
 // Window
 GLFWwindow* GWindow = nullptr;
 
-unsigned short GWindowWidth = 800;
-unsigned short GWindowHeight = 600;
+uint16 GWindowWidth = 800;
+uint16 GWindowHeight = 600;
 
 // Global
 float GLastSeconds = 0.f;
@@ -46,6 +46,7 @@ FScenePtr GScene;
 
 FSceneObjectPtr GSkyboxObject;
 
+FFramebufferPtr GMSAAFramebuffer;
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
 
@@ -100,8 +101,6 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	
-	glfwWindowHint(GLFW_SAMPLES, 4);
 
 	OutWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
 	if (!OutWindow)
@@ -138,7 +137,6 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 		glEnable(GL_STENCIL_TEST);
 		glEnable(GL_BLEND);
 		glEnable(GL_CULL_FACE);
-		glEnable(GL_MULTISAMPLE);
 	}
 
 	// Features set
@@ -163,36 +161,51 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 	return true;
 }
 
-bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutFramebuffer)
+bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
 {
-	FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color);
-	FRenderBufferPtr sceneBufferTarget = FRenderBuffer::Create(GWindowWidth, GWindowHeight, ERenderTargetType::DepthAndStencil);
-	if(!sceneTextureTarget->IsInitialized() || !sceneBufferTarget->IsInitialized())
+	// MSAA
 	{
-		return false;
+		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color, 4);
+		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(GWindowWidth, GWindowHeight, ERenderTargetType::DepthAndStencil, 4);
+		if(!multisampledTextureTarget->IsInitialized() || !multisampledBufferTarget->IsInitialized())
+		{
+			return false;
+		}
+	
+		OutMSAAFramebuffer = FFramebuffer::Create();
+		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledTextureTarget->AsShared());
+		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledBufferTarget->AsShared());
 	}
 	
-	FTexturePtr screenQuad = FTexture::Create(sceneTextureTarget.Get(), ETextureType::Diffuse);
-	if(!screenQuad->IsInitialized())
+	// SCREEN
 	{
-		return false;
+		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color);
+		if(!sceneTextureTarget->IsInitialized())
+		{
+			return false;
+		}
+		
+		FTexturePtr screenQuad = FTexture::Create(sceneTextureTarget.Get(), ETextureType::Diffuse);
+		if(!screenQuad->IsInitialized())
+		{
+			return false;
+		}
+		
+		OutScreenFramebuffer = FFramebuffer::Create();
+		OutScreenFramebuffer->Attach(GL_FRAMEBUFFER, sceneTextureTarget->AsShared());
+	
+		static const TArray<FMesh2DVertex> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+			{ glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
+			{ glm::vec2( -1.0f, -1.0f), glm::vec2(0.0f, 0.0f)},
+			{ glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 0.0f)},
+			{ glm::vec2( -1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
+			{ glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 0.0f)},
+			{ glm::vec2( 1.0f,  1.0f), glm::vec2(1.0f, 1.)}
+		};
+		
+		OutScreenObj = FMesh2D::Create(quadVertices, {screenQuad})->AsShared();
+		OutScreenObj->SetCullFaces(false);
 	}
-
-	OutFramebuffer = FFramebuffer::Create();
-	OutFramebuffer->Attach(GL_FRAMEBUFFER, sceneTextureTarget->AsShared());
-	OutFramebuffer->Attach(GL_FRAMEBUFFER, sceneBufferTarget->AsShared());
-	
-	static const TArray<FMesh2DVertex> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-		{ glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
-		{ glm::vec2( -1.0f, -1.0f), glm::vec2(0.0f, 0.0f)},
-		{ glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 0.0f)},
-		{ glm::vec2( -1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
-		{ glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 0.0f)},
-		{ glm::vec2( 1.0f,  1.0f), glm::vec2(1.0f, 1.)}
-	};
-	
-	OutScreenObj = FMesh2D::Create(quadVertices, {screenQuad})->AsShared();
-	OutScreenObj->SetCullFaces(false);
 	
 	return true;
 }
@@ -350,7 +363,7 @@ void ProcessRender(const TArray<FShaderProgramPtr>& Shaders)
 	// Scene
 	// * To custom framebuffer
 	{
-		GScreenFramebuffer->Enable();
+		GMSAAFramebuffer->Enable();
 
 		// Setup
 		{
@@ -374,11 +387,25 @@ void ProcessRender(const TArray<FShaderProgramPtr>& Shaders)
 			Shaders[0]->Disable();
 		}
 		
-		GScreenFramebuffer->Disable();
+		GMSAAFramebuffer->Disable();
 	}
 
 	// Screen rendering
 	{
+		static FFramebufferCopyArgs copyArgs;
+		if(copyArgs.Source.Size.x == 0)
+		{
+			copyArgs.Source.Pos = { 0, 0 };
+			copyArgs.Source.Size = { GWindowWidth, GWindowHeight };
+			
+			copyArgs.Destination = copyArgs.Source;
+			
+			copyArgs.DataType = FFramebufferCopyArgs::DT_Color;
+			copyArgs.FilterType = FFramebufferCopyArgs::FT_Nearest;
+		}
+		
+		GMSAAFramebuffer->CopyTo(GScreenFramebuffer, copyArgs);
+	
 		// Setup
 		{
 			glDisable(GL_DEPTH_TEST);
@@ -431,7 +458,7 @@ int32 GuardedMain()
 		return -2;
 	}
 	
-	if(!PrepareScreenScene(GScreenObject, GScreenFramebuffer))
+	if(!PrepareScreenScene(GScreenObject, GMSAAFramebuffer, GScreenFramebuffer))
 	{
 		return -3;
 	}

@@ -63,6 +63,55 @@ void FFramebuffer::Disable()
 	bIsEnabled = false;
 }
 
+bool FFramebuffer::CopyTo(const TSharedPtr<FFramebuffer>& Destination, const FFramebufferCopyArgs& CopyArgs) const
+{
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, Id);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Destination->Id);
+	
+	GLenum dataType;
+	switch(CopyArgs.DataType)
+	{
+		case FFramebufferCopyArgs::DT_Color:
+			dataType = GL_COLOR_BUFFER_BIT;
+			break;
+		case FFramebufferCopyArgs::DT_Depth:
+			dataType = GL_DEPTH_BUFFER_BIT;
+			break;
+		case FFramebufferCopyArgs::DT_Stencil:
+			dataType = GL_STENCIL_BUFFER_BIT;
+			break;
+		default:
+			ENSURE_NO_ENTRY();
+			return false;
+	}
+	
+	GLenum filterType;
+	switch (CopyArgs.FilterType)
+	{
+		case FFramebufferCopyArgs::FT_Nearest:
+			filterType = GL_NEAREST;
+			break;
+		case FFramebufferCopyArgs::FT_Linear:
+			filterType = GL_LINEAR;
+			break;
+		default:
+			ENSURE_NO_ENTRY();
+			return false;
+	}
+	
+	glBlitFramebuffer(
+		CopyArgs.Source.Pos.x, CopyArgs.Source.Pos.y, CopyArgs.Source.Size.x, CopyArgs.Source.Size.y, 
+		CopyArgs.Destination.Pos.x, CopyArgs.Destination.Pos.y, CopyArgs.Destination.Size.x, CopyArgs.Destination.Size.y,
+		dataType, 
+		filterType
+	);
+	
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	
+	return true;
+}
+
 bool FFramebuffer::Attach(const EFramebufferType FBTargetType, const FRenderTargetPtr& Target)
 {	
 	if(!Target.IsValid()) return false;

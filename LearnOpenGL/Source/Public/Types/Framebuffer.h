@@ -7,6 +7,21 @@
 class IRenderTarget;
 enum class ERenderTargetType : uint8;
 
+struct FFramebufferCopyArgs
+{
+	struct FSubData
+	{
+		glm::vec<2, uint16, glm::defaultp> Pos;
+		glm::vec<2, uint16, glm::defaultp> Size;
+	};
+	
+	FSubData Source;
+	FSubData Destination;
+	
+	enum { DT_Color, DT_Depth, DT_Stencil } DataType;
+	enum { FT_Nearest, FT_Linear } FilterType;
+};
+
 class FFramebuffer
 {
 	
@@ -38,6 +53,10 @@ public: // Use methods
 
 	void Enable();
 	void Disable();
+
+public: // Copy methods
+
+	bool CopyTo(const TSharedPtr<FFramebuffer>& Destination, const FFramebufferCopyArgs& CopyArgs) const;
 
 public: // Attach methods
 
