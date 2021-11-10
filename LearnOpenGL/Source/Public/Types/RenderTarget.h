@@ -17,14 +17,16 @@ class IRenderTarget : public TSharedClass<IRenderTarget>
 public: // Getters
 
 	virtual bool IsInitialized() const = 0;
-	virtual bool IsAttached() const = 0;
 	virtual ERenderTargetType GetType() const = 0;
+	
+	virtual EFramebufferType GetAttachedFBType() const = 0;
+	virtual uint8 GetSamples() const = 0;
 
 protected: // Setup
 
 	friend class FFramebuffer;
 
-	virtual bool AttachFramebuffer(const EFramebufferType FBTarget) = 0;
+	virtual bool AttachFramebuffer(const EFramebufferType FBTarget, const uint8 UseIndex) = 0;
 	virtual bool DetachFramebuffer() = 0;
 };
 

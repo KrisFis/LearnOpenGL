@@ -9,7 +9,7 @@ class FRenderBuffer : public IRenderTarget
 
 private: // Constructors
 
-	explicit FRenderBuffer(uint16 InWidth, uint16 InHeight, ERenderTargetType InType);
+	explicit FRenderBuffer(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType);
 
 public: // Destructors
 	
@@ -18,17 +18,22 @@ public: // Destructors
 public: // Static constructions
 
 	FORCEINLINE static TSharedPtr<FRenderBuffer> Create(uint16 Width, uint16 Height, ERenderTargetType Type)
-	{ return MakeShareable(new FRenderBuffer(Width, Height, Type)); }
+	{ return MakeShareable(new FRenderBuffer(1, Width, Height, Type)); }
+	
+	FORCEINLINE static TSharedPtr<FRenderBuffer> CreateMultisampled(uint8 Samples, uint16 Width, uint16 Height, ERenderTargetType Type)
+	{ return MakeShareable(new FRenderBuffer(Samples, Width, Height, Type)); }
 	
 public: // IRenderTarget overrides
 
 	FORCEINLINE virtual bool IsInitialized() const override { return Type != ERenderTargetType::Invalid; };
-	FORCEINLINE virtual bool IsAttached() const override { return FBType != 0; };
 	FORCEINLINE virtual ERenderTargetType GetType() const override { return Type; }
+	
+	FORCEINLINE virtual EFramebufferType GetAttachedFBType() const override { return FBType; }
+	FORCEINLINE virtual uint8 GetSamples() const override { return Samples; }
 
 protected: // IRenderTarget overrides
 
-	virtual bool AttachFramebuffer(const EFramebufferType FBTarget) override;
+	virtual bool AttachFramebuffer(const EFramebufferType FBTarget, const uint8 UseIndex) override;
 	virtual bool DetachFramebuffer() override;
 
 private: // Fields
@@ -39,4 +44,6 @@ private: // Fields
 
 	uint16 Width;
 	uint16 Height;
+	
+	uint8 Samples;
 };

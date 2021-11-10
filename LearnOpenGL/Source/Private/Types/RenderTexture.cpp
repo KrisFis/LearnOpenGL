@@ -2,11 +2,13 @@
 #include "RenderTexture.h"
 #include "Framebuffer.h"
 
-FRenderTexture::FRenderTexture(uint16 InWidth, uint16 InHeight, ERenderTargetType InType)
+FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType)
 	: Id(0)
+	, Type(ERenderTargetType::Invalid)
 	, FBType(0)
 	, Width(0)
 	, Height(0)
+	, Samples(0)
 {
 	GLenum internalFormat, format, type;
 	switch (InType)
@@ -25,23 +27,38 @@ FRenderTexture::FRenderTexture(uint16 InWidth, uint16 InHeight, ERenderTargetTyp
 			type = GL_UNSIGNED_INT_24_8;
 			break;
 		default:
+			// NOT SUPPORTED
 			ENSURE_NO_ENTRY();
 			return;
 	}
 
 	glGenTextures(1, &Id);
-	glBindTexture(GL_TEXTURE_2D, Id);
 	
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, InWidth, InHeight, 0, format, type, nullptr);
+	if(InSamples > 1)
+	{
+		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, Id);
+		
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, InSamples, format, InWidth, InHeight, GL_TRUE);
+		
+		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+	}
+	else
+	{
+		glBindTexture(GL_TEXTURE_2D, Id);
+		
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, InWidth, InHeight, 0, format, type, nullptr);
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
 	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
+
 	Width = InWidth;
 	Height = InHeight;
 	Type = InType;
+	Samples = InSamples;
 }
 
 FRenderTexture::~FRenderTexture()
@@ -50,19 +67,21 @@ FRenderTexture::~FRenderTexture()
 		glDeleteTextures(1, &Id);
 }
 
-bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget)
+bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget, const uint8 UseIndex)
 {
-	if(!IsInitialized() || IsAttached())
+	if(!IsInitialized() || FBType != 0)
 	{
 		ENSURE_NO_ENTRY();
 		return false;
 	}
+	
+	if(UseIndex > 0 && Type != ERenderTargetType::Color) return false;
 
 	GLenum attachment;
 	switch (Type)
 	{
 		case ERenderTargetType::Color:
-			attachment = GL_COLOR_ATTACHMENT0;
+			attachment = GL_COLOR_ATTACHMENT0 + UseIndex;
 			break;
 		case ERenderTargetType::DepthOnly:
 			attachment = GL_DEPTH_ATTACHMENT;
@@ -75,7 +94,7 @@ bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget)
 			return false;
 	}
 	
-	glFramebufferTexture2D(FBTarget, attachment, GL_TEXTURE_2D, Id, 0);
+	glFramebufferTexture2D(FBTarget, attachment, (Samples > 1) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, Id, 0);
 	FBType = FBTarget;
 	
 	return true;
@@ -83,7 +102,7 @@ bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget)
 
 bool FRenderTexture::DetachFramebuffer()
 {
-	if(!IsInitialized() || !IsAttached())
+	if(!IsInitialized() || FBType == 0)
 	{
 		ENSURE_NO_ENTRY();
 		return false;

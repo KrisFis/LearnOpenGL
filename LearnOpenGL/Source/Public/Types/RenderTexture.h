@@ -9,7 +9,7 @@ class FRenderTexture : public IRenderTarget
 
 private: // Constructors
 
-	explicit FRenderTexture(uint16 InWidth, uint16 InHeight, ERenderTargetType InType);
+	explicit FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType);
 
 public: // Destructor
 	
@@ -18,7 +18,10 @@ public: // Destructor
 public: // Static creation
 
 	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetType Type)
-	{ return MakeShareable(new FRenderTexture(Width, Height, Type)); }
+	{ return MakeShareable(new FRenderTexture(1, Width, Height, Type)); }
+	
+	FORCEINLINE static TSharedPtr<FRenderTexture> CreateMultisample(uint8 Samples, uint16 Width, uint16 Height, ERenderTargetType Type)
+	{ return MakeShareable(new FRenderTexture(Samples, Width, Height, Type)); }
 
 public: // Getters
 
@@ -27,12 +30,14 @@ public: // Getters
 public: // IRenderTarget overrides
 
 	FORCEINLINE virtual bool IsInitialized() const override { return Type != ERenderTargetType::Invalid; }
-	FORCEINLINE virtual bool IsAttached() const override { return FBType != 0; }
 	FORCEINLINE virtual ERenderTargetType GetType() const override { return Type; }
+	
+	FORCEINLINE virtual EFramebufferType GetAttachedFBType() const override { return FBType; }
+	FORCEINLINE virtual uint8 GetSamples() const override { return Samples; }
 
 protected: // IRenderTarget overrides
 
-	virtual bool AttachFramebuffer(const EFramebufferType FBTarget) override;
+	virtual bool AttachFramebuffer(const EFramebufferType FBTarget, const uint8 UseIndex) override;
 	virtual bool DetachFramebuffer() override;
 	
 private: // Fields
@@ -43,6 +48,8 @@ private: // Fields
 
 	uint16 Width;
 	uint16 Height;
+	
+	uint8 Samples;
 };
 
 typedef TSharedPtr<FRenderTexture> FRenderTexturePtr;
