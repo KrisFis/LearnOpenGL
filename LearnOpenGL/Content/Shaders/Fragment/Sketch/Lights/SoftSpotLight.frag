@@ -27,15 +27,18 @@ in VERT_OUT {
 
 	vec3 FragPos;
 	vec3 Normal;
-	vec2 TexCoords;
+	vec2 TexCoord;
 
-} fs_in;
+} frag_in;
+
+layout (std140) uniform Light
+{
+	vec3 viewPos;
+	Material material;
+	Light light;
+};
 
 out vec4 FragColor;
-
-uniform vec3 viewPos;
-uniform Material material;
-uniform Light light;
 
 #define USE_BLINN 1
 
@@ -46,20 +49,20 @@ void main()
 
 	// ambient
 	{
-		ambient = light.ambient * texture(material.diffuse, fs_in.TexCoords).rgb;
+		ambient = light.ambient * texture(material.diffuse, frag_in.TexCoord).rgb;
 	}
 
 	// diffuse
 	{
-		vec3 norm = normalize(fs_in.Normal);
-		vec3 lightDir = normalize(light.position - fs_in.FragPos);
+		vec3 norm = normalize(frag_in.Normal);
+		vec3 lightDir = normalize(light.position - frag_in.FragPos);
 		float diff = max(dot(norm, lightDir), 0.f);
-		diffuse = light.diffuse * diff * texture(material.diffuse, fs_in.TexCoords).rgb;
+		diffuse = light.diffuse * diff * texture(material.diffuse, frag_in.TexCoord).rgb;
 	}
 
 	// specular
 	{
-		vec3 viewDir = normalize(viewPos - fs_in.FragPos);
+		vec3 viewDir = normalize(viewPos - frag_in.FragPos);
 		
 		#if USE_BLINN
 		
@@ -73,7 +76,7 @@ void main()
 		
 		#endif
 		
-		specular = light.specular * spec * texture(material.specular, fs_in.TexCoords).rgb;
+		specular = light.specular * spec * texture(material.specular, frag_in.TexCoord).rgb;
 	}
 
 	// spotlight (soft edges)
@@ -85,7 +88,7 @@ void main()
 
 	// attenuation
 	{
-		float distance = length(light.position - fs_in.FragPos);
+		float distance = length(light.position - frag_in.FragPos);
 		attenuation = 1.f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 	}
 
