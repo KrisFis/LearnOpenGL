@@ -6,7 +6,7 @@ layout (location = 2) in vec2 aTexCoord;
 
 out vec2 TexCoord;
 
-layout (std140) uniform Matrices
+layout (std140) uniform UMatrices
 {
 	mat4 projection;
 	mat4 view;

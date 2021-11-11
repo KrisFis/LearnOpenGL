@@ -9,11 +9,18 @@ struct Material
 
 struct Light
 {
-	vec3 direction;// possible value: 0.2f, -1.0f, -0.3f
+	vec3 position;			// possible value: camera.Position
+	vec3 direction;			// possible value: camera.Front
+	float cutOff;			// possible value: cos(radians(12.5f))
+	float outerCutOff;		// possible value: cos(radians(17.5f))
 
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
+
+	float constant;			// possible value: 1.f
+	float linear;			// possible value: 0.09f
+	float quadratic;		// possible value: 0.032f
 };
 
 in VERT_OUT {
@@ -24,12 +31,13 @@ in VERT_OUT {
 	
 } frag_in;
 
-layout (std140) uniform Light
+layout (std140) uniform ULight
 {
 	vec3 viewPos;
-	Material material;
 	Light light;
 };
+
+uniform Material material;
 
 out vec4 FragColor;
 
@@ -39,6 +47,9 @@ void main()
 {
 	vec3 ambient, diffuse, specular;
 	
+	vec3 lightDir = normalize(-light.direction);
+	vec3 norm = normalize(frag_in.Normal);
+	
 	// ambient
 	{
 		ambient = light.ambient * texture(material.diffuse, frag_in.TexCoord).rgb;
@@ -46,8 +57,6 @@ void main()
 
 	// diffuse
 	{
-		vec3 norm = normalize(frag_in.Normal);
-		vec3 lightDir = normalize(-light.direction);
 		float diff = max(dot(norm, lightDir), 0.f);
 		diffuse = light.diffuse * diff * texture(material.diffuse, frag_in.TexCoord).rgb;
 	}
@@ -68,8 +77,8 @@ void main()
 		
 		#endif
 		
-		specular = light.specular * spec * texture(material.specular, TexCoord).rgb;
+		specular = light.specular * spec * texture(material.specular, frag_in.TexCoord).rgb;
 	}
 
-	FragColor = vec4(ambient + diffuse + specular + emission, 1.f);
+	FragColor = vec4(ambient + diffuse + specular, 1.f);
 }

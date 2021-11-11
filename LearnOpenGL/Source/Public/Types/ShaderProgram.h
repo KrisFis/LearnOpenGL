@@ -49,7 +49,7 @@ public: // External methods
 	void SetMat3(const char* Name, const glm::mat3& Value);
 	void SetMat4(const char* Name, const glm::mat4& Value);
 	
-	void SetUniformBuffer(const char* Name, const FUniformBuffer& Value);
+	bool SetUniformBuffer(const char* Name, const FUniformBuffer& Value);
 
 private: // Fields
 

@@ -4,7 +4,7 @@ layout (location = 0) in vec3 aPos;
 
 out vec3 TexCoord;
 
-layout (std140) uniform Matrices
+layout (std140) uniform UMatrices
 {
 	mat4 projection; 
 	mat4 view;
