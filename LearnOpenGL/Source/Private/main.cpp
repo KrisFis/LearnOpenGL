@@ -56,30 +56,10 @@ FUniformBufferPtr GLightBuffer;
 enum class EShadersMainType : uint8
 {
 	Invalid = 0,
+	
 	Mesh,
 	Screen,
-	Skybox,
-	
-	DirectionalLight,
-	PointLight,
-	SoftSpotLight,
-	SpotLight
-};
-
-struct FLightLightShaderInfo
-{
-	glm::vec3 position;
-	glm::vec3 direction;
-	float cutOff;
-	float outerCutOff;
-
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
-
-	float constant;
-	float linear;
-	float quadratic;
+	Skybox
 };
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
@@ -333,24 +313,6 @@ bool PrepareShaders(TFastMap<EShadersMainType, FShaderProgramPtr>& OutShaders, F
 			EShadersMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
 		});
-	
-		// Lights
-		{
-			OutShaders.insert({
-				EShadersMainType::DirectionalLight,
-				FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Sketch/Lights/Light.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Sketch/Lights/DirectionalLight.frag").c_str())
-			});
-			
-			OutShaders.insert({
-				EShadersMainType::PointLight,
-				FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Sketch/Lights/Light.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Sketch/Lights/PointLight.frag").c_str())
-			});
-			
-			OutShaders.insert({
-				EShadersMainType::SoftSpotLight,
-				FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Sketch/Lights/Light.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Sketch/Lights/SoftSpotLight.frag").c_str())
-			});
-		}
 	}
 	
 	for(const auto& shader : OutShaders)
@@ -360,26 +322,11 @@ bool PrepareShaders(TFastMap<EShadersMainType, FShaderProgramPtr>& OutShaders, F
 
 	// Uniform buffers
 	{
-		// Matrices
-		{
-			OutMatBuffer = FUniformBuffer::Create(0, 2 * sizeof(glm::mat4));
-			
-			ENSURE_RET(OutShaders[EShadersMainType::Mesh]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
-			ENSURE_RET(OutShaders[EShadersMainType::Skybox]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
-			
-			ENSURE_RET(OutShaders[EShadersMainType::DirectionalLight]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
-			ENSURE_RET(OutShaders[EShadersMainType::PointLight]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
-			ENSURE_RET(OutShaders[EShadersMainType::SoftSpotLight]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
-		}
-
-		// Lights
-		{
-			OutLightBuffer = FUniformBuffer::Create(1, sizeof(glm::vec3) + sizeof(FLightLightShaderInfo)); // viewPos + light
+		OutMatBuffer = FUniformBuffer::Create(0, 2 * sizeof(glm::mat4));
+		OutLightBuffer = FUniformBuffer::Create(1, sizeof(glm::vec3) + 4); // bool = 4 bytes
 		
-			ENSURE_RET(OutShaders[EShadersMainType::DirectionalLight]->SetUniformBuffer("ULight", OutLightBuffer.GetRef()), false);
-			ENSURE_RET(OutShaders[EShadersMainType::PointLight]->SetUniformBuffer("ULight", OutLightBuffer.GetRef()), false);
-			ENSURE_RET(OutShaders[EShadersMainType::SoftSpotLight]->SetUniformBuffer("ULight", OutLightBuffer.GetRef()), false);
-		}
+		ENSURE_RET(OutShaders[EShadersMainType::Mesh]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
+		ENSURE_RET(OutShaders[EShadersMainType::Skybox]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
 	}
 	
 	return true;
