@@ -21,23 +21,23 @@ namespace NMeshUtils
 		}
 	}
 
-	FSceneObjectPtr ConstructCube(const TSharedPtr<FTexture> Texture)
+	FSceneObjectPtr ConstructCube(const TArray<TSharedPtr<FTexture>> Textures)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Cube/Cube.obj", {Texture});
+		return NPrivate::ConstructShape("Models/Primitive/Cube/Cube.obj", Textures);
 	}
 
-	FSceneObjectPtr ConstructPlane(const TSharedPtr<FTexture> Texture)
+	FSceneObjectPtr ConstructPlane(const TArray<TSharedPtr<FTexture>> Textures)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Plane/Plane.obj", {Texture});
+		return NPrivate::ConstructShape("Models/Primitive/Plane/Plane.obj", Textures);
 	}
 
-	FSceneObjectPtr ConstructSphere(const TSharedPtr<FTexture> Texture)
+	FSceneObjectPtr ConstructSphere(const TArray<TSharedPtr<FTexture>> Textures)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Sphere/Sphere.obj", {Texture});
+		return NPrivate::ConstructShape("Models/Primitive/Sphere/Sphere.obj", Textures);
 	}
 
-	FSceneObjectPtr ConstructCylinder(const TSharedPtr<FTexture> Texture)
+	FSceneObjectPtr ConstructCylinder(const TArray<TSharedPtr<FTexture>> Textures)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Cylinder/Cylinder.obj", {Texture});
+		return NPrivate::ConstructShape("Models/Primitive/Cylinder/Cylinder.obj", Textures);
 	}
 }

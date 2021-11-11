@@ -12,7 +12,7 @@ uniform struct Material
 {
 	sampler2D diffuse;
 	sampler2D specular;
-	float shininess;
+	float shininess;		// possible value: 8, 16, 24, 32
 } material;
 
 uniform struct Light
@@ -27,7 +27,7 @@ uniform struct Light
 layout (std140) uniform ULight
 {
 	vec3 viewPos;
-	bool useBlinn;
+	int useBlinn;
 } u_light;
 
 out vec4 FragColor;
@@ -55,7 +55,7 @@ void main()
 		vec3 viewDir = normalize(u_light.viewPos - frag_in.FragPos);
 		
 		float spec = 0.f;
-		if(u_light.useBlinn)
+		if(u_light.useBlinn == 1)
 		{
 			vec3 halfwayDir = normalize(lightDir + viewDir);
 			spec = pow(max(dot(norm, halfwayDir), 0.f), material.shininess);

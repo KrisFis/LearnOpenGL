@@ -66,11 +66,15 @@ FCubemap::FCubemap(const TFastMap<ECubemapFace, FString>& FacesPaths)
 		
 			glTexImage2D(faceAsGLEnum, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 			stbi_image_free(data);
+			
+			std::cout << "Cubemap face load successful [Path: " << facePath.second << " ]" << std::endl;
 		}
 		else
 		{
-			std::cout << "Cubemap load failed [Path: " << facePath.second << " ]" << std::endl;
+			std::cout << "Cubemap face load failed [Path: " << facePath.second << " ]" << std::endl;
 			stbi_image_free(data);
+			
+			return;
 		}
 	}
 	

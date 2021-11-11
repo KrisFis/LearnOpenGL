@@ -53,13 +53,20 @@ FSceneObjectPtr GScreenObject;
 FUniformBufferPtr GMatricesBuffer;
 FUniformBufferPtr GLightBuffer;
 
+// TEST
+
+FSceneObjectPtr GLightMesh;
+glm::vec3 GLightColor = NColors::White.ToVec3();
+
 enum class EShadersMainType : uint8
 {
 	Invalid = 0,
 	
 	Mesh,
 	Screen,
-	Skybox
+	Skybox,
+	
+	LIGHT_OBJ
 };
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
@@ -164,7 +171,7 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 {
 	OutSkyboxObj = FSkybox::Create(
 		FCubemap::Create(
-			NTextureUtils::GetFacesPathFromRoot(NFileUtils::ContentPath("Textures/Cubemaps/Skybox_high"))
+			NTextureUtils::GetFacesPathFromRoot(NFileUtils::ContentPath("Textures/Cubemaps/Skybox_high"), "jpg", false)
 		)
 	)->AsShared();
 
@@ -220,34 +227,40 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	return true;
 }
 
-bool PrepareScene(FScenePtr& OutScene)
+bool PrepareScene(FScenePtr& OutScene, FSceneObjectPtr& OutLightMesh)
 {
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
-	FTexturePtr brickTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/bricksx64.png").c_str(), ETextureType::Diffuse);
-	FTexturePtr carpetTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/carpet.png").c_str(), ETextureType::Diffuse);
+	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr grassTexture = FTexture::Create(NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, true);
-	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !brickTexture->IsInitialized() || !carpetTexture->IsInitialized() || !grassTexture->IsInitialized())
+	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized()|| !grassTexture->IsInitialized())
 	{
 		return false;
 	}
 	
+	OutLightMesh = NMeshUtils::ConstructSphere({});
+	OutLightMesh->SetTransform({
+		{0.f, 0.f, 0.f},
+		{0.f, 0.f, 0.f},
+		{0.25f, 0.25f, 0.25f}
+	});
+	
 	TArray<FSceneObjectPtr> sceneObjects;
-	sceneObjects.push_back(NMeshUtils::ConstructPlane(rocksFloorTexture));
+	sceneObjects.push_back(NMeshUtils::ConstructPlane({rocksFloorTexture}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{0.f, -1.f, 0.f},
 		{0.f, 0.f, 0.f},
 		{10.f, 1.f, 10.f}
 	});
 
-	sceneObjects.push_back(NMeshUtils::ConstructSphere(wallTexture));
+	sceneObjects.push_back(NMeshUtils::ConstructSphere({wallTexture}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{10.f, 10.f, 10.f},
 			{0.f, 0.f, 0.f},
 			{2.f, 2.f, 2.f}
 	});
 	
-	sceneObjects.push_back(NMeshUtils::ConstructCube(brickTexture));
+	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -256,7 +269,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.25f, 1.f, 5.f}
 	});
 
-	sceneObjects.push_back(NMeshUtils::ConstructCube(brickTexture));
+	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -265,7 +278,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.25f, 1.f, 2.f}
 	});
 
-	sceneObjects.push_back(NMeshUtils::ConstructCube(brickTexture));
+	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -274,7 +287,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.25f, 1.f, 2.f}
 	});
 
-	sceneObjects.push_back(NMeshUtils::ConstructCube(brickTexture));
+	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -283,7 +296,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{1.25f, 1.f, 0.25f}
 	});
 	
-	sceneObjects.push_back(NMeshUtils::ConstructPlane(grassTexture));
+	sceneObjects.push_back(NMeshUtils::ConstructPlane({grassTexture}));
 	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{2.f, -0.499f, 0.f},
@@ -313,6 +326,11 @@ bool PrepareShaders(TFastMap<EShadersMainType, FShaderProgramPtr>& OutShaders, F
 			EShadersMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
 		});
+		
+		OutShaders.insert({
+			EShadersMainType::LIGHT_OBJ,
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Mesh_NoLight.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh_NoLight.frag").c_str())
+		});
 	}
 	
 	for(const auto& shader : OutShaders)
@@ -323,10 +341,13 @@ bool PrepareShaders(TFastMap<EShadersMainType, FShaderProgramPtr>& OutShaders, F
 	// Uniform buffers
 	{
 		OutMatBuffer = FUniformBuffer::Create(0, 2 * sizeof(glm::mat4));
-		OutLightBuffer = FUniformBuffer::Create(1, sizeof(glm::vec3) + 4); // bool = 4 bytes
+		OutLightBuffer = FUniformBuffer::Create(1, sizeof(glm::vec3) + sizeof(int32));
 		
 		ENSURE_RET(OutShaders[EShadersMainType::Mesh]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
+		ENSURE_RET(OutShaders[EShadersMainType::Mesh]->SetUniformBuffer("ULight", OutLightBuffer.GetRef()), false);
+		
 		ENSURE_RET(OutShaders[EShadersMainType::Skybox]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
+		ENSURE_RET(OutShaders[EShadersMainType::LIGHT_OBJ]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
 	}
 	
 	return true;
@@ -381,6 +402,34 @@ void ProcessInput()
 		if (glfwGetKey(GWindow, GLFW_KEY_D) == GLFW_PRESS)
 			GCamera->ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
+
+	// Testing
+	{
+		if (glfwGetKey(GWindow, GLFW_KEY_UP) == GLFW_PRESS)
+		{
+			FTransform lightTransform = GLightMesh->GetTransform();
+			lightTransform.Position.y += GDeltaSeconds * 3.f;
+			GLightMesh->SetTransform(lightTransform);
+		}
+		if (glfwGetKey(GWindow, GLFW_KEY_DOWN) == GLFW_PRESS)
+		{
+			FTransform lightTransform = GLightMesh->GetTransform();
+			lightTransform.Position.y -= GDeltaSeconds * 3.f;
+			GLightMesh->SetTransform(lightTransform);
+		}
+		if (glfwGetKey(GWindow, GLFW_KEY_LEFT) == GLFW_PRESS)
+		{
+			FTransform lightTransform = GLightMesh->GetTransform();
+			lightTransform.Position.x -= GDeltaSeconds * 3.f;
+			GLightMesh->SetTransform(lightTransform);
+		}
+		if (glfwGetKey(GWindow, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		{
+			FTransform lightTransform = GLightMesh->GetTransform();
+			lightTransform.Position.x += GDeltaSeconds * 3.f;
+			GLightMesh->SetTransform(lightTransform);
+		}
+	}
 }
 
 void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
@@ -391,6 +440,9 @@ void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
 	
 	GMatricesBuffer->SetValue(0, projection);
 	GMatricesBuffer->SetValue(sizeof(glm::mat4), view);
+	
+	GLightBuffer->SetValue(0, GCamera->GetPosition());
+	GLightBuffer->SetValue<int32>(sizeof(glm::vec3), 0);
 	
 	// Scene
 	// * To custom framebuffer
@@ -414,8 +466,30 @@ void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
 		// Draw scene
 		{
 			Shaders[EShadersMainType::Mesh]->Enable();
+
+			// Setup light
+			{
+				Shaders[EShadersMainType::Mesh]->SetFloat("material.shininess", 8.f);
+				
+				Shaders[EShadersMainType::Mesh]->SetVec3("light.position", GLightMesh->GetTransform().Position);
+				Shaders[EShadersMainType::Mesh]->SetVec3("light.diffuse", GLightColor * glm::vec3(0.5f));
+				Shaders[EShadersMainType::Mesh]->SetVec3("light.ambient", GLightColor * glm::vec3(0.5f) * glm::vec3(0.2f));
+				Shaders[EShadersMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
+				
+				Shaders[EShadersMainType::Mesh]->SetFloat("light.constant", 1.f);
+				Shaders[EShadersMainType::Mesh]->SetFloat("light.linear", 0.09f);
+				Shaders[EShadersMainType::Mesh]->SetFloat("light.quadratic", 0.032f);
+			}
+			
 			GScene->Draw(Shaders[EShadersMainType::Mesh], GCamera);
 			Shaders[EShadersMainType::Mesh]->Disable();
+
+			// TESTING
+			{
+				Shaders[EShadersMainType::LIGHT_OBJ]->Enable();
+				GLightMesh->Draw(Shaders[EShadersMainType::LIGHT_OBJ]);
+				Shaders[EShadersMainType::LIGHT_OBJ]->Disable();
+			}
 		}
 		
 		GMSAAFramebuffer->Disable();
@@ -494,7 +568,7 @@ int32 GuardedMain()
 		return -3;
 	}
 	
-	if(!PrepareScene(GScene))
+	if(!PrepareScene(GScene, GLightMesh))
 	{
 		return -4;
 	}

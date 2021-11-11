@@ -186,6 +186,11 @@ void FShaderProgram::SetMat4(const char* Name, const glm::mat4& Value)
 	glUniformMatrix4fv(glGetUniformLocation(Id, Name), 1, GL_FALSE, &Value[0][0]);
 }
 
+void FShaderProgram::SetSampler2D(const char* Name, const FTextureId Value)
+{
+	glUniform1i(glGetUniformLocation(Id, Name), Value);
+}
+
 bool FShaderProgram::SetUniformBuffer(const char* Name, const FUniformBuffer& Value)
 {
 	uint32 idx = glGetUniformBlockIndex(Id, Name);

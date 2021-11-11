@@ -9,8 +9,8 @@ class FTexture;
 
 namespace NMeshUtils
 {
-	FSceneObjectPtr ConstructCube(const TSharedPtr<FTexture> Texture);
-	FSceneObjectPtr ConstructPlane(const TSharedPtr<FTexture> Texture);
-	FSceneObjectPtr ConstructSphere(const TSharedPtr<FTexture> Texture);
-	FSceneObjectPtr ConstructCylinder(const TSharedPtr<FTexture> Texture);
+	FSceneObjectPtr ConstructCube(const TArray<TSharedPtr<FTexture>> Textures);
+	FSceneObjectPtr ConstructPlane(const TArray<TSharedPtr<FTexture>> Textures);
+	FSceneObjectPtr ConstructSphere(const TArray<TSharedPtr<FTexture>> Textures);
+	FSceneObjectPtr ConstructCylinder(const TArray<TSharedPtr<FTexture>> Textures);
 }

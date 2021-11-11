@@ -7,5 +7,5 @@ enum class ECubemapFace : uint8;
 
 namespace NTextureUtils
 {
-	TFastMap<ECubemapFace, FString> GetFacesPathFromRoot(const FString& Root);
+	TFastMap<ECubemapFace, FString> GetFacesPathFromRoot(const FString& Root, const FString& Extension, bool UseIndexes = true);
 }
