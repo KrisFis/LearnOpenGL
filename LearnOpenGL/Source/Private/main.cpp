@@ -54,9 +54,9 @@ FUniformBufferPtr GMatricesBuffer;
 FUniformBufferPtr GLightBuffer;
 
 // TEST
-
-FSceneObjectPtr GLightMesh;
-glm::vec3 GLightColor = NColors::White.ToVec3();
+glm::vec3 GLightPos;
+glm::vec4 GLightColor = NColors::White.ToVec4();
+bool GUseBlinn = true;
 
 enum class EShadersMainType : uint8
 {
@@ -227,7 +227,7 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	return true;
 }
 
-bool PrepareScene(FScenePtr& OutScene, FSceneObjectPtr& OutLightMesh)
+bool PrepareScene(FScenePtr& OutScene)
 {
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
@@ -237,13 +237,6 @@ bool PrepareScene(FScenePtr& OutScene, FSceneObjectPtr& OutLightMesh)
 	{
 		return false;
 	}
-	
-	OutLightMesh = NMeshUtils::ConstructSphere({});
-	OutLightMesh->SetTransform({
-		{0.f, 0.f, 0.f},
-		{0.f, 0.f, 0.f},
-		{0.25f, 0.25f, 0.25f}
-	});
 	
 	TArray<FSceneObjectPtr> sceneObjects;
 	sceneObjects.push_back(NMeshUtils::ConstructPlane({rocksFloorTexture}));
@@ -326,11 +319,6 @@ bool PrepareShaders(TFastMap<EShadersMainType, FShaderProgramPtr>& OutShaders, F
 			EShadersMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
 		});
-		
-		OutShaders.insert({
-			EShadersMainType::LIGHT_OBJ,
-			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Mesh_NoLight.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh_NoLight.frag").c_str())
-		});
 	}
 	
 	for(const auto& shader : OutShaders)
@@ -346,8 +334,7 @@ bool PrepareShaders(TFastMap<EShadersMainType, FShaderProgramPtr>& OutShaders, F
 		ENSURE_RET(OutShaders[EShadersMainType::Mesh]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
 		ENSURE_RET(OutShaders[EShadersMainType::Mesh]->SetUniformBuffer("ULight", OutLightBuffer.GetRef()), false);
 		
-		ENSURE_RET(OutShaders[EShadersMainType::Skybox]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
-		ENSURE_RET(OutShaders[EShadersMainType::LIGHT_OBJ]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
+		ENSURE_RET(OutShaders[EShadersMainType::Skybox]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);;
 	}
 	
 	return true;
@@ -405,29 +392,26 @@ void ProcessInput()
 
 	// Testing
 	{
+		if (glfwGetKey(GWindow, GLFW_KEY_B) == GLFW_PRESS)
+		{
+			GUseBlinn = !GUseBlinn;
+		}
+	
 		if (glfwGetKey(GWindow, GLFW_KEY_UP) == GLFW_PRESS)
 		{
-			FTransform lightTransform = GLightMesh->GetTransform();
-			lightTransform.Position.y += GDeltaSeconds * 3.f;
-			GLightMesh->SetTransform(lightTransform);
+			GLightPos.y += GDeltaSeconds * 0.5f;
 		}
 		if (glfwGetKey(GWindow, GLFW_KEY_DOWN) == GLFW_PRESS)
 		{
-			FTransform lightTransform = GLightMesh->GetTransform();
-			lightTransform.Position.y -= GDeltaSeconds * 3.f;
-			GLightMesh->SetTransform(lightTransform);
+			GLightPos.y -= GDeltaSeconds * 0.5f;
 		}
 		if (glfwGetKey(GWindow, GLFW_KEY_LEFT) == GLFW_PRESS)
 		{
-			FTransform lightTransform = GLightMesh->GetTransform();
-			lightTransform.Position.x -= GDeltaSeconds * 3.f;
-			GLightMesh->SetTransform(lightTransform);
+			GLightPos.x -= GDeltaSeconds * 0.5f;
 		}
 		if (glfwGetKey(GWindow, GLFW_KEY_RIGHT) == GLFW_PRESS)
 		{
-			FTransform lightTransform = GLightMesh->GetTransform();
-			lightTransform.Position.x += GDeltaSeconds * 3.f;
-			GLightMesh->SetTransform(lightTransform);
+			GLightPos.x += GDeltaSeconds * 0.5f;
 		}
 	}
 }
@@ -442,7 +426,7 @@ void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
 	GMatricesBuffer->SetValue(sizeof(glm::mat4), view);
 	
 	GLightBuffer->SetValue(0, GCamera->GetPosition());
-	GLightBuffer->SetValue<int32>(sizeof(glm::vec3), 0);
+	GLightBuffer->SetValue<int32>(sizeof(glm::vec3), GUseBlinn ? 1 : 0);
 	
 	// Scene
 	// * To custom framebuffer
@@ -471,9 +455,9 @@ void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
 			{
 				Shaders[EShadersMainType::Mesh]->SetFloat("material.shininess", 8.f);
 				
-				Shaders[EShadersMainType::Mesh]->SetVec3("light.position", GLightMesh->GetTransform().Position);
-				Shaders[EShadersMainType::Mesh]->SetVec3("light.diffuse", GLightColor * glm::vec3(0.5f));
-				Shaders[EShadersMainType::Mesh]->SetVec3("light.ambient", GLightColor * glm::vec3(0.5f) * glm::vec3(0.2f));
+				Shaders[EShadersMainType::Mesh]->SetVec3("light.position", GLightPos);
+				Shaders[EShadersMainType::Mesh]->SetVec3("light.diffuse", glm::vec3(GLightColor) * glm::vec3(0.5f));
+				Shaders[EShadersMainType::Mesh]->SetVec3("light.ambient", glm::vec3(GLightColor) * 0.05f);
 				Shaders[EShadersMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
 				
 				Shaders[EShadersMainType::Mesh]->SetFloat("light.constant", 1.f);
@@ -482,14 +466,8 @@ void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
 			}
 			
 			GScene->Draw(Shaders[EShadersMainType::Mesh], GCamera);
+			
 			Shaders[EShadersMainType::Mesh]->Disable();
-
-			// TESTING
-			{
-				Shaders[EShadersMainType::LIGHT_OBJ]->Enable();
-				GLightMesh->Draw(Shaders[EShadersMainType::LIGHT_OBJ]);
-				Shaders[EShadersMainType::LIGHT_OBJ]->Disable();
-			}
 		}
 		
 		GMSAAFramebuffer->Disable();
@@ -568,7 +546,7 @@ int32 GuardedMain()
 		return -3;
 	}
 	
-	if(!PrepareScene(GScene, GLightMesh))
+	if(!PrepareScene(GScene))
 	{
 		return -4;
 	}

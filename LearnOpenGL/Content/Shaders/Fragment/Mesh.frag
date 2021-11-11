@@ -47,15 +47,17 @@ vec4 CalculateSpotLight()
 	vec3 lightDir = normalize(light.position - frag_in.FragPos);
 	vec3 norm = normalize(frag_in.Normal);
 	
+	vec3 texColor = texture(material.diffuse0, frag_in.TexCoord).rgb;
+	
 	// ambient
 	{
-		ambient = light.ambient * texture(material.diffuse0, frag_in.TexCoord).rgb;
+		ambient = light.ambient * texColor;
 	}
 	
 	// diffuse
 	{
 		float diff = max(dot(norm, lightDir), 0.f);
-		diffuse = light.diffuse * diff * texture(material.diffuse0, frag_in.TexCoord).rgb;
+		diffuse = light.diffuse * diff * texColor;
 	}
 	
 	// specular
@@ -74,7 +76,7 @@ vec4 CalculateSpotLight()
 			spec = pow(max(dot(viewDir, reflectDir), 0.f), material.shininess);
 		}
 		
-		specular = vec3(0.f); //light.specular * spec;
+		specular = light.specular * spec;
 	}
 	
 	// attenuation
