@@ -5,7 +5,7 @@
 #include "Texture.h"
 #include "ColorUtils.h"
 
-FMesh2D::FMesh2D(const TArray <FMesh2DVertex>& InVertices, const TArray<TSharedPtr<FTexture>>& InTextures)
+FMesh2D::FMesh2D(const TArray<FMesh2DVertex>& InVertices, const TArray<TSharedPtr<FTexture>>& InTextures)
 	: OutlineSize(0.f)
 	, OutlineColor(NColors::Transparent)
 	, Transform(FTransform())

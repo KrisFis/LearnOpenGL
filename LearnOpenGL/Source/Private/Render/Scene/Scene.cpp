@@ -6,8 +6,6 @@
 #include "Camera.h"
 #include "FileUtils.h"
 #include "Texture.h"
-#include "../../Public/Types/Scene.h"
-
 
 namespace NScene_Private
 {

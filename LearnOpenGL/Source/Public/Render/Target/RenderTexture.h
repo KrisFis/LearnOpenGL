@@ -2,7 +2,7 @@
 #pragma once
 
 #include "ModuleMinimal.h"
-#include "RenderTarget.h"
+#include "RenderTargetBase.h"
 
 class FRenderTexture : public IRenderTarget
 {

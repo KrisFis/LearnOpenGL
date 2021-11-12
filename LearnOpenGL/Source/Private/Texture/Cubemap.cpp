@@ -1,8 +1,6 @@
 
 #include "Cubemap.h"
 #include "stb_image.h"
-#include "../../Public/Types/Cubemap.h"
-
 
 FCubemap::FCubemap(const TFastMap<ECubemapFace, FString>& FacesPaths)
 	: Id(NRenderConsts::Invalid::TextureId)
