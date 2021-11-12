@@ -2,7 +2,9 @@
 
 layout (location = 0) in vec3 aPos;
 
-out vec3 TexCoord;
+out VERT_OUT {
+	vec3 TexCoord;
+} vert_out;
 
 layout (std140) uniform UMatrices
 {
@@ -12,7 +14,6 @@ layout (std140) uniform UMatrices
 
 void main()
 {
-	TexCoord = aPos;
-	vec4 resultPos = projection * mat4(mat3(view)) * vec4(aPos, 1.0);
-	gl_Position = resultPos.xyww;
+	vert_out.TexCoord = aPos;
+	gl_Position = (projection * mat4(mat3(view)) * vec4(aPos, 1.0)).xyww;
 }

@@ -21,25 +21,32 @@ public: // Static constructions
 
 public: // Getters
 
+	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
+
 	FORCEINLINE FBufferId GetId() const { return Id; }
 	FORCEINLINE uint32 GetPointIdx() const { return PointIdx; }
 	FORCEINLINE uint32 GetSize() const { return Size; }
 
 public: // Setters
 
-	template<typename T>
+	template<typename T, typename TEnableIf<TIsPrimitiveType<T>::Value>::Type* = nullptr>
 	FORCEINLINE void SetValue(uint32 Offset, const T& Value)
 	{ FillSubData(Offset, sizeof(T), &Value); }
 
 private: // Private methods
 
-	void FillSubData(uint32 Offset, uint32 DataSize, const void* Data);
+	void FillSubData(const uint32 Offset, const uint32 RealDataSize, const void* Data);
 
 private: // Fields
 
 	FBufferId Id;
 	uint32 PointIdx;
 	uint32 Size;
+
+private: // Primitive fields
+
+	bool bIsInitialized;
+
 };
 
 typedef TSharedPtr<FUniformBuffer> FUniformBufferPtr;

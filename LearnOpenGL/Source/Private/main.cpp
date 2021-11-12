@@ -6,6 +6,7 @@
 #include "ColorUtils.h"
 #include "Scene.h"
 #include "TextureUtils.h"
+#include "ShaderUtils.h"
 
 #include "ShaderProgram.h"
 #include "Texture.h"
@@ -28,6 +29,8 @@ GLFWwindow* GWindow = nullptr;
 uint16 GWindowWidth = 800;
 uint16 GWindowHeight = 600;
 
+float GGamma = 1.5f; // 2.2f is best for most of the monitors
+
 // Global
 float GLastSeconds = 0.f;
 float GDeltaSeconds = 0.f;
@@ -35,6 +38,7 @@ float GDeltaSeconds = 0.f;
 // Key
 bool GbShiftWasPressed = false;
 bool GbAltWasPressed = false;
+bool GbBWasPressed = false;
 
 // Mouse
 float GLastMouseX = GWindowWidth * 0.5f;
@@ -50,24 +54,76 @@ FFramebufferPtr GMSAAFramebuffer;
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
 
-FUniformBufferPtr GMatricesBuffer;
-FUniformBufferPtr GLightBuffer;
-
 // TEST
 glm::vec3 GLightPos;
 glm::vec4 GLightColor = NColors::White.ToVec4();
 bool GUseBlinn = true;
 
-enum class EShadersMainType : uint8
+struct FUniformBufferMainType
 {
-	Invalid = 0,
+	enum EType : uint8 { Invalid = 0, Matrices, Light, PostProcess};
 	
-	Mesh,
-	Screen,
-	Skybox,
+	static const char* ToString(EType Type)
+	{
+		switch (Type)
+		{
+			case Matrices:
+				return "UMatrices";
+			case Light:
+				return "ULight";
+			case PostProcess:
+				return "UPostProcess";
+			default:
+				ENSURE_NO_ENTRY();
+				return "";
+		}
+	}
 	
-	LIGHT_OBJ
+	static int16 GetBindPoint(EType Type)
+	{
+		return (int16)(Type)-1;
+	}
+	
+	static uint32 GetSize(EType Type)
+	{
+		switch (Type)
+		{
+			case Matrices:
+				return NShaderUtils::GetSTD140Size<glm::mat4>() * 2;
+			case Light:
+				return NShaderUtils::GetSTD140Size<glm::vec4>() + NShaderUtils::GetSTD140Size<bool>();
+			case PostProcess:
+				return NShaderUtils::GetSTD140Size<float>();
+			default:
+				ENSURE_NO_ENTRY();
+				return 0;
+		}
+	}
 };
+
+struct FShaderMainType
+{
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox };
+	
+	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
+	{
+		switch (Type)
+		{
+			case Mesh:
+				return { FUniformBufferMainType::Matrices, FUniformBufferMainType::Light };
+			case Screen:
+				return { FUniformBufferMainType::PostProcess };
+			case Skybox:
+				return { FUniformBufferMainType::Matrices };
+			default:
+				ENSURE_NO_ENTRY();
+				return {};
+		}
+	}
+};
+
+typedef FShaderMainType::EType EShaderMainType;
+typedef FUniformBufferMainType::EType EUniformBufferMainType;
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
@@ -232,7 +288,7 @@ bool PrepareScene(FScenePtr& OutScene)
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
-	FTexturePtr grassTexture = FTexture::Create(NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, true);
+	FTexturePtr grassTexture = FTexture::Create(NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, false, true);
 	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized()|| !grassTexture->IsInitialized())
 	{
 		return false;
@@ -301,22 +357,22 @@ bool PrepareScene(FScenePtr& OutScene)
 	return true;
 }
 
-bool PrepareShaders(TFastMap<EShadersMainType, FShaderProgramPtr>& OutShaders, FUniformBufferPtr& OutMatBuffer, FUniformBufferPtr& OutLightBuffer)
+bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TFastMap<EUniformBufferMainType, FUniformBufferPtr>& OutUniforms)
 {
 	// Compile and set shaders
 	{
 		OutShaders.insert({
-			EShadersMainType::Mesh,
+			EShaderMainType::Mesh,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Mesh.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Mesh.frag").c_str())
 		});
 		
 		OutShaders.insert({
-			EShadersMainType::Screen,
+			EShaderMainType::Screen,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Screen.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Screen.frag").c_str())
 		});
 		
 		OutShaders.insert({
-			EShadersMainType::Skybox,
+			EShaderMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
 		});
 	}
@@ -328,13 +384,60 @@ bool PrepareShaders(TFastMap<EShadersMainType, FShaderProgramPtr>& OutShaders, F
 
 	// Uniform buffers
 	{
-		OutMatBuffer = FUniformBuffer::Create(0, 2 * sizeof(glm::mat4));
-		OutLightBuffer = FUniformBuffer::Create(1, sizeof(glm::vec3) + sizeof(int32));
+		// Matrices
+		{
+			constexpr EUniformBufferMainType currentType = EUniformBufferMainType::Matrices;
+			
+			OutUniforms.insert({
+				currentType,
+				FUniformBuffer::Create(
+					FUniformBufferMainType::GetBindPoint(currentType), 
+					FUniformBufferMainType::GetSize(currentType)
+				)
+			});
+			
+			ENSURE_RET(OutShaders[EShaderMainType::Mesh]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
+			false);
+			
+			ENSURE_RET(OutShaders[EShaderMainType::Skybox]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()),
+			false);
+		}
+
+		// Light
+		{
+			constexpr EUniformBufferMainType currentType = EUniformBufferMainType::Light;
+			
+			OutUniforms.insert({
+				currentType,
+				FUniformBuffer::Create(
+					FUniformBufferMainType::GetBindPoint(currentType), 
+					FUniformBufferMainType::GetSize(currentType)
+				)
+			});
 		
-		ENSURE_RET(OutShaders[EShadersMainType::Mesh]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);
-		ENSURE_RET(OutShaders[EShadersMainType::Mesh]->SetUniformBuffer("ULight", OutLightBuffer.GetRef()), false);
+			ENSURE_RET(OutShaders[EShaderMainType::Mesh]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
+			false);
+		}
 		
-		ENSURE_RET(OutShaders[EShadersMainType::Skybox]->SetUniformBuffer("UMatrices", OutMatBuffer.GetRef()), false);;
+		// PostProcess
+		{
+			constexpr EUniformBufferMainType currentType = EUniformBufferMainType::PostProcess;
+			
+			OutUniforms.insert({
+				currentType,
+				FUniformBuffer::Create(
+					FUniformBufferMainType::GetBindPoint(currentType), 
+					FUniformBufferMainType::GetSize(currentType)
+				)
+			});
+		
+			ENSURE_RET(OutShaders[EShaderMainType::Screen]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
+			false);
+		}
 	}
 	
 	return true;
@@ -392,7 +495,13 @@ void ProcessInput()
 
 	// Testing
 	{
-		if (glfwGetKey(GWindow, GLFW_KEY_B) == GLFW_PRESS)
+		const bool BWasPreviouslyPressed = GbBWasPressed;
+		GbBWasPressed = (glfwGetKey(GWindow, GLFW_KEY_B) == GLFW_PRESS);
+	
+		const bool BWasJustPressed = !BWasPreviouslyPressed && GbBWasPressed;
+		const bool BWasJustReleased = BWasPreviouslyPressed && !GbBWasPressed;
+	
+		if (BWasJustPressed)
 		{
 			GUseBlinn = !GUseBlinn;
 		}
@@ -416,17 +525,25 @@ void ProcessInput()
 	}
 }
 
-void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
+bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
+{
+	// GAMMA
+	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
+	
+	return true;
+}
+
+void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 {
 	// Init values
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera->GetViewMatrix();
 	
-	GMatricesBuffer->SetValue(0, projection);
-	GMatricesBuffer->SetValue(sizeof(glm::mat4), view);
+	Uniforms[EUniformBufferMainType::Matrices]->SetValue(0, projection);
+	Uniforms[EUniformBufferMainType::Matrices]->SetValue(NShaderUtils::GetSTD140Size<glm::mat4>(), view);
 	
-	GLightBuffer->SetValue(0, GCamera->GetPosition());
-	GLightBuffer->SetValue<int32>(sizeof(glm::vec3), GUseBlinn ? 1 : 0);
+	Uniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
+	Uniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
 	
 	// Scene
 	// * To custom framebuffer
@@ -442,32 +559,32 @@ void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
 		
 		// Draw skybox
 		{
-			Shaders[EShadersMainType::Skybox]->Enable();
-			GSkyboxObject->Draw(Shaders[EShadersMainType::Skybox]);
-			Shaders[EShadersMainType::Skybox]->Disable();
+			Shaders[EShaderMainType::Skybox]->Enable();
+			GSkyboxObject->Draw(Shaders[EShaderMainType::Skybox]);
+			Shaders[EShaderMainType::Skybox]->Disable();
 		}
 	
 		// Draw scene
 		{
-			Shaders[EShadersMainType::Mesh]->Enable();
+			Shaders[EShaderMainType::Mesh]->Enable();
 
 			// Setup light
 			{
-				Shaders[EShadersMainType::Mesh]->SetFloat("material.shininess", 8.f);
+				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
 				
-				Shaders[EShadersMainType::Mesh]->SetVec3("light.position", GLightPos);
-				Shaders[EShadersMainType::Mesh]->SetVec3("light.diffuse", glm::vec3(GLightColor) * glm::vec3(0.5f));
-				Shaders[EShadersMainType::Mesh]->SetVec3("light.ambient", glm::vec3(GLightColor) * 0.05f);
-				Shaders[EShadersMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.position", GLightPos);
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.diffuse", glm::vec3(GLightColor) * glm::vec3(0.5f));
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", glm::vec3(GLightColor) * 0.05f);
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
 				
-				Shaders[EShadersMainType::Mesh]->SetFloat("light.constant", 1.f);
-				Shaders[EShadersMainType::Mesh]->SetFloat("light.linear", 0.09f);
-				Shaders[EShadersMainType::Mesh]->SetFloat("light.quadratic", 0.032f);
+				Shaders[EShaderMainType::Mesh]->SetFloat("light.constant", 1.f);
+				Shaders[EShaderMainType::Mesh]->SetFloat("light.linear", 0.09f);
+				Shaders[EShaderMainType::Mesh]->SetFloat("light.quadratic", 0.032f);
 			}
 			
-			GScene->Draw(Shaders[EShadersMainType::Mesh], GCamera);
+			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);
 			
-			Shaders[EShadersMainType::Mesh]->Disable();
+			Shaders[EShaderMainType::Mesh]->Disable();
 		}
 		
 		GMSAAFramebuffer->Disable();
@@ -498,11 +615,11 @@ void ProcessRender(TFastMap<EShadersMainType, FShaderProgramPtr>& Shaders)
 
 		// Draw
 		{
-			Shaders[EShadersMainType::Screen]->Enable();
+			Shaders[EShaderMainType::Screen]->Enable();
 
-			GScreenObject->Draw(Shaders[EShadersMainType::Screen]);
+			GScreenObject->Draw(Shaders[EShaderMainType::Screen]);
 			
-			Shaders[EShadersMainType::Screen]->Disable();
+			Shaders[EShaderMainType::Screen]->Disable();
 		}
 	}
 }
@@ -535,8 +652,9 @@ int32 GuardedMain()
 		return -1;
 	}
 
-	TFastMap<EShadersMainType, FShaderProgramPtr> Shaders;
-	if(!PrepareShaders(Shaders, GMatricesBuffer, GLightBuffer))
+	TFastMap<EShaderMainType, FShaderProgramPtr> Shaders;
+	TFastMap<EUniformBufferMainType, FUniformBufferPtr> Uniforms;
+	if(!PrepareShaders(Shaders, Uniforms))
 	{
 		return -2;
 	}
@@ -555,6 +673,11 @@ int32 GuardedMain()
 	{
 		return -5;
 	}
+	
+	if(!InitRender(Uniforms))
+	{
+		return -6;
+	}
 
 	// Main render loop
 	FTimer frameTimer;
@@ -568,7 +691,7 @@ int32 GuardedMain()
 
 		EngineTick();
 		ProcessInput();
-		ProcessRender(Shaders);
+		ProcessRender(Shaders, Uniforms);
 
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();

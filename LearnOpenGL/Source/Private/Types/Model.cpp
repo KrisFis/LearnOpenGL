@@ -180,7 +180,7 @@ TArray<TSharedPtr<FTexture>> FModel::LoadMaterialTextures(aiMaterial* Material, 
 		
 		if(!skip)
 		{
-			FTexturePtr newTexture = FTexture::Create(filePath.c_str(), friendlyType);
+			FTexturePtr newTexture = FTexture::Create(filePath.c_str(), friendlyType, false);
 			
 			result.push_back(newTexture);
 			LoadedTextures.push_back(newTexture);

@@ -56,7 +56,7 @@ FTexture::FTexture(const FRenderTexture* RenderTexture, const ETextureType InTyp
 	, Type(InType)
 {}
 
-FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool ClampToEdge)
+FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool IsLinear, bool ClampToEdge)
 	: Id(0)
 	, UseIndex(-1)
 	, Type(ETextureType::Invalid)
@@ -78,17 +78,19 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool Clamp
 	}
 	else
 	{
-		GLenum format;
+		GLenum internalFormat, format;
 		switch(nrChannels)
 		{
 			case 1:
-				format = GL_RED;
+				format = internalFormat = GL_RED;
 			break;
 			case 3:
 				format = GL_RGB;
+				internalFormat = (IsLinear) ? GL_RGB : GL_SRGB;
 			break;
 			case 4:
 				format = GL_RGBA;
+				internalFormat = (IsLinear) ? GL_RGBA : GL_SRGB_ALPHA;
 			break;
 			default:
 				ENSURE_NO_ENTRY();
@@ -96,7 +98,7 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool Clamp
 		}
 
 		glBindTexture(GL_TEXTURE_2D, Id);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		// set the texture wrapping parameters
@@ -104,7 +106,7 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool Clamp
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (ClampToEdge) ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 
 		// set texture filtering parameters
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		stbi_image_free(data);

@@ -33,7 +33,7 @@ class FTexture
 private: // Constructors
 
 	explicit FTexture(const FRenderTexture* RenderTexture, const ETextureType InType);
-	explicit FTexture(const char* InFilePath, const ETextureType InType, bool ClampToEdge);
+	explicit FTexture(const char* InFilePath, const ETextureType InType, bool IsLinear, bool ClampToEdge);
 	
 public: // Destructors
 	
@@ -44,8 +44,8 @@ public: // Static constructions
 	FORCEINLINE static TSharedPtr<FTexture> Create(const FRenderTexture* RenderTexture, const ETextureType Type) 
 	{ return MakeShareable(new FTexture(RenderTexture, Type));}
 
-	FORCEINLINE static TSharedPtr<FTexture> Create(const char* FilePath, const ETextureType Type, bool ClampToEdge = false) 
-	{ return MakeShareable(new FTexture(FilePath, Type, ClampToEdge));}
+	FORCEINLINE static TSharedPtr<FTexture> Create(const char* FilePath, const ETextureType Type, bool IsLinear = false, bool ClampToEdge = false) 
+	{ return MakeShareable(new FTexture(FilePath, Type, IsLinear, ClampToEdge));}
 
 public: // Getters
 

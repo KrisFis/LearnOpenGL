@@ -1,17 +1,17 @@
 #version 460 core
 
-struct Material
+in VERT_OUT {
+	vec3 TexCoord;
+} frag_in;
+
+uniform struct Material
 {
 	samplerCube texture;
-};
+} material;
 
 out vec4 FragColor;
 
-in vec3 TexCoord;
-
-uniform Material material;
-
 void main()
 {
-	FragColor = texture(material.texture, TexCoord);
+	FragColor = texture(material.texture, frag_in.TexCoord);
 }

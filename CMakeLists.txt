@@ -63,6 +63,7 @@ include_directories(
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Misc"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Types"
+    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/TypeTraits"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/include"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/STB/include"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/include"

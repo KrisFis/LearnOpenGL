@@ -27,7 +27,7 @@ uniform struct Light
 layout (std140) uniform ULight
 {
 	vec3 viewPos;
-	int useBlinn;
+	bool useBlinn;
 } u_light;
 
 out vec4 FragColor;
@@ -55,7 +55,7 @@ void main()
 		vec3 viewDir = normalize(u_light.viewPos - frag_in.FragPos);
 		
 		float spec = 0.f;
-		if(u_light.useBlinn == 1)
+		if(u_light.useBlinn)
 		{
 			vec3 halfwayDir = normalize(lightDir + viewDir);
 			spec = pow(max(dot(norm, halfwayDir), 0.f), material.shininess);

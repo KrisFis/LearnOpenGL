@@ -30,8 +30,8 @@ uniform struct Light
 
 layout (std140) uniform ULight
 {
-	vec3 viewPos;
-	int useBlinn;
+	vec4 viewPos;
+	bool useBlinn;
 } u_light;
 
 out vec4 FragColor;
@@ -47,25 +47,25 @@ vec4 CalculateSpotLight()
 	vec3 lightDir = normalize(light.position - frag_in.FragPos);
 	vec3 norm = normalize(frag_in.Normal);
 	
-	vec3 texColor = texture(material.diffuse0, frag_in.TexCoord).rgb;
+	vec4 texColor = texture(material.diffuse0, frag_in.TexCoord);
 	
 	// ambient
 	{
-		ambient = light.ambient * texColor;
+		ambient = light.ambient * texColor.rgb;
 	}
 	
 	// diffuse
 	{
 		float diff = max(dot(norm, lightDir), 0.f);
-		diffuse = light.diffuse * diff * texColor;
+		diffuse = light.diffuse * diff * texColor.rgb;
 	}
 	
 	// specular
 	{
-		vec3 viewDir = normalize(u_light.viewPos - frag_in.FragPos);
+		vec3 viewDir = normalize(u_light.viewPos.rgb - frag_in.FragPos);
 		
 		float spec = 0.f;
-		if(u_light.useBlinn == 1)
+		if(u_light.useBlinn)
 		{
 			vec3 halfwayDir = normalize(lightDir + viewDir);
 			spec = pow(max(dot(norm, halfwayDir), 0.f), material.shininess);
@@ -82,10 +82,10 @@ vec4 CalculateSpotLight()
 	// attenuation
 	{
 		float distance = length(light.position - frag_in.FragPos);
-		attenuation = 1.f / (light.constant + light.linear * distance + light.quadratic * pow(distance, 2));
+		attenuation = 1.f / (light.constant + light.linear * distance + light.quadratic * distance);
 	}
 	
-	return vec4(attenuation * (ambient + diffuse + specular), 1.f);
+	return vec4(attenuation * ambient + diffuse + specular, texColor.a);
 }
 
 void main()
