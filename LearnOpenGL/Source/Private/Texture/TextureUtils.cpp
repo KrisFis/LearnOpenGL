@@ -5,8 +5,7 @@
 
 namespace NTextureUtils
 {
-	TFastMap<ECubemapFace, FString>
-	NTextureUtils::GetFacesPathFromRoot(const FString& Root, const FString& Extension, bool UseIndexes)
+	TFastMap<ECubemapFace, FString> GetFacesPathFromRoot(const FString& Root, const FString& Extension, bool UseIndexes)
 	{
 		TFastMap<ECubemapFace, FString> result;
 		result.reserve(6);

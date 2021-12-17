@@ -5,6 +5,25 @@
 
 struct FColor
 {
+
+private: // Internal constructions
+
+	template<typename ParType, typename TEnableIf<!TIsFloatingType<ParType>::Value>::Type* = nullptr>
+	FORCEINLINE static constexpr FColor ConstructImpl(ParType Red, ParType Green, ParType Blue, ParType Alpha)
+	{
+		return FColor((uint8)Red, (uint8)Green, (uint8)Blue, (uint8)Alpha);
+	}
+	
+	template<typename ParType, typename TEnableIf<TIsFloatingType<ParType>::Value>::Type* = nullptr>
+	FORCEINLINE static constexpr FColor ConstructImpl(ParType Red, ParType Green, ParType Blue, ParType Alpha)
+	{
+		return FColor(
+			(uint8)(glm::clamp(Red, 0.f, 1.f) * (float)UINT8_MAX),
+			(uint8)(glm::clamp(Green, 0.f, 1.f) * (float)UINT8_MAX),
+			(uint8)(glm::clamp(Blue, 0.f, 1.f) * (float)UINT8_MAX),
+			(uint8)(glm::clamp(Alpha, 0.f, 1.f) * (float)UINT8_MAX)
+		);
+	}
 	
 public: // Static constructions
 	
@@ -18,14 +37,7 @@ public: // Static constructions
 	
 	// Construct color from CMYK model 
 	FORCEINLINE static constexpr FColor CMYK(float Cyan, float Magenta, float Yellow, float Black)
-	{ 
-		return ConstructImpl(
-			(1-Cyan) * (1-Black),
-			(1-Magenta) * (1-Black),
-			(1-Yellow) * (1-Black),
-			(float)UINT8_MAX
-		);
-	}
+	{ return ConstructImpl((1-Cyan) * (1-Black), (1-Magenta) * (1-Black), (1-Yellow) * (1-Black), (float)UINT8_MAX); }
 		
 public: // Arithmetic operators (FColor)
 
@@ -74,25 +86,6 @@ public: // Fields
 	union { uint8 G, Y; };
 	union { uint8 B, Z; };
 	union { uint8 A, W; };
-
-private: // Helper methods
-
-	template<typename ParType, typename TEnableIf<TIsFloatingType<ParType>::Value>::Type* = nullptr>
-	FORCEINLINE static constexpr FColor ConstructImpl(ParType Red, ParType Green, ParType Blue, ParType Alpha)
-	{
-		return FColor(
-			(uint8)(glm::clamp(Red, 0.f, 1.f) * (float)UINT8_MAX),
-			(uint8)(glm::clamp(Green, 0.f, 1.f) * (float)UINT8_MAX),
-			(uint8)(glm::clamp(Blue, 0.f, 1.f) * (float)UINT8_MAX),
-			(uint8)(glm::clamp(Alpha, 0.f, 1.f) * (float)UINT8_MAX)
-		);
-	}
-	
-	template<typename ParType, typename TEnableIf<!TIsFloatingType<ParType>::Value>::Type* = nullptr>
-	FORCEINLINE static constexpr FColor ConstructImpl(ParType Red, ParType Green, ParType Blue, ParType Alpha)
-	{
-		return FColor((uint8)Red, (uint8)Green, (uint8)Blue, (uint8)Alpha);
-	}
 
 private: // Private constructor
 

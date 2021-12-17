@@ -33,18 +33,18 @@ if(WIN32)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Win32)
     set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Win32)
 elseif(UNIX)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Unix)
-    set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Unix)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Linux)
+    set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Linux)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug)
     set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Debug)
-    add_definitions(-DDEBUG=1)
+    add_definitions(-D_DEBUG=1)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release)
     set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Release)
-    add_definitions(-DRELEASE=1)
+    add_definitions(-D_DEBUG=1)
 endif()
 
 # Modules
@@ -90,23 +90,30 @@ file(GLOB_RECURSE "PROJECT_SOURCES"
     "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Private/*.cpp"
 )
 
-# Libs
-set(OpenGLLibs opengl32 glfw/glfw3)
-set(AssimpLibs assimp)
-set(ASTDLibs ASTD)
 
 # Executable and linking
 # -----------------------------------------------------------
 
 add_executable(${PROJECT_NAME} "${PROJECT_SOURCES}" "${ASTD_SOURCES}")
 
-target_link_libraries(${PROJECT_NAME} ${OpenGLLibs} ${AssimpLibs} ${ASTDLibs})
+# Libs
+if(WIN32)
+    set(OpenGLLibs opengl32 glfw/glfw3-win32)
+    set(AssimpLibs assimp-win32)
+elseif(UNIX)
+    set(OpenGLLibs GL)
+    set(AssimpLibs)
+endif()
+
+target_link_libraries(${PROJECT_NAME} ASTD ${OpenGLLibs} ${AssimpLibs})
 
 # Commands
 # -----------------------------------------------------------
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different 
-        "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/lib/assimp-vc142-mt.dll"
-        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assimp-vc142-mt.dll"
-)
+if(WIN32)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+            "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/lib/assimp-vc142-mt.dll"
+            "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assimp-vc142-mt.dll"
+    )
+endif()
