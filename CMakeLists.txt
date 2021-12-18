@@ -1,18 +1,29 @@
 
-# Setup
+# CMake
 # -----------------------------------------------------------
 
 cmake_minimum_required(VERSION 3.10)
 
 project(LearnOpenGL)
 
+# Default values
+# -----------------------------------------------------------
+
+set(PROJECT_DIR ${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME})
+set(PROJECT_THIRD_PARTY_DIR ${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty)
+
+# Compiler
+# -----------------------------------------------------------
+
 # Compiler
 set(CMAKE_CXX_STANDARD 17)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -fpermissive")
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 # Paths
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Binaries")
-set(CMAKE_CURRENT_BINARY_DIR "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Intermediate")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_DIR}/Binaries")
+set(CMAKE_CURRENT_BINARY_DIR "${PROJECT_DIR}/Intermediate")
 
 # Configuration types
 set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE STRING "" FORCE)
@@ -49,63 +60,69 @@ endif()
 
 # Modules
 # -----------------------------------------------------------
+## Should be moved to library instead of compiling itself
 
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../ASTD" [EXCLUDE_FROM_ALL])
+set(ASTD_SCRIPTS_PATH "${PROJECT_THIRD_PARTY_DIR}/ASTD/Scripts/CMake")
+include(${ASTD_SCRIPTS_PATH}/ProjectFiles.cmake)
 
-ASTD_file_public_directories(${CMAKE_CURRENT_LIST_DIR}/../ASTD/Scripts/CMake ASTD_INCLUDE_DIRS)
-ASTD_file_private_files(${CMAKE_CURRENT_LIST_DIR}/../ASTD/Scripts/CMake ASTD_SOURCES)
+ASTD_file_public_directories(${ASTD_SCRIPTS_PATH} ASTD_INCLUDE_DIRS)
 
 # Project Files
 # -----------------------------------------------------------
 
 include_directories(
     "${ASTD_INCLUDE_DIRS}"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Misc"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Player"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Render"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Render/Light"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Render/Light/Base"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Render/Scene"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Render/Target"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Render/Target/Base"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/Texture"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Public/TypeTraits"
+    "${PROJECT_DIR}/Source/Public"
+    "${PROJECT_DIR}/Source/Public/Misc"
+    "${PROJECT_DIR}/Source/Public/Player"
+    "${PROJECT_DIR}/Source/Public/Render"
+    "${PROJECT_DIR}/Source/Public/Render/Light"
+    "${PROJECT_DIR}/Source/Public/Render/Light/Base"
+    "${PROJECT_DIR}/Source/Public/Render/Scene"
+    "${PROJECT_DIR}/Source/Public/Render/Target"
+    "${PROJECT_DIR}/Source/Public/Render/Target/Base"
+    "${PROJECT_DIR}/Source/Public/Texture"
+    "${PROJECT_DIR}/Source/Public/TypeTraits"
     
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/include"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/STB/include"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/include"
-)
-
-link_directories(
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/lib"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/lib"
+    "${PROJECT_THIRD_PARTY_DIR}/OpenGL/include"
+    "${PROJECT_THIRD_PARTY_DIR}/STB/include"
+    "${PROJECT_THIRD_PARTY_DIR}/Assimp/include"
 )
 
 # Sources
 file(GLOB_RECURSE "PROJECT_SOURCES"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/src/*.c"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/OpenGL/src/*.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/STB/src/*.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/Source/Private/*.cpp"
+    "${PROJECT_THIRD_PARTY_DIR}/OpenGL/src/*.c"
+    "${PROJECT_THIRD_PARTY_DIR}/OpenGL/src/*.cpp"
+    "${PROJECT_THIRD_PARTY_DIR}/STB/src/*.cpp"
+    "${PROJECT_DIR}/Source/Private/*.cpp"
 )
 
+# Libraries
+# -----------------------------------------------------------
+
+set(OPENGL_LIB_ROOT ${PROJECT_THIRD_PARTY_DIR}/OpenGL/lib)
+set(ASSIMP_LIB_ROOT ${PROJECT_THIRD_PARTY_DIR}/Assimp/lib)
+
+if(WIN32)
+    find_library(ASSIMP_LIB assimp HINTS "${ASSIMP_LIB_ROOT}/Win32")
+    find_library(GLFW_LIB glfw3 HINTS "${OPENGL_LIB_ROOT}/GLFW/Win32")
+    find_library(OPENGL_LIB opengl32)
+    
+    set(PLATFORM_LIBS "${ASSIMP_LIB}" "${GLFW_LIB}" "${OPENGL_LIB}")
+elseif(UNIX)
+    find_library(ASSIMP_LIB assimp)
+    find_library(GLFW_LIB glfw)
+    find_library(OPENGL_LIB GL)
+    find_library(X11_LIB X11)
+
+    set(PLATFORM_LIBS "${ASSIMP_LIB}" "${GLFW_LIB}" "${OPENGL_LIB}" "${X11_LIB}")
+endif()
 
 # Executable and linking
 # -----------------------------------------------------------
 
-add_executable(${PROJECT_NAME} "${PROJECT_SOURCES}" "${ASTD_SOURCES}")
-
-# Libs
-if(WIN32)
-    set(OpenGLLibs opengl32 glfw/glfw3-win32)
-    set(AssimpLibs assimp-win32)
-elseif(UNIX)
-    set(OpenGLLibs GL)
-    set(AssimpLibs)
-endif()
-
-target_link_libraries(${PROJECT_NAME} ASTD ${OpenGLLibs} ${AssimpLibs})
+add_executable(${PROJECT_NAME} "${PROJECT_SOURCES}")
+target_link_libraries(${PROJECT_NAME} "${PLATFORM_LIBS}")
 
 # Commands
 # -----------------------------------------------------------
@@ -113,7 +130,7 @@ target_link_libraries(${PROJECT_NAME} ASTD ${OpenGLLibs} ${AssimpLibs})
 if(WIN32)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different 
-            "${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}/ThirdParty/Assimp/lib/assimp-vc142-mt.dll"
+            "${PROJECT_THIRD_PARTY_DIR}/Assimp/lib/Win32/assimp-vc142-mt.dll"
             "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assimp-vc142-mt.dll"
     )
 endif()
