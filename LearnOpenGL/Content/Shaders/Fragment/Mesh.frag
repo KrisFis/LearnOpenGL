@@ -40,19 +40,6 @@ uniform vec4 overrideColor;
 uniform sampler2D shadowMap;
 uniform bool useShadow;
 
-// Is in shadow
-float CalculateShadow(vec4 FragPositionInLightSpace)
-{
-	vec3 projCoords = FragPositionInLightSpace.xyz / FragPositionInLightSpace.w;
-	
-	projCoords = projCoords * 0.5 + 0.5;
-	
-	float closestDepth = texture(shadowMap, projCoords.xy).r;
-	float currentDepth = projCoords.z;
-	
-	return (currentDepth > closestDepth)  ? 1.0 : 0.0;
-}
-
 vec4 CalculateDirectionalLight()
 {
 	float shadow;
@@ -93,7 +80,22 @@ vec4 CalculateDirectionalLight()
 
 	// Lightning
 	{
-		shadow = (useShadow) ? CalculateShadow(frag_in.FragPosLightSpace) : 0.f;
+		if(useShadow)
+		{
+			vec3 projCoords = frag_in.FragPosLightSpace.xyz / frag_in.FragPosLightSpace.w;
+			
+			projCoords = projCoords * 0.5 + 0.5;
+			
+			float closestDepth = texture(shadowMap, projCoords.xy).r;
+			float currentDepth = projCoords.z;
+			
+			float bias = max(0.05f * (1.f - dot(norm, lightDir)), 0.005f);
+			shadow = currentDepth - bias > closestDepth  ? 1.f : 0.f;
+		}
+		else
+		{
+			shadow = 0.f;
+		}
 	}
 
 	return vec4(ambient + ((diffuse + specular) * (1.f - shadow)), 1.f);

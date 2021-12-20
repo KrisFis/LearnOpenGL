@@ -47,8 +47,10 @@ void FDepthMap::Enable()
 	app.GetWindowSize(LastKnownWidth, LastKnownHeight);
 	app.SetWindowSize(Width, Height);
 
+	glCullFace(GL_FRONT);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBId);
-
+	glCullFace(GL_BACK);
+	
 	bIsEnabled = true;
 }
 
