@@ -24,10 +24,10 @@
 #include "Skybox.h"
 
 // Window
-GLFWwindow* GWindow = nullptr;
+uint16 GInitWindowWidth = 800;
+uint16 GInitWindowHeight = 600;
 
-uint16 GWindowWidth = 800;
-uint16 GWindowHeight = 600;
+GLFWwindow* GWindow = nullptr;
 
 float GGamma = 1.5f; // 2.2f is best for most of the monitors
 
@@ -41,8 +41,8 @@ bool GbAltWasPressed = false;
 bool GbBWasPressed = false;
 
 // Mouse
-float GLastMouseX = GWindowWidth * 0.5f;
-float GLastMouseY = GWindowHeight * 0.5f;
+float GLastMouseX = GInitWindowWidth * 0.5f;
+float GLastMouseY = GInitWindowHeight * 0.5f;
 
 // Global instances
 FCameraPtr GCamera;
@@ -150,10 +150,7 @@ void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 {
-	GWindowWidth = Width;
-	GWindowHeight = Height;
-
-	glViewport(0, 0, Width, Height);
+	FApplication::Get().SetWindowSize(Width, Height);
 }
 
 void BindEvents(GLFWwindow* Window)
@@ -175,7 +172,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	OutWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
+	OutWindow = glfwCreateWindow(GInitWindowWidth, GInitWindowHeight, "LearnOpenGL", nullptr, nullptr);
 	if (!OutWindow)
 	{
 		std::cout << "Failed to create window" << std::endl;
@@ -193,7 +190,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
     BindEvents(OutWindow);
 
 	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glViewport(0, 0, GWindowWidth, GWindowHeight);
+	FApplication::Get().SetWindowSize(GInitWindowWidth, GInitWindowHeight);
 
 	// Log Info
 	{
@@ -236,10 +233,13 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 
 bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
 {
+	uint16 windowWidth, windowHeight;
+	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
+
 	// MSAA
 	{
-		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color, 4);
-		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(GWindowWidth, GWindowHeight, ERenderTargetType::DepthAndStencil, 4);
+		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(windowWidth, windowHeight, ERenderTargetType::Color, 4);
+		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil, 4);
 		if(!multisampledTextureTarget->IsInitialized() || !multisampledBufferTarget->IsInitialized())
 		{
 			return false;
@@ -252,7 +252,7 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	
 	// SCREEN
 	{
-		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color);
+		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(windowWidth, windowHeight, ERenderTargetType::Color);
 		if(!sceneTextureTarget->IsInitialized())
 		{
 			return false;
@@ -535,8 +535,11 @@ bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 
 void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 {
+	uint16 windowWidth, windowHeight;
+	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
+
 	// Init values
-	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
+	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)windowWidth / (float)windowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera->GetViewMatrix();
 	
 	Uniforms[EUniformBufferMainType::Matrices]->SetValue(0, projection);
@@ -596,7 +599,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		if(copyArgs.Source.Size.x == 0)
 		{
 			copyArgs.Source.Pos = { 0, 0 };
-			copyArgs.Source.Size = { GWindowWidth, GWindowHeight };
+			copyArgs.Source.Size = { windowWidth, windowHeight };
 			
 			copyArgs.Destination = copyArgs.Source;
 			
