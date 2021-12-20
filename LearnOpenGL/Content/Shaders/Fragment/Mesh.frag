@@ -38,6 +38,7 @@ uniform vec4 overrideColor;
 
 // Shadow
 uniform sampler2D shadowMap;
+uniform bool useShadow;
 
 // Is in shadow
 float CalculateShadow(vec4 FragPositionInLightSpace)
@@ -92,7 +93,7 @@ vec4 CalculateDirectionalLight()
 
 	// Lightning
 	{
-		shadow = CalculateShadow(frag_in.FragPosLightSpace);
+		shadow = (useShadow) ? CalculateShadow(frag_in.FragPosLightSpace) : 0.f;
 	}
 
 	return vec4(ambient + ((diffuse + specular) * (1.f - shadow)), 1.f);

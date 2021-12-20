@@ -40,6 +40,7 @@ float GDeltaSeconds = 0.f;
 bool GbShiftWasPressed = false;
 bool GbAltWasPressed = false;
 bool GbBWasPressed = false;
+bool GbVWasPressed = false;
 
 // Mouse
 float GLastMouseX = GInitWindowWidth * 0.5f;
@@ -61,6 +62,7 @@ uint8 GShadowMapTexId = 10;
 glm::mat4 GLightSpaceMatrix = glm::mat4(1.f);
 glm::vec4 GLightColor = NColors::White.ToVec4();
 bool GUseBlinn = true;
+bool GUseShadow = true;
 
 struct FUniformBufferMainType
 {
@@ -301,7 +303,7 @@ bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{0.f, -1.f, 0.f},
 		{0.f, 0.f, 0.f},
-		{10.f, 1.f, 10.f}
+		{25.f, 1.f, 25.f}
 	});
 
 	sceneObjects.push_back(NMeshUtils::ConstructSphere({wallTexture}));
@@ -324,7 +326,7 @@ bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{8.f, 0.f, 2.f},
+			{8.f, 3.f, 2.f},
 			{0.f, 0.f, 0.f},
 			{0.25f, 1.f, 2.f}
 	});
@@ -342,7 +344,7 @@ bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{4.f, 0.f, 0.f},
+			{4.f, 6.f, 0.f},
 			{0.f, 0.f, 0.f},
 			{1.25f, 1.f, 0.25f}
 	});
@@ -517,6 +519,18 @@ void ProcessInput()
 		{
 			GUseBlinn = !GUseBlinn;
 		}
+		
+		
+		const bool VWasPreviouslyPressed = GbVWasPressed;
+		GbVWasPressed = (glfwGetKey(GWindow, GLFW_KEY_V) == GLFW_PRESS);
+	
+		const bool VWasJustPressed = !VWasPreviouslyPressed && GbVWasPressed;
+		const bool VWasJustReleased = VWasPreviouslyPressed && !GbVWasPressed;
+	
+		if (VWasJustPressed)
+		{
+			GUseShadow = !GUseShadow;
+		}
 	}
 }
 
@@ -559,6 +573,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	
 	// Scene
 	// * To shadow map
+	if(GUseShadow)
 	{
 		GShadowMap->Enable();
 		
@@ -623,6 +638,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				Shaders[EShaderMainType::Mesh]->SetMat4("lightSpaceMatrix", GLightSpaceMatrix);
 				
 				Shaders[EShaderMainType::Mesh]->SetInt32("shadowMap", GShadowMapTexId);
+				Shaders[EShaderMainType::Mesh]->SetBool("useShadow", GUseShadow);
 			}
 			
 			GShadowMap->UseTexture(GShadowMapTexId);
