@@ -22,6 +22,7 @@
 
 #include "Cubemap.h"
 #include "Skybox.h"
+#include "DepthMap.h"
 
 // Window
 uint16 GInitWindowWidth = 800;
@@ -53,9 +54,11 @@ FSceneObjectPtr GSkyboxObject;
 FFramebufferPtr GMSAAFramebuffer;
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
+FDepthMapPtr GShadowMap;
 
 // TEST
-glm::vec3 GLightPos;
+uint8 GShadowMapTexId = 10;
+glm::mat4 GLightSpaceMatrix = glm::mat4(1.f);
 glm::vec4 GLightColor = NColors::White.ToVec4();
 bool GUseBlinn = true;
 
@@ -103,7 +106,7 @@ struct FUniformBufferMainType
 
 struct FShaderMainType
 {
-	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox };
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, ShadowMap };
 	
 	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
 	{
@@ -116,7 +119,6 @@ struct FShaderMainType
 			case Skybox:
 				return { FUniformBufferMainType::Matrices };
 			default:
-				ENSURE_NO_ENTRY();
 				return {};
 		}
 	}
@@ -283,7 +285,7 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	return true;
 }
 
-bool PrepareScene(FScenePtr& OutScene)
+bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 {
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
@@ -353,7 +355,12 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.5f, 0.5f, 0.5f}
 	});
 	
+	uint16 windowW, windowH;
+	FApplication::Get().GetWindowSize(windowW, windowH);
+	
 	OutScene = FScene::Create(sceneObjects);
+	OutShadowMap = FDepthMap::Create(windowW, windowH);
+	
 	return true;
 }
 
@@ -374,6 +381,11 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		OutShaders.insert({
 			EShaderMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
+		});
+		
+		OutShaders.insert({
+			EShaderMainType::ShadowMap,
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/ShadowMap.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Empty.frag").c_str())
 		});
 	}
 	
@@ -505,23 +517,6 @@ void ProcessInput()
 		{
 			GUseBlinn = !GUseBlinn;
 		}
-	
-		if (glfwGetKey(GWindow, GLFW_KEY_UP) == GLFW_PRESS)
-		{
-			GLightPos.y += GDeltaSeconds * 0.5f;
-		}
-		if (glfwGetKey(GWindow, GLFW_KEY_DOWN) == GLFW_PRESS)
-		{
-			GLightPos.y -= GDeltaSeconds * 0.5f;
-		}
-		if (glfwGetKey(GWindow, GLFW_KEY_LEFT) == GLFW_PRESS)
-		{
-			GLightPos.x -= GDeltaSeconds * 0.5f;
-		}
-		if (glfwGetKey(GWindow, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		{
-			GLightPos.x += GDeltaSeconds * 0.5f;
-		}
 	}
 }
 
@@ -529,6 +524,18 @@ bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 {
 	// GAMMA
 	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
+
+	// light space init
+	{
+		float near_plane = 1.0f, far_plane = 7.5f;
+		
+		glm::mat4 lightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, near_plane, far_plane);
+		glm::mat4 lightView = glm::lookAt(glm::vec3(-2.f, 4.f, -1.f),
+										glm::vec3( 0.f, 0.f,  0.f),
+										glm::vec3( 0.f, 1.f,  0.f));
+										
+		GLightSpaceMatrix = lightProjection * lightView;
+	}
 	
 	return true;
 }
@@ -537,6 +544,8 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 {
 	uint16 windowWidth, windowHeight;
 	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
+
+	// TODO(kristian.fisera): Camera should hold projection (perspective, ortho)
 
 	// Init values
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)windowWidth / (float)windowHeight, 0.1f, 100.f);
@@ -547,6 +556,37 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	
 	Uniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
 	Uniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
+	
+	// Scene
+	// * To shadow map
+	{
+		GShadowMap->Enable();
+		
+		// Setup
+		{
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_STENCIL_TEST);
+			glClear(GL_DEPTH_BUFFER_BIT);
+		}
+
+		// Draw scene
+		{
+			
+			Shaders[EShaderMainType::ShadowMap]->Enable();
+
+			// Setup
+			{
+				Shaders[EShaderMainType::ShadowMap]->SetMat4("lightSpaceMatrix", GLightSpaceMatrix);
+			}
+			
+			GScene->Draw(Shaders[EShaderMainType::ShadowMap], GCamera);
+			
+			Shaders[EShaderMainType::ShadowMap]->Disable();
+		}
+		
+		
+		GShadowMap->Disable();
+	}
 	
 	// Scene
 	// * To custom framebuffer
@@ -575,17 +615,21 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			{
 				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
 				
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.position", GLightPos);
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.position", glm::vec3(-2.f, 4.f, -1.f));
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.diffuse", glm::vec3(GLightColor) * glm::vec3(0.5f));
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", glm::vec3(GLightColor) * 0.05f);
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
 				
-				Shaders[EShaderMainType::Mesh]->SetFloat("light.constant", 1.f);
-				Shaders[EShaderMainType::Mesh]->SetFloat("light.linear", 0.09f);
-				Shaders[EShaderMainType::Mesh]->SetFloat("light.quadratic", 0.032f);
+				Shaders[EShaderMainType::Mesh]->SetMat4("lightSpaceMatrix", GLightSpaceMatrix);
+				
+				Shaders[EShaderMainType::Mesh]->SetInt32("shadowMap", GShadowMapTexId);
 			}
 			
+			GShadowMap->UseTexture(GShadowMapTexId);
+			
 			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);
+			
+			GShadowMap->ClearTexture();
 			
 			Shaders[EShaderMainType::Mesh]->Disable();
 		}
@@ -667,7 +711,7 @@ int32 GuardedMain()
 		return -3;
 	}
 	
-	if(!PrepareScene(GScene))
+	if(!PrepareScene(GScene, GShadowMap))
 	{
 		return -4;
 	}

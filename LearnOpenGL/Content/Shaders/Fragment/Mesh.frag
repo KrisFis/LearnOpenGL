@@ -5,6 +5,7 @@ in VERT_OUT {
 	vec3 FragPos;
 	vec3 Normal;
 	vec2 TexCoord;
+	vec4 FragPosLightSpace;
 	
 } frag_in;
 
@@ -22,10 +23,6 @@ uniform struct Light
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
-
-	float constant;			// possible value: 1.f
-	float linear;			// possible value: 0.09f
-	float quadratic;		// possible value: 0.032f
 } light;
 
 layout (std140) uniform ULight
@@ -39,30 +36,44 @@ out vec4 FragColor;
 uniform bool useOverrideColor;
 uniform vec4 overrideColor;
 
-vec4 CalculateSpotLight()
+// Shadow
+uniform sampler2D shadowMap;
+
+// Is in shadow
+float CalculateShadow(vec4 FragPositionInLightSpace)
 {
+	vec3 projCoords = FragPositionInLightSpace.xyz / FragPositionInLightSpace.w;
+	
+	projCoords = projCoords * 0.5 + 0.5;
+	
+	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	float currentDepth = projCoords.z;
+	
+	return (currentDepth > closestDepth)  ? 1.0 : 0.0;
+}
+
+vec4 CalculateDirectionalLight()
+{
+	float shadow;
 	vec3 ambient, diffuse, specular;
-	float attenuation;
 	
 	vec3 lightDir = normalize(light.position - frag_in.FragPos);
 	vec3 norm = normalize(frag_in.Normal);
 	
-	vec4 texColor = texture(material.diffuse0, frag_in.TexCoord);
-	
 	// ambient
 	{
-		ambient = light.ambient * texColor.rgb;
+		ambient = light.ambient * texture(material.diffuse0, frag_in.TexCoord).rgb;
 	}
-	
+
 	// diffuse
 	{
 		float diff = max(dot(norm, lightDir), 0.f);
-		diffuse = light.diffuse * diff * texColor.rgb;
+		diffuse = light.diffuse * diff * texture(material.diffuse0, frag_in.TexCoord).rgb;
 	}
-	
+
 	// specular
 	{
-		vec3 viewDir = normalize(u_light.viewPos.rgb - frag_in.FragPos);
+		vec3 viewDir = normalize(u_light.viewPos.xyz - frag_in.FragPos);
 		
 		float spec = 0.f;
 		if(u_light.useBlinn)
@@ -76,22 +87,21 @@ vec4 CalculateSpotLight()
 			spec = pow(max(dot(viewDir, reflectDir), 0.f), material.shininess);
 		}
 		
-		specular = light.specular * spec;
+		specular = light.specular * spec * texture(material.specular0, frag_in.TexCoord).rgb;
 	}
-	
-	// attenuation
+
+	// Lightning
 	{
-		float distance = length(light.position - frag_in.FragPos);
-		attenuation = 1.f / (light.constant + light.linear * distance + light.quadratic * distance);
+		shadow = CalculateShadow(frag_in.FragPosLightSpace);
 	}
-	
-	return vec4(attenuation * ambient + diffuse + specular, texColor.a);
+
+	return vec4(ambient + ((diffuse + specular) * (1.f - shadow)), 1.f);
 }
 
 void main()
 {
 	// for now use only 0 index
-	vec4 resultColor = (useOverrideColor) ? overrideColor : CalculateSpotLight();
+	vec4 resultColor = (useOverrideColor) ? overrideColor : CalculateDirectionalLight();
 	if(resultColor.a < 0.1f)
 		discard;
 

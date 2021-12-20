@@ -2,7 +2,8 @@
 #include "DepthMap.h"
 
 FDepthMap::FDepthMap(uint16 InWidth, uint16 InHeight)
-	: TexId(0)
+	: UsedTexIndex(-1)
+	, TexId(0)
 	, FBId(0)
 	, Width(InWidth)
 	, Height(InHeight)
@@ -61,4 +62,21 @@ void FDepthMap::Disable()
 	app.SetWindowSize(LastKnownWidth, LastKnownHeight);
 	
 	bIsEnabled = false;
+}
+
+void FDepthMap::UseTexture(const uint8 Index)
+{
+	glActiveTexture(GL_TEXTURE0 + Index);
+	glBindTexture(GL_TEXTURE_2D, Index);
+	
+	UsedTexIndex = Index;
+}
+
+void FDepthMap::ClearTexture()
+{
+	if(UsedTexIndex == -1) return;
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
+	UsedTexIndex = -1;
 }

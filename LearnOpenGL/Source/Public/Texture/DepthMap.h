@@ -10,7 +10,7 @@ class FDepthMap
 {
 private: // Private constructors
 
-	FDepthMap(uint16 InWidth, uint16 InHeight);
+	 FDepthMap(uint16 InWidth, uint16 InHeight);
 
 public: // Destructor 
 
@@ -21,14 +21,23 @@ public: // Static constructions
 	FORCEINLINE static TSharedPtr<FDepthMap> Create(uint16 Width, uint16 Height)
 	{ return MakeShareable(new FDepthMap(Width, Height)); }
 
+public: // Getters
+
+	FORCEINLINE FTextureId GetTextureId() const { return TexId; }
+	FORCEINLINE FFramebufferId GetFBId() const { return FBId; }
+
 public: // External methods
 
 	void Enable();
 	void Disable();
 
+	void UseTexture(const uint8 Index);
+	void ClearTexture();
+
 private: // Cache
 
 	uint16 LastKnownWidth, LastKnownHeight;
+	int16 UsedTexIndex;
 
 private: // Fields
 
