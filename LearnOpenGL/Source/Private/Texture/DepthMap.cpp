@@ -67,7 +67,7 @@ void FDepthMap::Disable()
 void FDepthMap::UseTexture(const uint8 Index)
 {
 	glActiveTexture(GL_TEXTURE0 + Index);
-	glBindTexture(GL_TEXTURE_2D, Index);
+	glBindTexture(GL_TEXTURE_2D, TexId);
 	
 	UsedTexIndex = Index;
 }

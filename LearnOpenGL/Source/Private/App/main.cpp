@@ -59,6 +59,9 @@ FDepthMapPtr GShadowMap;
 
 // TEST
 uint8 GShadowMapTexId = 10;
+
+glm::vec2 GClipPlane = glm::vec2(1.f, 15.f);
+glm::vec3 GLightPos = glm::vec3(-2.f, 4.f, -1.f);
 glm::mat4 GLightSpaceMatrix = glm::mat4(1.f);
 glm::vec4 GLightColor = NColors::White.ToVec4();
 bool GUseBlinn = true;
@@ -538,18 +541,6 @@ bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 {
 	// GAMMA
 	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
-
-	// light space init
-	{
-		float near_plane = 1.0f, far_plane = 7.5f;
-		
-		glm::mat4 lightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, near_plane, far_plane);
-		glm::mat4 lightView = glm::lookAt(glm::vec3(-2.f, 4.f, -1.f),
-										glm::vec3( 0.f, 0.f,  0.f),
-										glm::vec3( 0.f, 1.f,  0.f));
-										
-		GLightSpaceMatrix = lightProjection * lightView;
-	}
 	
 	return true;
 }
@@ -570,6 +561,16 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	
 	Uniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
 	Uniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
+	
+	// light space
+	{
+		glm::mat4 lightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, GClipPlane.x, GClipPlane.y);
+		glm::mat4 lightView = glm::lookAt(GLightPos,
+										glm::vec3( 0.f, 0.f,  0.f),
+										glm::vec3( 0.f, 1.f,  0.f));
+										
+		GLightSpaceMatrix = lightProjection * lightView;
+	}
 	
 	// Scene
 	// * To shadow map
@@ -630,7 +631,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			{
 				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
 				
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.position", glm::vec3(-2.f, 4.f, -1.f));
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.position", GLightPos);
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.diffuse", glm::vec3(GLightColor) * glm::vec3(0.5f));
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", glm::vec3(GLightColor) * 0.05f);
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
