@@ -90,7 +90,7 @@ vec4 CalculateDirectionalLight()
 			float currentDepth = projCoords.z;
 			
 			float bias = max(0.05f * (1.f - dot(norm, lightDir)), 0.005f);
-			shadow = currentDepth - bias > closestDepth  ? 1.f : 0.f;
+			shadow = (projCoords.z <= 1.f && currentDepth - bias > closestDepth)  ? 1.f : 0.f;
 		}
 		else
 		{

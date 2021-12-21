@@ -61,7 +61,7 @@ FDepthMapPtr GShadowMap;
 uint8 GShadowMapTexId = 10;
 
 glm::vec2 GClipPlane = glm::vec2(1.f, 15.f);
-glm::vec3 GLightPos = glm::vec3(-2.f, 4.f, -1.f);
+glm::vec3 GLightPos = glm::vec3(-6.f, 10.f, 1.5f);
 glm::mat4 GLightSpaceMatrix = glm::mat4(1.f);
 glm::vec4 GLightColor = NColors::White.ToVec4();
 bool GUseBlinn = true;
@@ -292,11 +292,12 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 
 bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 {
-	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse);
+	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr grassTexture = FTexture::Create(NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, false, true);
-	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized()|| !grassTexture->IsInitialized())
+	FTexturePtr awesomeFace = FTexture::Create(NFileUtils::ContentPath("Textures/awesomeface.png").c_str(), ETextureType::Diffuse);
+	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized()|| !grassTexture->IsInitialized() || !awesomeFace->IsInitialized())
 	{
 		return false;
 	}
@@ -316,46 +317,44 @@ bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 			{2.f, 2.f, 2.f}
 	});
 	
+	sceneObjects.push_back(NMeshUtils::ConstructSphere({awesomeFace}));
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::LightYellow);
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			GLightPos,
+			{0.f, 0.f, 0.f},
+			{0.25f, 0.25f, 0.25f}
+	});
+	
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{10.f, 0.f, 0.f},
+			{2.f, 0.f, 0.f},
 			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 5.f}
+			{1.f, 1.f, 1.f}
 	});
 
+	// LEFT
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{8.f, 3.f, 2.f},
-			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 2.f}
+			{-2.f, 2.f, -2.f},
+			{-45.f, 0.f, 0.f},
+			{1.f, 1.f, 1.f}
 	});
 
+	// RIGHT
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{6.f, 0.f, -2.f},
-			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 2.f}
-	});
-
-	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
-	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{4.f, 6.f, 0.f},
-			{0.f, 0.f, 0.f},
-			{1.25f, 1.f, 0.25f}
+			{-2.f, 1.f, 2.f},
+			{0.f, -45.f, 0.f},
+			{1.f, 1.f, 1.f}
 	});
 	
 	sceneObjects.push_back(NMeshUtils::ConstructPlane({grassTexture}));
 	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{2.f, -0.499f, 0.f},
+			{-6.f, -0.499f, 0.f},
 			{-90.f, 0.f, 90.f},
 			{0.5f, 0.5f, 0.5f}
 	});
