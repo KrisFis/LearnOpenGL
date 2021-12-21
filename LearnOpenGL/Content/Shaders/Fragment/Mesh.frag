@@ -40,6 +40,15 @@ uniform samplerCube shadowCube;
 uniform bool useShadow;
 uniform float shadowFarPlane;
 
+vec3 sampleOffsetDirections[20] = vec3[]
+(
+	vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
+	vec3(1, 1, -1), vec3(1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+	vec3(1, 1, 0), vec3(1, -1, 0), vec3(-1, -1, 0), vec3(-1, 1, 0),
+	vec3(1, 0, 1), vec3(-1, 0, 1), vec3(1, 0, -1), vec3(-1, 0, -1),
+	vec3(0, 1, 1), vec3(0, -1, 1), vec3(0, -1, -1), vec3(0, 1, -1)
+);
+
 vec4 CalculateLight()
 {
 	float shadow;
@@ -80,22 +89,32 @@ vec4 CalculateLight()
 
 	// Lightning
 	{
-		if(useShadow)
+		if (useShadow)
 		{
 			vec3 fragToLight = frag_in.FragPos - light.position;
-			float closestDepth = texture(shadowCube, fragToLight).r;
-			closestDepth *= shadowFarPlane;
 			float currentDepth = length(fragToLight);
 			
-			float bias = 0.05f;
-			shadow = currentDepth - bias > closestDepth ? 1.f : 0.f;
+			float bias = 0.2f;
+			int numOfSamples  = 20;
+			float viewDistance = length(u_light.viewPos.xyz - frag_in.FragPos);
+			float diskRadius = (1.f + (viewDistance / shadowFarPlane)) / 25.f;
+			
+			for(int i = 0; i < numOfSamples; ++i)
+			{
+				float closestDepth = texture(shadowCube, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+				closestDepth *= shadowFarPlane; // undo mapping [0;1]
+				if(currentDepth - bias > closestDepth)
+					shadow += 1.0;
+			}
+			
+			shadow /= float(numOfSamples);
 		}
 		else
 		{
 			shadow = 0.f;
 		}
 	}
-	
+
 	return vec4(ambient + ((diffuse + specular) * (1.f - shadow)), 1.f);
 }
 
@@ -104,7 +123,7 @@ void main()
 	// for now use only 0 index
 	vec4 resultColor = (useOverrideColor) ? overrideColor : CalculateLight();
 	if (resultColor.a < 0.1f)
-		discard;
+	discard;
 
 	FragColor = resultColor;
 }
