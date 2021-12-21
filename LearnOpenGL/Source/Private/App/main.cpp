@@ -64,7 +64,7 @@ glm::vec2 GShadowClipPlane = {1.f, 25.f};
 glm::mat4 GShadowTransforms[6];
 uint8 GShadowCubemapIndex = 10;
 
-glm::vec3 GLightPos = glm::vec3(0.2f, 4.f, -1.7f);
+glm::vec3 GLightPos = glm::vec3(1.8f, 7.2f, -0.75f);
 FColor GLightColor = NColors::White;
 bool GUseBlinn = true;
 bool GUseShadow = true;
@@ -544,12 +544,12 @@ bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 	{
 		const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.f, GShadowClipPlane.x, GShadowClipPlane.y);
 		
-		GShadowTransforms[0] = shadowProj * glm::lookAt(GLightPos, GLightPos * glm::vec3(1.f, 0.f, 0.f), glm::vec3(0.f, -1.f, 0.f));
-		GShadowTransforms[1] = shadowProj * glm::lookAt(GLightPos, GLightPos * glm::vec3(-1.f, 0.f, 0.f), glm::vec3(0.f, -1.f, 0.f));
-		GShadowTransforms[2] = shadowProj * glm::lookAt(GLightPos, GLightPos * glm::vec3(0.f, 1.f, 0.f), glm::vec3(0.f, 0.f, 1.f));
-		GShadowTransforms[3] = shadowProj * glm::lookAt(GLightPos, GLightPos * glm::vec3(0.f, -1.f, 0.f), glm::vec3(0.f, 0.f, -1.f));
-		GShadowTransforms[4] = shadowProj * glm::lookAt(GLightPos, GLightPos * glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, -1.f, 0.f));
-		GShadowTransforms[5] = shadowProj * glm::lookAt(GLightPos, GLightPos * glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f, -1.f, 0.f));
+		GShadowTransforms[0] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f));
+		GShadowTransforms[1] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3(-1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f));
+		GShadowTransforms[2] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  1.f,  0.f), glm::vec3(0.f,  0.f,  1.f));
+		GShadowTransforms[3] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f, -1.f,  0.f), glm::vec3(0.f,  0.f, -1.f));
+		GShadowTransforms[4] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  0.f,  1.f), glm::vec3(0.f, -1.f,  0.f));
+		GShadowTransforms[5] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  0.f, -1.f), glm::vec3(0.f, -1.f,  0.f));
 	}
 	
 	return true;
