@@ -64,8 +64,8 @@ glm::vec2 GShadowClipPlane = {1.f, 25.f};
 glm::mat4 GShadowTransforms[6];
 uint8 GShadowCubemapIndex = 10;
 
-glm::vec3 GLightPos = glm::vec3(-6.f, 10.f, 1.5f);
-glm::vec4 GLightColor = NColors::White.ToVec4();
+glm::vec3 GLightPos = glm::vec3(0.2f, 4.f, -1.7f);
+FColor GLightColor = NColors::White;
 bool GUseBlinn = true;
 bool GUseShadow = true;
 
@@ -638,13 +638,13 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
 				
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.position", GLightPos);
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.diffuse", glm::vec3(GLightColor) * glm::vec3(0.5f));
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", glm::vec3(GLightColor) * 0.05f);
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.diffuse", GLightColor.ToVec3() * 0.5f);
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", GLightColor.ToVec3() * 0.05f);
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
 				
 				Shaders[EShaderMainType::ShadowCubemap]->SetFloat("shadowFarPlane", GShadowClipPlane.y);
 				
-				Shaders[EShaderMainType::Mesh]->SetInt32("shadowMap", GShadowCubemapIndex);
+				Shaders[EShaderMainType::Mesh]->SetInt32("shadowCube", GShadowCubemapIndex);
 				Shaders[EShaderMainType::Mesh]->SetBool("useShadow", GUseShadow);
 			}
 			
