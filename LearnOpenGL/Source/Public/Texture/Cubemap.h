@@ -34,12 +34,12 @@ public: // Getters
 	FORCEINLINE FTextureId GetId() const { return Id; }
 	FORCEINLINE int16 GetUsedIndex() const { return UsedIndex; }
 	
-	FORCEINLINE bool IsUsed() const { return bIsUsed; }
+	FORCEINLINE bool IsUsed() const { return UsedIndex != -1; }
 	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
 
 public: // Use methods
 
-	void Use(const uint8 UseIndex);
+	void Use(const uint8 Index);
 	void Clear();
 
 private: // Fields
@@ -51,7 +51,6 @@ private: // Fields
 private: // Primitive fields
 
 	uint8 bIsInitialized : 1;
-	uint8 bIsUsed : 1;
 
 };
 

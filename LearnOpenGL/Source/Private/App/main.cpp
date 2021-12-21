@@ -23,6 +23,7 @@
 #include "Cubemap.h"
 #include "Skybox.h"
 #include "DepthMap.h"
+#include "DepthCubemap.h"
 
 // Window
 uint16 GInitWindowWidth = 800;
@@ -687,6 +688,16 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	}
 }
 
+bool EngineInit()
+{
+	GCamera = FCamera::Create(
+		{-16.5f, 2.5f, -5.f}, 
+		{19.f, -6.5f, 0.f} 
+	);
+	
+	return true;
+}
+
 void EngineTick()
 {
 	// Update FPS
@@ -708,8 +719,6 @@ void EngineTick()
 
 int32 GuardedMain()
 {
-	GCamera = FCamera::Create();
-	
 	if (!CreateInitWindow(GWindow))
 	{
 		return -1;
@@ -736,10 +745,15 @@ int32 GuardedMain()
 	{
 		return -5;
 	}
+
+	if(!EngineInit())
+	{
+		return -6;
+	}
 	
 	if(!InitRender(Uniforms))
 	{
-		return -6;
+		return -7;
 	}
 
 	// Main render loop

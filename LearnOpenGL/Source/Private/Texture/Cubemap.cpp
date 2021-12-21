@@ -5,7 +5,6 @@
 FCubemap::FCubemap(const TFastMap<ECubemapFace, FString>& FacesPaths)
 	: Id(NRenderConsts::Invalid::TextureId)
 	, UsedIndex(-1)
-	, bIsUsed(false)
 	, bIsInitialized(false)
 {
 	glGenTextures(1, &Id);
@@ -95,21 +94,19 @@ FCubemap::~FCubemap()
 	}
 }
 
-void FCubemap::Use(const uint8 UseIndex)
-{
-	if(bIsUsed) return;
-	
-	glActiveTexture(GL_TEXTURE0 + UseIndex);
+void FCubemap::Use(const uint8 Index)
+{	
+	glActiveTexture(GL_TEXTURE0 + Index);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, Id);
 	
-	bIsUsed = true;
+	UsedIndex = Index;
 }
 
 void FCubemap::Clear()
 {
-	if(!bIsUsed) return;
+	if(UsedIndex != -1) return;
 	
 	glBindTexture(GL_TEXTURE_CUBE_MAP, NRenderConsts::Invalid::TextureId);
 	
-	bIsUsed = false;
+	UsedIndex = -1;
 }
