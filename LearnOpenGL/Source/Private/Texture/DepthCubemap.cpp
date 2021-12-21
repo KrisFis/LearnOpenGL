@@ -6,6 +6,7 @@ FDepthCubemap::FDepthCubemap(uint16 InWidth, uint16 InHeight)
 	, FBId(0)
 	, Width(InWidth)
 	, Height(InHeight)
+	, UsedCubeIndex(-1)
 	, bIsEnabled(false)
 {
 	
@@ -38,6 +39,11 @@ FDepthCubemap::~FDepthCubemap()
 
 void FDepthCubemap::Enable()
 {
+	FApplication& app = FApplication::Get();
+	
+	app.GetWindowSize(LastKnownWidth, LastKnownHeight);
+	app.SetWindowSize(Width, Height);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, FBId);
 
 	bIsEnabled = true;
@@ -48,6 +54,26 @@ void FDepthCubemap::Disable()
 	if(!bIsEnabled) return;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
+	FApplication& app = FApplication::Get();
+	app.SetWindowSize(LastKnownWidth, LastKnownHeight);
 
 	bIsEnabled = false;
+}
+
+void FDepthCubemap::UseCube(uint8 Index)
+{
+	glActiveTexture(GL_TEXTURE0 + Index);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, CubeId);
+	
+	UsedCubeIndex = Index;
+}
+
+void FDepthCubemap::ClearCube()
+{
+	if(UsedCubeIndex == -1) return;
+	
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	
+	UsedCubeIndex = -1;
 }

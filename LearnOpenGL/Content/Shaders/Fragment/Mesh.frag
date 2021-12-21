@@ -5,8 +5,7 @@ in VERT_OUT {
 	vec3 FragPos;
 	vec3 Normal;
 	vec2 TexCoord;
-	vec4 FragPosLightSpace;
-	
+
 } frag_in;
 
 uniform struct Material
@@ -37,17 +36,18 @@ uniform bool useOverrideColor;
 uniform vec4 overrideColor;
 
 // Shadow
-uniform sampler2D shadowMap;
+uniform samplerCube shadowCube;
 uniform bool useShadow;
+uniform float shadowFarPlane;
 
-vec4 CalculateDirectionalLight()
+vec4 CalculateLight()
 {
 	float shadow;
 	vec3 ambient, diffuse, specular;
-	
+
 	vec3 lightDir = normalize(light.position - frag_in.FragPos);
 	vec3 norm = normalize(frag_in.Normal);
-	
+
 	// ambient
 	{
 		ambient = light.ambient * texture(material.diffuse0, frag_in.TexCoord).rgb;
@@ -62,9 +62,9 @@ vec4 CalculateDirectionalLight()
 	// specular
 	{
 		vec3 viewDir = normalize(u_light.viewPos.xyz - frag_in.FragPos);
-		
+
 		float spec = 0.f;
-		if(u_light.useBlinn)
+		if (u_light.useBlinn)
 		{
 			vec3 halfwayDir = normalize(lightDir + viewDir);
 			spec = pow(max(dot(norm, halfwayDir), 0.f), material.shininess);
@@ -74,33 +74,20 @@ vec4 CalculateDirectionalLight()
 			vec3 reflectDir = reflect(-lightDir, norm);
 			spec = pow(max(dot(viewDir, reflectDir), 0.f), material.shininess);
 		}
-		
+
 		specular = light.specular * spec * texture(material.specular0, frag_in.TexCoord).rgb;
 	}
 
 	// Lightning
 	{
-		vec3 projCoords = frag_in.FragPosLightSpace.xyz / frag_in.FragPosLightSpace.w;
-		projCoords = projCoords * 0.5 + 0.5;
-		
-		if(useShadow && projCoords.z <= 1.f)
+		if(useShadow)
 		{
+			vec3 fragToLight = frag_in.FragPos - light.position;
+			float closestDepth = texture(shadowCube, fragToLight).r * shadowFarPlane;
+			float currentDepth = length(fragToLight);
 			
-			float closestDepth = texture(shadowMap, projCoords.xy).r;
-			float currentDepth = projCoords.z;
-			
-			float bias = max(0.05f * (1.f - dot(norm, lightDir)), 0.005f);
-			
-			vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-			for(int x = -1; x <= 1; ++x)
-			{
-				for(int y = -1; y <= 1; ++y)
-				{
-					float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-					shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
-				}
-			}
-			shadow /= 9.0;
+			float bias = 0.05f;
+			shadow = currentDepth - bias > closestDepth ? 1.f : 0.f;
 		}
 		else
 		{
@@ -114,8 +101,8 @@ vec4 CalculateDirectionalLight()
 void main()
 {
 	// for now use only 0 index
-	vec4 resultColor = (useOverrideColor) ? overrideColor : CalculateDirectionalLight();
-	if(resultColor.a < 0.1f)
+	vec4 resultColor = (useOverrideColor) ? overrideColor : CalculateLight();
+	if (resultColor.a < 0.1f)
 		discard;
 
 	FragColor = resultColor;

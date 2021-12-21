@@ -22,13 +22,17 @@ public: // Getters
 
 	FORCEINLINE FTextureId GetCubeId() const { return CubeId; }
 	FORCEINLINE FFramebufferId GetFBId() const { return FBId; }
-
+	
+	FORCEINLINE int16 GetUsedCubeIndex() const { return UsedCubeIndex; }
 	FORCEINLINE bool IsEnabled() const { return bIsEnabled; }
 
 public: // External methods
 
 	void Enable();
 	void Disable();
+	
+	void UseCube(uint8 Index);
+	void ClearCube();
 
 private: // Fields
 
@@ -36,6 +40,10 @@ private: // Fields
 	FFramebufferId FBId;
 
 	uint16 Width, Height;
+
+	uint16 LastKnownWidth, LastKnownHeight;
+	
+	int16 UsedCubeIndex;
 
 private: // Primitive fields
 
