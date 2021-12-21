@@ -22,6 +22,8 @@ struct FFramebufferCopyArgs
 	enum { FT_Nearest, FT_Linear } FilterType;
 };
 
+// TODO(kristian.fisera: Fix issue with binding fb target per render target
+// * Binding should be only called for GL_FRAMEBUFFER for enable
 class FFramebuffer
 {
 	

@@ -5,6 +5,7 @@
 #include "ASTD.h"
 
 // Core
+#include "Application.h"
 #include "GLMTypeTraits.h"
 #include "RenderTypes.h"
 

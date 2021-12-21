@@ -73,6 +73,7 @@ ASTD_file_public_directories(${ASTD_SCRIPTS_PATH} ASTD_INCLUDE_DIRS)
 include_directories(
     "${ASTD_INCLUDE_DIRS}"
     "${PROJECT_DIR}/Source/Public"
+    "${PROJECT_DIR}/Source/Public/App"
     "${PROJECT_DIR}/Source/Public/Misc"
     "${PROJECT_DIR}/Source/Public/Player"
     "${PROJECT_DIR}/Source/Public/Render"

@@ -22,12 +22,13 @@
 
 #include "Cubemap.h"
 #include "Skybox.h"
+#include "DepthMap.h"
 
 // Window
-GLFWwindow* GWindow = nullptr;
+uint16 GInitWindowWidth = 800;
+uint16 GInitWindowHeight = 600;
 
-uint16 GWindowWidth = 800;
-uint16 GWindowHeight = 600;
+GLFWwindow* GWindow = nullptr;
 
 float GGamma = 1.5f; // 2.2f is best for most of the monitors
 
@@ -39,10 +40,11 @@ float GDeltaSeconds = 0.f;
 bool GbShiftWasPressed = false;
 bool GbAltWasPressed = false;
 bool GbBWasPressed = false;
+bool GbVWasPressed = false;
 
 // Mouse
-float GLastMouseX = GWindowWidth * 0.5f;
-float GLastMouseY = GWindowHeight * 0.5f;
+float GLastMouseX = GInitWindowWidth * 0.5f;
+float GLastMouseY = GInitWindowHeight * 0.5f;
 
 // Global instances
 FCameraPtr GCamera;
@@ -53,11 +55,17 @@ FSceneObjectPtr GSkyboxObject;
 FFramebufferPtr GMSAAFramebuffer;
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
+FDepthMapPtr GShadowMap;
 
 // TEST
-glm::vec3 GLightPos;
+uint8 GShadowMapTexId = 10;
+
+glm::vec2 GClipPlane = glm::vec2(1.f, 15.f);
+glm::vec3 GLightPos = glm::vec3(-6.f, 10.f, 1.5f);
+glm::mat4 GLightSpaceMatrix = glm::mat4(1.f);
 glm::vec4 GLightColor = NColors::White.ToVec4();
 bool GUseBlinn = true;
+bool GUseShadow = true;
 
 struct FUniformBufferMainType
 {
@@ -103,7 +111,7 @@ struct FUniformBufferMainType
 
 struct FShaderMainType
 {
-	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox };
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, ShadowMap };
 	
 	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
 	{
@@ -116,7 +124,6 @@ struct FShaderMainType
 			case Skybox:
 				return { FUniformBufferMainType::Matrices };
 			default:
-				ENSURE_NO_ENTRY();
 				return {};
 		}
 	}
@@ -150,10 +157,7 @@ void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
 
 void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 {
-	GWindowWidth = Width;
-	GWindowHeight = Height;
-
-	glViewport(0, 0, Width, Height);
+	FApplication::Get().SetWindowSize(Width, Height);
 }
 
 void BindEvents(GLFWwindow* Window)
@@ -175,7 +179,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	OutWindow = glfwCreateWindow(GWindowWidth, GWindowHeight, "LearnOpenGL", nullptr, nullptr);
+	OutWindow = glfwCreateWindow(GInitWindowWidth, GInitWindowHeight, "LearnOpenGL", nullptr, nullptr);
 	if (!OutWindow)
 	{
 		std::cout << "Failed to create window" << std::endl;
@@ -193,7 +197,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
     BindEvents(OutWindow);
 
 	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glViewport(0, 0, GWindowWidth, GWindowHeight);
+	FApplication::Get().SetWindowSize(GInitWindowWidth, GInitWindowHeight);
 
 	// Log Info
 	{
@@ -236,10 +240,13 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 
 bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
 {
+	uint16 windowWidth, windowHeight;
+	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
+
 	// MSAA
 	{
-		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color, 4);
-		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(GWindowWidth, GWindowHeight, ERenderTargetType::DepthAndStencil, 4);
+		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(windowWidth, windowHeight, ERenderTargetType::Color, 4);
+		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil, 4);
 		if(!multisampledTextureTarget->IsInitialized() || !multisampledBufferTarget->IsInitialized())
 		{
 			return false;
@@ -252,7 +259,7 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	
 	// SCREEN
 	{
-		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(GWindowWidth, GWindowHeight, ERenderTargetType::Color);
+		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(windowWidth, windowHeight, ERenderTargetType::Color);
 		if(!sceneTextureTarget->IsInitialized())
 		{
 			return false;
@@ -283,13 +290,14 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	return true;
 }
 
-bool PrepareScene(FScenePtr& OutScene)
+bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 {
-	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/floor_rocks.jpg").c_str(), ETextureType::Diffuse);
+	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr grassTexture = FTexture::Create(NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, false, true);
-	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized()|| !grassTexture->IsInitialized())
+	FTexturePtr awesomeFace = FTexture::Create(NFileUtils::ContentPath("Textures/awesomeface.png").c_str(), ETextureType::Diffuse);
+	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized()|| !grassTexture->IsInitialized() || !awesomeFace->IsInitialized())
 	{
 		return false;
 	}
@@ -299,7 +307,7 @@ bool PrepareScene(FScenePtr& OutScene)
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{0.f, -1.f, 0.f},
 		{0.f, 0.f, 0.f},
-		{10.f, 1.f, 10.f}
+		{25.f, 1.f, 25.f}
 	});
 
 	sceneObjects.push_back(NMeshUtils::ConstructSphere({wallTexture}));
@@ -309,51 +317,54 @@ bool PrepareScene(FScenePtr& OutScene)
 			{2.f, 2.f, 2.f}
 	});
 	
+	sceneObjects.push_back(NMeshUtils::ConstructSphere({awesomeFace}));
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::LightYellow);
+	sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			GLightPos,
+			{0.f, 0.f, 0.f},
+			{0.25f, 0.25f, 0.25f}
+	});
+	
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{10.f, 0.f, 0.f},
+			{2.f, 0.f, 0.f},
 			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 5.f}
+			{1.f, 1.f, 1.f}
 	});
 
+	// LEFT
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{8.f, 0.f, 2.f},
-			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 2.f}
+			{-2.f, 2.f, -2.f},
+			{-45.f, 0.f, 0.f},
+			{1.f, 1.f, 1.f}
 	});
 
+	// RIGHT
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{6.f, 0.f, -2.f},
-			{0.f, 0.f, 0.f},
-			{0.25f, 1.f, 2.f}
-	});
-
-	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
-	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{4.f, 0.f, 0.f},
-			{0.f, 0.f, 0.f},
-			{1.25f, 1.f, 0.25f}
+			{-2.f, 1.f, 2.f},
+			{0.f, -45.f, 0.f},
+			{1.f, 1.f, 1.f}
 	});
 	
 	sceneObjects.push_back(NMeshUtils::ConstructPlane({grassTexture}));
 	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{2.f, -0.499f, 0.f},
+			{-6.f, -0.499f, 0.f},
 			{-90.f, 0.f, 90.f},
 			{0.5f, 0.5f, 0.5f}
 	});
 	
+	uint16 windowW, windowH;
+	FApplication::Get().GetWindowSize(windowW, windowH);
+	
 	OutScene = FScene::Create(sceneObjects);
+	OutShadowMap = FDepthMap::Create(windowW, windowH);
+	
 	return true;
 }
 
@@ -374,6 +385,11 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		OutShaders.insert({
 			EShaderMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
+		});
+		
+		OutShaders.insert({
+			EShaderMainType::ShadowMap,
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/ShadowMap.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Empty.frag").c_str())
 		});
 	}
 	
@@ -505,22 +521,17 @@ void ProcessInput()
 		{
 			GUseBlinn = !GUseBlinn;
 		}
+		
+		
+		const bool VWasPreviouslyPressed = GbVWasPressed;
+		GbVWasPressed = (glfwGetKey(GWindow, GLFW_KEY_V) == GLFW_PRESS);
 	
-		if (glfwGetKey(GWindow, GLFW_KEY_UP) == GLFW_PRESS)
+		const bool VWasJustPressed = !VWasPreviouslyPressed && GbVWasPressed;
+		const bool VWasJustReleased = VWasPreviouslyPressed && !GbVWasPressed;
+	
+		if (VWasJustPressed)
 		{
-			GLightPos.y += GDeltaSeconds * 0.5f;
-		}
-		if (glfwGetKey(GWindow, GLFW_KEY_DOWN) == GLFW_PRESS)
-		{
-			GLightPos.y -= GDeltaSeconds * 0.5f;
-		}
-		if (glfwGetKey(GWindow, GLFW_KEY_LEFT) == GLFW_PRESS)
-		{
-			GLightPos.x -= GDeltaSeconds * 0.5f;
-		}
-		if (glfwGetKey(GWindow, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		{
-			GLightPos.x += GDeltaSeconds * 0.5f;
+			GUseShadow = !GUseShadow;
 		}
 	}
 }
@@ -535,8 +546,13 @@ bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 
 void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 {
+	uint16 windowWidth, windowHeight;
+	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
+
+	// TODO(kristian.fisera): Camera should hold projection (perspective, ortho)
+
 	// Init values
-	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)GWindowWidth / (float)GWindowHeight, 0.1f, 100.f);
+	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)windowWidth / (float)windowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera->GetViewMatrix();
 	
 	Uniforms[EUniformBufferMainType::Matrices]->SetValue(0, projection);
@@ -544,6 +560,48 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	
 	Uniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
 	Uniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
+	
+	// light space
+	{
+		glm::mat4 lightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, GClipPlane.x, GClipPlane.y);
+		glm::mat4 lightView = glm::lookAt(GLightPos,
+										glm::vec3( 0.f, 0.f,  0.f),
+										glm::vec3( 0.f, 1.f,  0.f));
+										
+		GLightSpaceMatrix = lightProjection * lightView;
+	}
+	
+	// Scene
+	// * To shadow map
+	if(GUseShadow)
+	{
+		GShadowMap->Enable();
+		
+		// Setup
+		{
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_STENCIL_TEST);
+			glClear(GL_DEPTH_BUFFER_BIT);
+		}
+
+		// Draw scene
+		{
+			
+			Shaders[EShaderMainType::ShadowMap]->Enable();
+
+			// Setup
+			{
+				Shaders[EShaderMainType::ShadowMap]->SetMat4("lightSpaceMatrix", GLightSpaceMatrix);
+			}
+			
+			GScene->Draw(Shaders[EShaderMainType::ShadowMap], GCamera);
+			
+			Shaders[EShaderMainType::ShadowMap]->Disable();
+		}
+		
+		
+		GShadowMap->Disable();
+	}
 	
 	// Scene
 	// * To custom framebuffer
@@ -577,12 +635,17 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", glm::vec3(GLightColor) * 0.05f);
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
 				
-				Shaders[EShaderMainType::Mesh]->SetFloat("light.constant", 1.f);
-				Shaders[EShaderMainType::Mesh]->SetFloat("light.linear", 0.09f);
-				Shaders[EShaderMainType::Mesh]->SetFloat("light.quadratic", 0.032f);
+				Shaders[EShaderMainType::Mesh]->SetMat4("lightSpaceMatrix", GLightSpaceMatrix);
+				
+				Shaders[EShaderMainType::Mesh]->SetInt32("shadowMap", GShadowMapTexId);
+				Shaders[EShaderMainType::Mesh]->SetBool("useShadow", GUseShadow);
 			}
 			
+			GShadowMap->UseTexture(GShadowMapTexId);
+			
 			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);
+			
+			GShadowMap->ClearTexture();
 			
 			Shaders[EShaderMainType::Mesh]->Disable();
 		}
@@ -596,7 +659,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		if(copyArgs.Source.Size.x == 0)
 		{
 			copyArgs.Source.Pos = { 0, 0 };
-			copyArgs.Source.Size = { GWindowWidth, GWindowHeight };
+			copyArgs.Source.Size = { windowWidth, windowHeight };
 			
 			copyArgs.Destination = copyArgs.Source;
 			
@@ -664,7 +727,7 @@ int32 GuardedMain()
 		return -3;
 	}
 	
-	if(!PrepareScene(GScene))
+	if(!PrepareScene(GScene, GShadowMap))
 	{
 		return -4;
 	}
