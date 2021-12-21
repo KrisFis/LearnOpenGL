@@ -320,7 +320,7 @@ bool PrepareScene(FScenePtr& OutScene, FDepthCubemapPtr& OutShadowCubemap)
 	});
 	
 	sceneObjects.push_back(NMeshUtils::ConstructSphere({awesomeFace}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.1f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::LightYellow);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			GLightPos,
@@ -642,7 +642,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", GLightColor.ToVec3() * 0.05f);
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
 				
-				Shaders[EShaderMainType::ShadowCubemap]->SetFloat("shadowFarPlane", GShadowClipPlane.y);
+				Shaders[EShaderMainType::Mesh]->SetFloat("shadowFarPlane", GShadowClipPlane.y);
 				
 				Shaders[EShaderMainType::Mesh]->SetInt32("shadowCube", GShadowCubemapIndex);
 				Shaders[EShaderMainType::Mesh]->SetBool("useShadow", GUseShadow);

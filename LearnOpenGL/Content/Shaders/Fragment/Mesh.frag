@@ -83,7 +83,8 @@ vec4 CalculateLight()
 		if(useShadow)
 		{
 			vec3 fragToLight = frag_in.FragPos - light.position;
-			float closestDepth = texture(shadowCube, fragToLight).r * shadowFarPlane;
+			float closestDepth = texture(shadowCube, fragToLight).r;
+			closestDepth *= shadowFarPlane;
 			float currentDepth = length(fragToLight);
 			
 			float bias = 0.05f;
@@ -94,7 +95,7 @@ vec4 CalculateLight()
 			shadow = 0.f;
 		}
 	}
-
+	
 	return vec4(ambient + ((diffuse + specular) * (1.f - shadow)), 1.f);
 }
 
