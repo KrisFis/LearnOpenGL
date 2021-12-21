@@ -18,7 +18,7 @@ class FShaderProgram
 
 private: // Constructors
 
-    explicit FShaderProgram(const char* VertexFilePath, const char* FragmentFilePath);
+    explicit FShaderProgram(const char* VertexFilePath, const char* GeometryFilePath, const char* FragmentFilePath);
 
 public: // Destructors
     
@@ -27,13 +27,16 @@ public: // Destructors
 public: // Static constructions
 
 	FORCEINLINE static TSharedPtr<FShaderProgram> Create(const char* VertexFilePath, const char* FragmentFilePath)
-	{ return MakeShareable(new FShaderProgram(VertexFilePath, FragmentFilePath)); }
+	{ return MakeShareable(new FShaderProgram(VertexFilePath, nullptr, FragmentFilePath)); }
+	
+	FORCEINLINE static TSharedPtr<FShaderProgram> Create(const char* VertexFilePath, const char* GeometryFilePath, const char* FragmentFilePath)
+	{ return MakeShareable(new FShaderProgram(VertexFilePath, GeometryFilePath, FragmentFilePath)); }
 
 public: // Getters
 
 	FORCEINLINE bool IsInitialized() const { return bIsInitialized; }
 	FORCEINLINE bool IsEnabled() const { return bIsEnabled; }
-    FORCEINLINE const FShaderProgramId& GetProgramId() const { return Id; }
+	FORCEINLINE const FShaderProgramId& GetProgramId() const { return Id; }
 
 public: // External methods
 
@@ -55,7 +58,7 @@ public: // External methods
 
 private: // Fields
 
-    FShaderProgramId Id;
+	FShaderProgramId Id;
 
 	bool bIsEnabled;
 	bool bIsInitialized;

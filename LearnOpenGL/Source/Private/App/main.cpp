@@ -23,6 +23,7 @@
 #include "Cubemap.h"
 #include "Skybox.h"
 #include "DepthMap.h"
+#include "DepthCubemap.h"
 
 // Window
 uint16 GInitWindowWidth = 800;
@@ -55,15 +56,16 @@ FSceneObjectPtr GSkyboxObject;
 FFramebufferPtr GMSAAFramebuffer;
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
-FDepthMapPtr GShadowMap;
+FDepthCubemapPtr GShadowCubemap;
 
 // TEST
-uint8 GShadowMapTexId = 10;
+uint16 GShadowResolution = 1024;
+glm::vec2 GShadowClipPlane = {1.f, 25.f};
+glm::mat4 GShadowTransforms[6];
+uint8 GShadowCubemapIndex = 10;
 
-glm::vec2 GClipPlane = glm::vec2(1.f, 15.f);
-glm::vec3 GLightPos = glm::vec3(-6.f, 10.f, 1.5f);
-glm::mat4 GLightSpaceMatrix = glm::mat4(1.f);
-glm::vec4 GLightColor = NColors::White.ToVec4();
+glm::vec3 GLightPos = glm::vec3(1.8f, 7.2f, -0.75f);
+FColor GLightColor = NColors::White;
 bool GUseBlinn = true;
 bool GUseShadow = true;
 
@@ -111,7 +113,7 @@ struct FUniformBufferMainType
 
 struct FShaderMainType
 {
-	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, ShadowMap };
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, ShadowCubemap };
 	
 	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
 	{
@@ -290,7 +292,7 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	return true;
 }
 
-bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
+bool PrepareScene(FScenePtr& OutScene, FDepthCubemapPtr& OutShadowCubemap)
 {
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
@@ -318,7 +320,7 @@ bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 	});
 	
 	sceneObjects.push_back(NMeshUtils::ConstructSphere({awesomeFace}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.1f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::LightYellow);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			GLightPos,
@@ -359,11 +361,8 @@ bool PrepareScene(FScenePtr& OutScene, FDepthMapPtr& OutShadowMap)
 			{0.5f, 0.5f, 0.5f}
 	});
 	
-	uint16 windowW, windowH;
-	FApplication::Get().GetWindowSize(windowW, windowH);
-	
 	OutScene = FScene::Create(sceneObjects);
-	OutShadowMap = FDepthMap::Create(windowW, windowH);
+	OutShadowCubemap = FDepthCubemap::Create(GShadowResolution, GShadowResolution);
 	
 	return true;
 }
@@ -388,8 +387,8 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		});
 		
 		OutShaders.insert({
-			EShaderMainType::ShadowMap,
-			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/ShadowMap.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Empty.frag").c_str())
+			EShaderMainType::ShadowCubemap,
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/ShadowCubemap.vert").c_str(), NFileUtils::ContentPath("Shaders/Geometry/ShadowCubemap.geom").c_str(), NFileUtils::ContentPath("Shaders/Fragment/ShadowCubemap.frag").c_str())
 		});
 	}
 	
@@ -541,6 +540,18 @@ bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 	// GAMMA
 	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
 	
+	// Shadow
+	{
+		const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.f, GShadowClipPlane.x, GShadowClipPlane.y);
+		
+		GShadowTransforms[0] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f));
+		GShadowTransforms[1] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3(-1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f));
+		GShadowTransforms[2] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  1.f,  0.f), glm::vec3(0.f,  0.f,  1.f));
+		GShadowTransforms[3] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f, -1.f,  0.f), glm::vec3(0.f,  0.f, -1.f));
+		GShadowTransforms[4] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  0.f,  1.f), glm::vec3(0.f, -1.f,  0.f));
+		GShadowTransforms[5] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  0.f, -1.f), glm::vec3(0.f, -1.f,  0.f));
+	}
+	
 	return true;
 }
 
@@ -561,46 +572,42 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	Uniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
 	Uniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
 	
-	// light space
-	{
-		glm::mat4 lightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, GClipPlane.x, GClipPlane.y);
-		glm::mat4 lightView = glm::lookAt(GLightPos,
-										glm::vec3( 0.f, 0.f,  0.f),
-										glm::vec3( 0.f, 1.f,  0.f));
-										
-		GLightSpaceMatrix = lightProjection * lightView;
-	}
-	
 	// Scene
 	// * To shadow map
 	if(GUseShadow)
 	{
-		GShadowMap->Enable();
+		GShadowCubemap->Enable();
 		
 		// Setup
 		{
 			glEnable(GL_DEPTH_TEST);
-			glEnable(GL_STENCIL_TEST);
-			glClear(GL_DEPTH_BUFFER_BIT);
+			glDisable(GL_STENCIL_TEST);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 
 		// Draw scene
 		{
-			
-			Shaders[EShaderMainType::ShadowMap]->Enable();
+			Shaders[EShaderMainType::ShadowCubemap]->Enable();
 
 			// Setup
 			{
-				Shaders[EShaderMainType::ShadowMap]->SetMat4("lightSpaceMatrix", GLightSpaceMatrix);
+				Shaders[EShaderMainType::ShadowCubemap]->SetFloat("shadowFarPlane", GShadowClipPlane.y);
+				Shaders[EShaderMainType::ShadowCubemap]->SetVec3("lightPos", GLightPos);
+				
+				for (uint8 i = 0; i < 6; ++i)
+				{
+					const FString resultName = "shadowMatrices[" + std::to_string(i) + "]";
+					Shaders[EShaderMainType::ShadowCubemap]->SetMat4(resultName.c_str(), GShadowTransforms[i]);
+				}
 			}
 			
-			GScene->Draw(Shaders[EShaderMainType::ShadowMap], GCamera);
+			GScene->Draw(Shaders[EShaderMainType::ShadowCubemap], GCamera);
 			
-			Shaders[EShaderMainType::ShadowMap]->Disable();
+			Shaders[EShaderMainType::ShadowCubemap]->Disable();
 		}
 		
 		
-		GShadowMap->Disable();
+		GShadowCubemap->Disable();
 	}
 	
 	// Scene
@@ -631,21 +638,21 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
 				
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.position", GLightPos);
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.diffuse", glm::vec3(GLightColor) * glm::vec3(0.5f));
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", glm::vec3(GLightColor) * 0.05f);
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.diffuse", GLightColor.ToVec3() * 0.5f);
+				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", GLightColor.ToVec3() * 0.05f);
 				Shaders[EShaderMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
 				
-				Shaders[EShaderMainType::Mesh]->SetMat4("lightSpaceMatrix", GLightSpaceMatrix);
+				Shaders[EShaderMainType::Mesh]->SetFloat("shadowFarPlane", GShadowClipPlane.y);
 				
-				Shaders[EShaderMainType::Mesh]->SetInt32("shadowMap", GShadowMapTexId);
+				Shaders[EShaderMainType::Mesh]->SetInt32("shadowCube", GShadowCubemapIndex);
 				Shaders[EShaderMainType::Mesh]->SetBool("useShadow", GUseShadow);
 			}
 			
-			GShadowMap->UseTexture(GShadowMapTexId);
+			GShadowCubemap->UseCube(GShadowCubemapIndex);
 			
 			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);
 			
-			GShadowMap->ClearTexture();
+			GShadowCubemap->ClearCube();
 			
 			Shaders[EShaderMainType::Mesh]->Disable();
 		}
@@ -687,6 +694,16 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	}
 }
 
+bool EngineInit()
+{
+	GCamera = FCamera::Create(
+		{-16.5f, 2.5f, -5.f}, 
+		{19.f, -6.5f, 0.f} 
+	);
+	
+	return true;
+}
+
 void EngineTick()
 {
 	// Update FPS
@@ -708,8 +725,6 @@ void EngineTick()
 
 int32 GuardedMain()
 {
-	GCamera = FCamera::Create();
-	
 	if (!CreateInitWindow(GWindow))
 	{
 		return -1;
@@ -727,7 +742,7 @@ int32 GuardedMain()
 		return -3;
 	}
 	
-	if(!PrepareScene(GScene, GShadowMap))
+	if(!PrepareScene(GScene, GShadowCubemap))
 	{
 		return -4;
 	}
@@ -736,10 +751,15 @@ int32 GuardedMain()
 	{
 		return -5;
 	}
+
+	if(!EngineInit())
+	{
+		return -6;
+	}
 	
 	if(!InitRender(Uniforms))
 	{
-		return -6;
+		return -7;
 	}
 
 	// Main render loop
