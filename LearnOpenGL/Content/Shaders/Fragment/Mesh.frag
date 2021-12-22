@@ -22,7 +22,11 @@ uniform struct Light
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
-} light;
+
+	float constant;
+	float linear;
+	float quadratic;
+} lights[3];
 
 layout (std140) uniform ULight
 {
@@ -35,28 +39,14 @@ out vec4 FragColor;
 uniform bool useOverrideColor;
 uniform vec4 overrideColor;
 
-// Shadow
-uniform samplerCube shadowCube;
-uniform bool useShadow;
-uniform float shadowFarPlane;
-
-vec3 sampleOffsetDirections[20] = vec3[]
-(
-	vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
-	vec3(1, 1, -1), vec3(1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
-	vec3(1, 1, 0), vec3(1, -1, 0), vec3(-1, -1, 0), vec3(-1, 1, 0),
-	vec3(1, 0, 1), vec3(-1, 0, 1), vec3(1, 0, -1), vec3(-1, 0, -1),
-	vec3(0, 1, 1), vec3(0, -1, 1), vec3(0, -1, -1), vec3(0, 1, -1)
-);
-
-vec4 CalculateLight()
+vec4 CalculateLight(Light light)
 {
-	float shadow;
 	vec3 ambient, diffuse, specular;
-
+	float attenuation;
+	
 	vec3 lightDir = normalize(light.position - frag_in.FragPos);
 	vec3 norm = normalize(frag_in.Normal);
-
+	
 	// ambient
 	{
 		ambient = light.ambient * texture(material.diffuse0, frag_in.TexCoord).rgb;
@@ -70,10 +60,10 @@ vec4 CalculateLight()
 
 	// specular
 	{
-		vec3 viewDir = normalize(u_light.viewPos.xyz - frag_in.FragPos);
-
+		vec3 viewDir = normalize(u_light.viewPos - frag_in.FragPos);
+		
 		float spec = 0.f;
-		if (u_light.useBlinn)
+		if(u_light.useBlinn)
 		{
 			vec3 halfwayDir = normalize(lightDir + viewDir);
 			spec = pow(max(dot(norm, halfwayDir), 0.f), material.shininess);
@@ -83,45 +73,35 @@ vec4 CalculateLight()
 			vec3 reflectDir = reflect(-lightDir, norm);
 			spec = pow(max(dot(viewDir, reflectDir), 0.f), material.shininess);
 		}
-
+		
 		specular = light.specular * spec * texture(material.specular0, frag_in.TexCoord).rgb;
 	}
 
-	// Lightning
+	// attenuation
 	{
-		if (useShadow)
-		{
-			vec3 fragToLight = frag_in.FragPos - light.position;
-			float currentDepth = length(fragToLight);
-			
-			float bias = 0.2f;
-			int numOfSamples  = 20;
-			float viewDistance = length(u_light.viewPos.xyz - frag_in.FragPos);
-			float diskRadius = (1.f + (viewDistance / shadowFarPlane)) / 25.f;
-			
-			for(int i = 0; i < numOfSamples; ++i)
-			{
-				float closestDepth = texture(shadowCube, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
-				closestDepth *= shadowFarPlane; // undo mapping [0;1]
-				if(currentDepth - bias > closestDepth)
-					shadow += 1.0;
-			}
-			
-			shadow /= float(numOfSamples);
-		}
-		else
-		{
-			shadow = 0.f;
-		}
+		float distance = length(light.position - frag_in.FragPos);
+		attenuation = 1.f / (light.constant + light.linear * distance + light.quadratic * distance);
 	}
 
-	return vec4(ambient + ((diffuse + specular) * (1.f - shadow)), 1.f);
+	return vec4(attenuation * (ambient + diffuse + specular), 1.f);
+}
+
+vec4 CalculateLights()
+{
+	vec4 result = vec4(0.f);
+	
+	for(int i = 0; i < 4; ++i)
+	{
+		result += CalculateLight(lights[i]);
+	}
+	
+	return result;
 }
 
 void main()
 {
 	// for now use only 0 index
-	vec4 resultColor = (useOverrideColor) ? overrideColor : CalculateLight();
+	vec4 resultColor = (useOverrideColor) ? overrideColor : CalculateLights();
 	if (resultColor.a < 0.1f)
 	discard;
 

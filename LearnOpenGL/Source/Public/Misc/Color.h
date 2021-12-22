@@ -5,6 +5,9 @@
 
 struct FColor
 {
+public: // Default constructor
+
+	FORCEINLINE constexpr FColor() : R(0), G(0), B(0), A(0) {}
 
 private: // Internal constructions
 
@@ -89,8 +92,7 @@ public: // Fields
 
 private: // Private constructor
 
-	constexpr FColor() : R(0), G(0), B(0), A(0) {}
-	constexpr FColor(uint8 Red, uint8 Green, uint8 Blue, uint8 Alpha)
+	FORCEINLINE constexpr FColor(uint8 Red, uint8 Green, uint8 Blue, uint8 Alpha)
 		: R(Red)
 		, G(Green)
 		, B(Blue)
