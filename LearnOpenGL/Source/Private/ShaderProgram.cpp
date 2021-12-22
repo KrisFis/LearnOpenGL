@@ -18,7 +18,7 @@ static bool HasErrors(const unsigned int& Id, const FString& ShaderType, const c
 		{
 			glGetShaderInfoLog(Id, 1024, NULL, infoLog);
 			std::cout << "Shader compilation failed. [" << Filename << "]"
-					  << "\n" << infoLog; // Contains newline terminator
+					  << "\n" << infoLog<< std::endl;
 			return true;
 		}
 	}
@@ -29,7 +29,7 @@ static bool HasErrors(const unsigned int& Id, const FString& ShaderType, const c
 		{
 			glGetProgramInfoLog(Id, 1024, NULL, infoLog);
 			std::cout << "Shader compilation failed. [PROGRAM_LINK_FAIL] [" << Filename << "]"
-					<< "\n" << infoLog; // Contains newline terminator
+					<< "\n" << infoLog << std::endl;
 			return true;
 		}
 	}

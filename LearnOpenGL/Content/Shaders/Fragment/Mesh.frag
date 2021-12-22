@@ -60,7 +60,7 @@ vec4 CalculateLight(Light light)
 
 	// specular
 	{
-		vec3 viewDir = normalize(u_light.viewPos - frag_in.FragPos);
+		vec3 viewDir = normalize(u_light.viewPos.xyz - frag_in.FragPos);
 		
 		float spec = 0.f;
 		if(u_light.useBlinn)
@@ -89,8 +89,8 @@ vec4 CalculateLight(Light light)
 vec4 CalculateLights()
 {
 	vec4 result = vec4(0.f);
-	
-	for(int i = 0; i < 4; ++i)
+
+	for(int i = 0; i < 3; ++i)
 	{
 		result += CalculateLight(lights[i]);
 	}

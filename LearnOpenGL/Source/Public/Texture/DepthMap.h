@@ -27,7 +27,7 @@ public: // Getters
 	FORCEINLINE FFramebufferId GetFBId() const { return FBId; }
 
 	FORCEINLINE bool IsEnabled() const { return bIsEnabled; }
-	FORCEINLINE uint8 GetBoundTextureIndex() const { return UsedTexIndex; }
+	FORCEINLINE int16 GetBoundTextureIndex() const { return UsedTexIndex; }
 
 public: // External methods
 
