@@ -61,9 +61,11 @@ FSceneObjectPtr GScreenObject;
 
 bool GUseBlinn = true;
 float GExposure = 0.15f;
+bool GWireframeMode = false;
 
 bool GUIDemoVisible = false;
 bool GUIDetailsInViewport = true;
+bool GUIDebugVisible = false;
 bool GUIResetLayout = true;
 
 // ~ TEST
@@ -504,11 +506,6 @@ void ProcessInput()
 	if (glfwGetKey(GWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS && GbShiftWasPressed)
 		glfwSetWindowShouldClose(GWindow, true);
 
-	if (glfwGetKey(GWindow, GLFW_KEY_F1) == GLFW_PRESS)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	else if (glfwGetKey(GWindow, GLFW_KEY_F2) == GLFW_PRESS)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
 	// Cursor
 	{
 		if(altWasJustPressed)
@@ -654,28 +651,65 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 
 void ProcessUIRender()
 {
-	bool layoutApplied = false;
+	// Menu bar
+	{
+		if(ImGui::BeginMainMenuBar())
+		{
+			if(ImGui::BeginMenu("Rendering"))
+			{
+				if(ImGui::Checkbox("Wireframe", &GWireframeMode))
+				{
+					glPolygonMode(GL_FRONT_AND_BACK, GWireframeMode ? GL_LINE : GL_FILL);
+				}
 
+				ImGui::EndMenu();
+			}
+
+			if(ImGui::BeginMenu("Settings"))
+			{
+				ImGui::Checkbox("Details in viewport", &GUIDetailsInViewport);
+				ImGui::Checkbox("Debug visible", &GUIDebugVisible);
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Help"))
+			{
+				if(ImGui::Button((!GUIDemoVisible) ? "Show DEMO" : "Hide DEMO"))
+					GUIDemoVisible = !GUIDemoVisible;
+
+				if(ImGui::Button("Reset Layout"))
+					GUIResetLayout = true;
+
+				ImGui::EndMenu();
+			}
+
+			if(ImGui::Button("Quit"))
+			{
+				glfwSetWindowShouldClose(GWindow, true);
+			}
+
+			ImGui::EndMainMenuBar();
+		}
+	}
+
+	// Details
 	{
 		if(!GViewportCapturesInput || GUIDetailsInViewport)
 		{
 			const float currentFramerate = 60.f / GDeltaSeconds;
 
-			static ImVec2 defaultPos(0, 0);
-			static ImVec2 defaultSize(255, 105);
+			static ImVec2 defaultPos(FApplication::Get().GetWindowWidth() - 255.f, 20.f);
+			static ImVec2 defaultSize(255.f, 105.f);
 
 			if(GUIResetLayout)
 			{
 				ImGui::SetNextWindowPos(defaultPos);
 				ImGui::SetNextWindowSize(defaultSize);
-				ImGui::SetNextItemOpen(true);
-
-				layoutApplied = true;
 			}
 
 			ImGui::Begin("Details");
 			ImGui::Text("FPS: %.1f (%.3f ms)", currentFramerate, 1000.0f / currentFramerate);
-			if(ImGui::CollapsingHeader("Camera"))
+			if(ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::Indent();
 
@@ -689,86 +723,86 @@ void ProcessUIRender()
 			}
 			ImGui::End();
 		}
+	}
 
-		if(!GViewportCapturesInput)
+	// Debug
+	{
+		if(!GViewportCapturesInput && GUIDebugVisible)
 		{
-			static ImVec2 defaultPos(0, 105);
-			static ImVec2 defaultSize(460, 375);
+			static const ImVec2 defaultPos(0.f, FApplication::Get().GetWindowHeight() - 300.f);
+			static const ImVec2 defaultPosRaised(defaultPos.x, defaultPos.y - 150.f);
 
-			if(GUIResetLayout)
+			static const ImVec2 defaultSize(475.f, 300.f);
+			static const ImVec2 defaultSizeRaised(defaultSize.x, defaultSize.y + 150.f);
+
+			static bool debugWindowSizeDirty = false;
+			static bool colorPickerWasVisible = false;
+
+			if(GUIResetLayout || debugWindowSizeDirty)
 			{
-				ImGui::SetNextWindowPos(defaultPos);
-				ImGui::SetNextWindowSize(defaultSize);
+				ImGui::SetNextWindowPos((colorPickerWasVisible) ? defaultPosRaised : defaultPos);
+				ImGui::SetNextWindowSize((colorPickerWasVisible) ? defaultSizeRaised : defaultSize);
 
-				layoutApplied = true;
+				debugWindowSizeDirty = false;
 			}
 
-			ImGui::Begin("Configurations");
+			ImGui::Begin("Debug");
 
-			if (ImGui::CollapsingHeader("Testing"))
+			ImGui::Checkbox("Blinn shading", &GUseBlinn);
+			ImGui::SliderFloat("Gamma", &GGamma, 0.f, 5.f);
+			ImGui::SliderFloat("HDR exposure", &GExposure, 0.f, 5.f);
+
+			if(ImGui::CollapsingHeader("Lights"))
 			{
 				ImGui::Indent();
 
-				ImGui::Checkbox("Blinn shading", &GUseBlinn);
-				ImGui::SliderFloat("Gamma", &GGamma, 0.f, 5.f);
-				ImGui::SliderFloat("HDR exposure", &GExposure, 0.f, 5.f);
-
-				if(ImGui::CollapsingHeader("Lights"))
+				bool colorPickerVisible = false;
+				for(uint8 i = 0; i < 3; ++i)
 				{
-					ImGui::Indent();
-
-					for(uint8 i = 0; i < 3; ++i)
+					if(ImGui::CollapsingHeader(FString("[" + std::to_string(i) + "]").c_str()))
 					{
-						if(ImGui::CollapsingHeader(FString("[" + std::to_string(i) + "]").c_str()))
+						colorPickerVisible = true;
+
+						ImGui::Indent();
+
+						glm::vec4 colorCopy = GLights[i].Color.ToVec4();
+
+						ImGui::SliderFloat3("Position", &GLights[i].Position.x, -25.f, 25.f);
+						if(ImGui::ColorPicker4("Color", &colorCopy.x,
+							ImGuiColorEditFlags_HDR |
+							ImGuiColorEditFlags_NoSidePreview |
+							ImGuiColorEditFlags_AlphaBar))
 						{
-							ImGui::Indent();
-							glm::vec4 colorCopy = GLights[i].Color.ToVec4();
-
-							ImGui::SliderFloat3("Position", &GLights[i].Position.x, -25.f, 25.f);
-							if(ImGui::ColorEdit4("Color", &colorCopy.x))
-							{
-								GLights[i].Color = FColor::FromVec4(colorCopy);
-							}
-
-							ImGui::Unindent();
+							GLights[i].Color = FColor::FromVec4(colorCopy);
 						}
+
+						ImGui::Unindent();
 					}
 				}
 
-				ImGui::Unindent();
-			}
-			if (ImGui::CollapsingHeader("Settings"))
-			{
-				ImGui::Indent();
-				ImGui::Checkbox("Details in viewport", &GUIDetailsInViewport);
-				ImGui::Unindent();
-			}
-			if (ImGui::CollapsingHeader("Help"))
-			{
-				ImGui::Indent();
-
-				if(ImGui::Button((!GUIDemoVisible) ? "Show" : "Hide"))
-					GUIDemoVisible = !GUIDemoVisible;
-
-				if(ImGui::Button("Reset Layout"))
-					GUIResetLayout = true;
+				if(colorPickerVisible != colorPickerWasVisible)
+				{
+					colorPickerWasVisible = colorPickerVisible;
+					debugWindowSizeDirty = true;
+				}
 
 				ImGui::Unindent();
 			}
 
 			ImGui::End();
-
-			if(GUIDemoVisible)
-			{
-				ImGui::ShowDemoWindow(&GUIDemoVisible);
-			}
-		}
-
-		if(layoutApplied)
-		{
-			GUIResetLayout = false;
 		}
 	}
+
+	// Demo
+	{
+		if(GUIDemoVisible)
+		{
+			ImGui::ShowDemoWindow(&GUIDemoVisible);
+		}
+	}
+
+	// Reset layout
+	GUIResetLayout = false;
 }
 
 bool EngineInit()

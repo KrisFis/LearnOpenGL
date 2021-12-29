@@ -89,4 +89,5 @@ public: // Fields
 	union { uint16 G, Y; };
 	union { uint16 B, Z; };
 	union { uint16 A, W; };
+
 };

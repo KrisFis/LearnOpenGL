@@ -2,6 +2,14 @@
 #include "Color.h"
 #include "StringUtils.h"
 
+namespace
+{
+	FORCEINLINE void NormalizeChannel(uint16& channel)
+	{
+		channel = glm::clamp<uint16>(channel, 0, UINT8_MAX);
+	}
+}
+
 const FColor& FColor::GetEmpty()
 {
 	static FColor emptyVal = FColor();
@@ -53,10 +61,10 @@ glm::vec3 FColor::ToVec3() const
 
 void FColor::Normalize()
 {
-	R = glm::clamp<uint16>(R, 0, UINT8_MAX);
-	G = glm::clamp<uint16>(G, 0, UINT8_MAX);
-	B = glm::clamp<uint16>(B, 0, UINT8_MAX);
-	A = glm::clamp<uint16>(A, 0, UINT8_MAX);
+	NormalizeChannel(R);
+	NormalizeChannel(G);
+	NormalizeChannel(B);
+	NormalizeChannel(A);
 }
 
 FColor FColor::NormalizeCopy()
@@ -65,7 +73,6 @@ FColor FColor::NormalizeCopy()
 	newColor.Normalize();
 	return newColor;
 }
-
 
 FColor& FColor::operator+=(const FColor& Other)
 {
