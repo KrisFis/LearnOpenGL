@@ -26,12 +26,14 @@
 #include "DepthCubemap.h"
 
 // Window
-uint16 GInitWindowWidth = 800;
-uint16 GInitWindowHeight = 600;
+uint16 GInitWindowWidth = 1360;
+uint16 GInitWindowHeight = 765;
 
 GLFWwindow* GWindow = nullptr;
 
 float GGamma = 1.5f; // 2.2f is best for most of the monitors
+
+bool GViewportCapturesInput = (BUILD_DEBUG != 1);
 
 // Global
 float GLastSeconds = 0.f;
@@ -59,6 +61,12 @@ FSceneObjectPtr GScreenObject;
 
 bool GUseBlinn = true;
 float GExposure = 0.15f;
+bool GWireframeMode = false;
+
+bool GUIDemoVisible = false;
+bool GUIDetailsInViewport = true;
+bool GUIDebugVisible = false;
+bool GUIResetLayout = true;
 
 // ~ TEST
 
@@ -137,7 +145,10 @@ typedef FUniformBufferMainType::EType EUniformBufferMainType;
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
-	GCamera->ProcessScroll((float)ScrollY);
+	if(GViewportCapturesInput)
+	{
+		GCamera->ProcessScroll((float)ScrollY);
+	}
 }
 
 void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
@@ -205,7 +216,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	glfwSetCursorPosCallback(OutWindow, &MousePositionChanged);
 	glfwSetScrollCallback(OutWindow, &MouseScrollChanged);
 
-	glfwSetInputMode(OutWindow, GLFW_CURSOR, BUILD_DEBUG == 1 ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(OutWindow, GLFW_CURSOR, GViewportCapturesInput ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 	FApplication::Get().SetWindowSize(GInitWindowWidth, GInitWindowHeight);
 
 	// Log Info
@@ -232,6 +243,18 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
 	}
+
+	return true;
+}
+
+bool CreateInitUI(GLFWwindow* Window)
+{
+	ImGui::CreateContext();
+
+	ImGui_ImplGlfw_InitForOpenGL(Window, true);
+	ImGui_ImplOpenGL3_Init("#version 460");
+
+	ImGui::StyleColorsDark();
 
 	return true;
 }
@@ -483,19 +506,14 @@ void ProcessInput()
 	if (glfwGetKey(GWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS && GbShiftWasPressed)
 		glfwSetWindowShouldClose(GWindow, true);
 
-	if (glfwGetKey(GWindow, GLFW_KEY_F1) == GLFW_PRESS)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	else if (glfwGetKey(GWindow, GLFW_KEY_F2) == GLFW_PRESS)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
 	// Cursor
 	{
 		if(altWasJustPressed)
 		{
-			const bool isProcessingInput = GCamera->GetShouldProcessInput();
+			GViewportCapturesInput = !GViewportCapturesInput;
 
-			GCamera->SetShouldProcessInput(!isProcessingInput);
-			glfwSetInputMode(GWindow, GLFW_CURSOR, (isProcessingInput) ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+			GCamera->SetShouldProcessInput(GViewportCapturesInput);
+			glfwSetInputMode(GWindow, GLFW_CURSOR, GViewportCapturesInput ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 		}
 	}
 
@@ -515,36 +533,14 @@ void ProcessInput()
 		if (glfwGetKey(GWindow, GLFW_KEY_D) == GLFW_PRESS)
 			GCamera->ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
-
-	// Blinn
-	{
-		const bool BWasPreviouslyPressed = GbBWasPressed;
-		GbBWasPressed = (glfwGetKey(GWindow, GLFW_KEY_B) == GLFW_PRESS);
-	
-		const bool BWasJustPressed = !BWasPreviouslyPressed && GbBWasPressed;
-		const bool BWasJustReleased = BWasPreviouslyPressed && !GbBWasPressed;
-	
-		if (BWasJustPressed)
-		{
-			GUseBlinn = !GUseBlinn;
-		}
-	}
-
-	// Gamma and exposure
-	{
-		if (glfwGetKey(GWindow, GLFW_KEY_KP_MULTIPLY) == GLFW_PRESS)
-			GExposure += 0.1f * GDeltaSeconds;
-		if (glfwGetKey(GWindow, GLFW_KEY_KP_DIVIDE) == GLFW_PRESS)
-			GExposure -= 0.1f * GDeltaSeconds;
-			
-		if (glfwGetKey(GWindow, GLFW_KEY_KP_ADD) == GLFW_PRESS)
-			GGamma += 0.15f * GDeltaSeconds;
-		if (glfwGetKey(GWindow, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
-			GGamma -= 0.15f * GDeltaSeconds;
-	}
 }
 
 bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
+{
+	return true;
+}
+
+bool InitUI()
 {
 	return true;
 }
@@ -653,6 +649,162 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	}
 }
 
+void ProcessUIRender()
+{
+	// Menu bar
+	{
+		if(ImGui::BeginMainMenuBar())
+		{
+			if(ImGui::BeginMenu("Rendering"))
+			{
+				if(ImGui::Checkbox("Wireframe", &GWireframeMode))
+				{
+					glPolygonMode(GL_FRONT_AND_BACK, GWireframeMode ? GL_LINE : GL_FILL);
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if(ImGui::BeginMenu("Settings"))
+			{
+				ImGui::Checkbox("Details in viewport", &GUIDetailsInViewport);
+				ImGui::Checkbox("Debug visible", &GUIDebugVisible);
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Help"))
+			{
+				if(ImGui::Button((!GUIDemoVisible) ? "Show DEMO" : "Hide DEMO"))
+					GUIDemoVisible = !GUIDemoVisible;
+
+				if(ImGui::Button("Reset Layout"))
+					GUIResetLayout = true;
+
+				ImGui::EndMenu();
+			}
+
+			if(ImGui::Button("Quit"))
+			{
+				glfwSetWindowShouldClose(GWindow, true);
+			}
+
+			ImGui::EndMainMenuBar();
+		}
+	}
+
+	// Details
+	{
+		if(!GViewportCapturesInput || GUIDetailsInViewport)
+		{
+			const float currentFramerate = 60.f / GDeltaSeconds;
+
+			static ImVec2 defaultPos(FApplication::Get().GetWindowWidth() - 255.f, 20.f);
+			static ImVec2 defaultSize(255.f, 105.f);
+
+			if(GUIResetLayout)
+			{
+				ImGui::SetNextWindowPos(defaultPos);
+				ImGui::SetNextWindowSize(defaultSize);
+			}
+
+			ImGui::Begin("Details");
+			ImGui::Text("FPS: %.1f (%.3f ms)", currentFramerate, 1000.0f / currentFramerate);
+			if(ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Indent();
+
+				const glm::vec3& pos = GCamera->GetPosition();
+				const glm::vec3& rot = GCamera->GetRotation();
+
+				ImGui::Text("Position: [%.1f, %.1f, %.1f]", pos.x, pos.y, pos.z);
+				ImGui::Text("Rotation: [%.1f, %.1f, %.1f]", rot.x, rot.y, rot.z);
+
+				ImGui::Unindent();
+			}
+			ImGui::End();
+		}
+	}
+
+	// Debug
+	{
+		if(!GViewportCapturesInput && GUIDebugVisible)
+		{
+			static const ImVec2 defaultPos(0.f, FApplication::Get().GetWindowHeight() - 300.f);
+			static const ImVec2 defaultPosRaised(defaultPos.x, defaultPos.y - 150.f);
+
+			static const ImVec2 defaultSize(475.f, 300.f);
+			static const ImVec2 defaultSizeRaised(defaultSize.x, defaultSize.y + 150.f);
+
+			static bool debugWindowSizeDirty = false;
+			static bool colorPickerWasVisible = false;
+
+			if(GUIResetLayout || debugWindowSizeDirty)
+			{
+				ImGui::SetNextWindowPos((colorPickerWasVisible) ? defaultPosRaised : defaultPos);
+				ImGui::SetNextWindowSize((colorPickerWasVisible) ? defaultSizeRaised : defaultSize);
+
+				debugWindowSizeDirty = false;
+			}
+
+			ImGui::Begin("Debug");
+
+			ImGui::Checkbox("Blinn shading", &GUseBlinn);
+			ImGui::SliderFloat("Gamma", &GGamma, 0.f, 5.f);
+			ImGui::SliderFloat("HDR exposure", &GExposure, 0.f, 5.f);
+
+			if(ImGui::CollapsingHeader("Lights"))
+			{
+				ImGui::Indent();
+
+				bool colorPickerVisible = false;
+				for(uint8 i = 0; i < 3; ++i)
+				{
+					if(ImGui::CollapsingHeader(FString("[" + std::to_string(i) + "]").c_str()))
+					{
+						colorPickerVisible = true;
+
+						ImGui::Indent();
+
+						glm::vec4 colorCopy = GLights[i].Color.ToVec4();
+
+						ImGui::SliderFloat3("Position", &GLights[i].Position.x, -25.f, 25.f);
+						if(ImGui::ColorPicker4("Color", &colorCopy.x,
+							ImGuiColorEditFlags_HDR |
+							ImGuiColorEditFlags_NoSidePreview |
+							ImGuiColorEditFlags_AlphaBar))
+						{
+							GLights[i].Color = FColor::FromVec4(colorCopy);
+						}
+
+						ImGui::Unindent();
+					}
+				}
+
+				if(colorPickerVisible != colorPickerWasVisible)
+				{
+					colorPickerWasVisible = colorPickerVisible;
+					debugWindowSizeDirty = true;
+				}
+
+				ImGui::Unindent();
+			}
+
+			ImGui::End();
+		}
+	}
+
+	// Demo
+	{
+		if(GUIDemoVisible)
+		{
+			ImGui::ShowDemoWindow(&GUIDemoVisible);
+		}
+	}
+
+	// Reset layout
+	GUIResetLayout = false;
+}
+
 bool EngineInit()
 {
 	GCamera = FCamera::Create(
@@ -669,12 +821,12 @@ void EngineTick()
 {
 	// Update FPS
 	{
-		FString resultTitle;
-		resultTitle.append("LearnOpenGL: FPS [");
-		resultTitle.append(std::to_string((uint16)std::floor(60.f / GDeltaSeconds)));
-		resultTitle.append("]");
-	
-		glfwSetWindowTitle(GWindow, resultTitle.c_str());
+//		FString resultTitle;
+//		resultTitle.append("LearnOpenGL: FPS [");
+//		resultTitle.append(std::to_string((uint16)std::floor(60.f / GDeltaSeconds)));
+//		resultTitle.append("]");
+//
+//		glfwSetWindowTitle(GWindow, resultTitle.c_str());
 	}
 	
 	// Position log
@@ -691,36 +843,46 @@ int32 GuardedMain()
 		return -1;
 	}
 
+	if(!CreateInitUI(GWindow))
+	{
+		return -2;
+	}
+
 	TFastMap<EShaderMainType, FShaderProgramPtr> Shaders;
 	TFastMap<EUniformBufferMainType, FUniformBufferPtr> Uniforms;
 	if(!PrepareShaders(Shaders, Uniforms))
 	{
-		return -2;
+		return -3;
 	}
 	
 	if(!PrepareFBs(GScreenObject, GMSAAFramebuffer, GScreenFramebuffer))
 	{
-		return -3;
+		return -4;
 	}
 	
 	if(!PrepareScene(GScene))
 	{
-		return -4;
+		return -5;
 	}
 	
 	if(!PrepareSkybox(GSkyboxObject))
 	{
-		return -5;
+		return -6;
 	}
 
 	if(!EngineInit())
 	{
-		return -6;
+		return -7;
 	}
 	
 	if(!InitRender(Uniforms))
 	{
-		return -7;
+		return -8;
+	}
+
+	if(!InitUI())
+	{
+		return -9;
 	}
 
 	// Main render loop
@@ -737,11 +899,26 @@ int32 GuardedMain()
 		ProcessInput();
 		ProcessRender(Shaders, Uniforms);
 
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ProcessUIRender();
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		glfwSwapBuffers(GWindow);
 		glfwPollEvents();
 
 		frameTimer.Stop();
 	}
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
+	glfwTerminate();
 
 	return 0;
 }
@@ -759,7 +936,6 @@ int32 main()
 	// Shutdown
 	{
 		NRenderUtils::Shutdown();
-		glfwTerminate();
 	}
 
 	// End print

@@ -45,7 +45,6 @@ void FUniformBuffer::FillSubData(const uint32 Offset, const uint32 RealDataSize,
 		// * allocate zeroed data
 		uint8* newData = new uint8[correctedDataSize]();
 		
-		// TODO(kristian.fisera): Implement custom MEMCPY
 		memcpy(newData, Data, RealDataSize);
 		
 		dataToSend = newData;

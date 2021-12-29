@@ -82,10 +82,11 @@ include_directories(
     "${PROJECT_DIR}/Source/Public/Render/Target/Base"
     "${PROJECT_DIR}/Source/Public/Texture"
     "${PROJECT_DIR}/Source/Public/TypeTraits"
-    
+
     "${PROJECT_THIRD_PARTY_DIR}/OpenGL/include"
     "${PROJECT_THIRD_PARTY_DIR}/STB/include"
     "${PROJECT_THIRD_PARTY_DIR}/Assimp/include"
+    "${PROJECT_THIRD_PARTY_DIR}/ImGUI/include"
 )
 
 # Sources
@@ -93,6 +94,7 @@ file(GLOB_RECURSE "PROJECT_SOURCES"
     "${PROJECT_THIRD_PARTY_DIR}/OpenGL/src/*.c"
     "${PROJECT_THIRD_PARTY_DIR}/OpenGL/src/*.cpp"
     "${PROJECT_THIRD_PARTY_DIR}/STB/src/*.cpp"
+    "${PROJECT_THIRD_PARTY_DIR}/ImGUI/src/*.cpp"
     "${PROJECT_DIR}/Source/Private/*.cpp"
 )
 
@@ -106,7 +108,7 @@ if(WIN32)
     find_library(ASSIMP_LIB assimp HINTS "${ASSIMP_LIB_ROOT}/Win32")
     find_library(GLFW_LIB glfw3 HINTS "${OPENGL_LIB_ROOT}/GLFW/Win32")
     find_library(OPENGL_LIB opengl32)
-    
+
     set(PLATFORM_LIBS "${ASSIMP_LIB}" "${GLFW_LIB}" "${OPENGL_LIB}")
 elseif(UNIX)
     find_library(ASSIMP_LIB assimp)
@@ -128,7 +130,7 @@ target_link_libraries(${PROJECT_NAME} "${PLATFORM_LIBS}")
 
 if(WIN32)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${PROJECT_THIRD_PARTY_DIR}/Assimp/lib/Win32/assimp-vc142-mt.dll"
             "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assimp-vc142-mt.dll"
     )
