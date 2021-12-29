@@ -3,7 +3,7 @@
 #include "Mesh.h"
 #include "Texture.h"
 #include "ShaderProgram.h"
-#include "ColorUtils.h"
+#include "ColorConsts.h"
 
 FModel::FModel(const char* FilePath) 
 	: OutlineSize(0.f)
