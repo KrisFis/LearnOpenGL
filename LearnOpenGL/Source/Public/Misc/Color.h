@@ -35,7 +35,7 @@ public: // Static values
 	
 public: // Conversions
 
-	static FColor FromCMYK(float Cyan, float Magenta, float Yellow, float Black);
+	static FColor FromCMYK(uint8 Cyan, uint8 Magenta, uint8 Yellow, uint8 Black);
 	static FColor FromHex(const char* Value);
 	
 	static FColor FromVec4(const glm::vec4& Value);
