@@ -8,9 +8,14 @@ const FColor& FColor::GetEmpty()
 	return emptyVal;
 }
 
-FColor FColor::FromCMYK(float Cyan, float Magenta, float Yellow, float Black)
+FColor FColor::FromCMYK(uint8 Cyan, uint8 Magenta, uint8 Yellow, uint8 Black)
 {
-	return FColor((1-Cyan) * (1-Black), (1-Magenta) * (1-Black), (1-Yellow) * (1-Black), (float)UINT8_MAX);
+	return FColor(
+		(UINT8_MAX - Cyan) * (UINT8_MAX - Black),
+		(UINT8_MAX - Magenta) * (UINT8_MAX - Black),
+		(UINT8_MAX - Yellow) * (UINT8_MAX - Black),
+		UINT8_MAX
+	);
 }
 
 FColor FColor::FromHex(const char* Value)
@@ -177,16 +182,16 @@ FColor FColor::operator-(uint16 Value) const
 FColor& FColor::operator*=(float Value)
 {
 #if BUILD_DEBUG
-	ENSURE(R <= UINT16_MAX / Value);
-	ENSURE(G <= UINT16_MAX / Value);
-	ENSURE(B <= UINT16_MAX / Value);
-	ENSURE(A <= UINT16_MAX / Value);
+	ENSURE((float)R <= (float)UINT16_MAX / Value);
+	ENSURE((float)G <= (float)UINT16_MAX / Value);
+	ENSURE((float)B <= (float)UINT16_MAX / Value);
+	ENSURE((float)A <= (float)UINT16_MAX / Value);
 #endif // BUILD_DEBUG
 
-	R *= Value;
-	G *= Value;
-	B *= Value;
-	A *= Value;
+	R = (uint16)(R * Value);
+	G = (uint16)(G * Value);
+	B = (uint16)(B * Value);
+	A = (uint16)(A * Value);
 	return *this;
 }
 
@@ -203,10 +208,10 @@ FColor& FColor::operator/=(float Value)
 	ENSURE(Value > 0);
 #endif // BUILD_DEBUG
 
-	R /= Value;
-	G /= Value;
-	B /= Value;
-	A /= Value;
+	R = (uint16)(R / Value);
+	G = (uint16)(G / Value);
+	B = (uint16)(B / Value);
+	A = (uint16)(A / Value);
 	return *this;
 }
 
