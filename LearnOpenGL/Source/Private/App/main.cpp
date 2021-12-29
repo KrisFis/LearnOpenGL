@@ -56,18 +56,19 @@ FSceneObjectPtr GSkyboxObject;
 FFramebufferPtr GMSAAFramebuffer;
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
-FDepthCubemapPtr GShadowCubemap;
+
+bool GUseBlinn = true;
+float GExposure = 0.15f;
+
+// ~ TEST
+
+struct FLightInfo
+{
+	glm::vec3 Position;
+	FColor Color;
+} GLights[3];
 
 // TEST
-uint16 GShadowResolution = 1024;
-glm::vec2 GShadowClipPlane = {1.f, 25.f};
-glm::mat4 GShadowTransforms[6];
-uint8 GShadowCubemapIndex = 10;
-
-glm::vec3 GLightPos = glm::vec3(1.8f, 7.2f, -0.75f);
-FColor GLightColor = NColors::White;
-bool GUseBlinn = true;
-bool GUseShadow = true;
 
 struct FUniformBufferMainType
 {
@@ -103,7 +104,7 @@ struct FUniformBufferMainType
 			case Light:
 				return NShaderUtils::GetSTD140Size<glm::vec4>() + NShaderUtils::GetSTD140Size<bool>();
 			case PostProcess:
-				return NShaderUtils::GetSTD140Size<float>();
+				return NShaderUtils::GetSTD140Size<float>() * 2;
 			default:
 				ENSURE_NO_ENTRY();
 				return 0;
@@ -113,7 +114,7 @@ struct FUniformBufferMainType
 
 struct FShaderMainType
 {
-	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, ShadowCubemap };
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox };
 	
 	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
 	{
@@ -162,21 +163,25 @@ void WindowSizeChanged(GLFWwindow* Window, int Width, int Height)
 	FApplication::Get().SetWindowSize(Width, Height);
 }
 
-void BindEvents(GLFWwindow* Window)
+void GLFWError(int32 ErrorCode, const char* Message)
 {
-	glfwSetFramebufferSizeCallback(Window, &WindowSizeChanged);
-	glfwSetCursorPosCallback(Window, &MousePositionChanged);
-	glfwSetScrollCallback(Window, &MouseScrollChanged);
+	std::cout << "GLFW error occurs: [" << ErrorCode << "] " << Message << std::endl;
+	ENSURE_NO_ENTRY();
 }
 
 bool CreateInitWindow(GLFWwindow*& OutWindow)
 {
+	glfwSetErrorCallback(&GLFWError);
+
 	if (!glfwInit())
 	{
 		std::cout << "failed to initialize GLFW" << std::endl;
 		return false;
 	}
 
+	// DEBUG context
+	//glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+	
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -196,9 +201,11 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 		return false;
 	}
 
-    BindEvents(OutWindow);
+	glfwSetFramebufferSizeCallback(OutWindow, &WindowSizeChanged);
+	glfwSetCursorPosCallback(OutWindow, &MousePositionChanged);
+	glfwSetScrollCallback(OutWindow, &MouseScrollChanged);
 
-	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(OutWindow, GLFW_CURSOR, BUILD_DEBUG == 1 ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 	FApplication::Get().SetWindowSize(GInitWindowWidth, GInitWindowHeight);
 
 	// Log Info
@@ -240,20 +247,26 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 	return true;
 }
 
-bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
+bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
 {
 	uint16 windowWidth, windowHeight;
 	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
 
 	// MSAA
 	{
-		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(windowWidth, windowHeight, ERenderTargetType::Color, 4);
-		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil, 4);
+		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(
+			windowWidth, 
+			windowHeight, 
+			ERenderTargetType::Color, 
+			ERenderTextureColorFlag::Float16
+		);
+		
+		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
 		if(!multisampledTextureTarget->IsInitialized() || !multisampledBufferTarget->IsInitialized())
 		{
 			return false;
 		}
-	
+		
 		OutMSAAFramebuffer = FFramebuffer::Create();
 		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledTextureTarget->AsShared());
 		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledBufferTarget->AsShared());
@@ -261,7 +274,13 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	
 	// SCREEN
 	{
-		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(windowWidth, windowHeight, ERenderTargetType::Color);
+		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(
+			windowWidth,
+			windowHeight,
+			ERenderTargetType::Color,
+			ERenderTextureColorFlag::Float16
+		);
+		
 		if(!sceneTextureTarget->IsInitialized())
 		{
 			return false;
@@ -292,7 +311,7 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	return true;
 }
 
-bool PrepareScene(FScenePtr& OutScene, FDepthCubemapPtr& OutShadowCubemap)
+bool PrepareScene(FScenePtr& OutScene)
 {
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
@@ -317,15 +336,6 @@ bool PrepareScene(FScenePtr& OutScene, FDepthCubemapPtr& OutShadowCubemap)
 			{10.f, 10.f, 10.f},
 			{0.f, 0.f, 0.f},
 			{2.f, 2.f, 2.f}
-	});
-	
-	sceneObjects.push_back(NMeshUtils::ConstructSphere({awesomeFace}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.1f);
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::LightYellow);
-	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			GLightPos,
-			{0.f, 0.f, 0.f},
-			{0.25f, 0.25f, 0.25f}
 	});
 	
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
@@ -362,8 +372,11 @@ bool PrepareScene(FScenePtr& OutScene, FDepthCubemapPtr& OutShadowCubemap)
 	});
 	
 	OutScene = FScene::Create(sceneObjects);
-	OutShadowCubemap = FDepthCubemap::Create(GShadowResolution, GShadowResolution);
 	
+	GLights[0] = {{1.5f, 0.1f, 3.f}, NColors::Red * 2.f };
+	GLights[1] = {{20.f, 5.f, 0.f}, NColors::White * 10.f };
+	GLights[2] = {{1.5f, 0.1f, -3.f}, NColors::Blue * 2.f };
+
 	return true;
 }
 
@@ -384,11 +397,6 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		OutShaders.insert({
 			EShaderMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
-		});
-		
-		OutShaders.insert({
-			EShaderMainType::ShadowCubemap,
-			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/ShadowCubemap.vert").c_str(), NFileUtils::ContentPath("Shaders/Geometry/ShadowCubemap.geom").c_str(), NFileUtils::ContentPath("Shaders/Fragment/ShadowCubemap.frag").c_str())
 		});
 	}
 	
@@ -508,7 +516,7 @@ void ProcessInput()
 			GCamera->ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
 
-	// Testing
+	// Blinn
 	{
 		const bool BWasPreviouslyPressed = GbBWasPressed;
 		GbBWasPressed = (glfwGetKey(GWindow, GLFW_KEY_B) == GLFW_PRESS);
@@ -520,38 +528,24 @@ void ProcessInput()
 		{
 			GUseBlinn = !GUseBlinn;
 		}
-		
-		
-		const bool VWasPreviouslyPressed = GbVWasPressed;
-		GbVWasPressed = (glfwGetKey(GWindow, GLFW_KEY_V) == GLFW_PRESS);
-	
-		const bool VWasJustPressed = !VWasPreviouslyPressed && GbVWasPressed;
-		const bool VWasJustReleased = VWasPreviouslyPressed && !GbVWasPressed;
-	
-		if (VWasJustPressed)
-		{
-			GUseShadow = !GUseShadow;
-		}
+	}
+
+	// Gamma and exposure
+	{
+		if (glfwGetKey(GWindow, GLFW_KEY_KP_MULTIPLY) == GLFW_PRESS)
+			GExposure += 0.1f * GDeltaSeconds;
+		if (glfwGetKey(GWindow, GLFW_KEY_KP_DIVIDE) == GLFW_PRESS)
+			GExposure -= 0.1f * GDeltaSeconds;
+			
+		if (glfwGetKey(GWindow, GLFW_KEY_KP_ADD) == GLFW_PRESS)
+			GGamma += 0.15f * GDeltaSeconds;
+		if (glfwGetKey(GWindow, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
+			GGamma -= 0.15f * GDeltaSeconds;
 	}
 }
 
 bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 {
-	// GAMMA
-	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
-	
-	// Shadow
-	{
-		const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.f, GShadowClipPlane.x, GShadowClipPlane.y);
-		
-		GShadowTransforms[0] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f));
-		GShadowTransforms[1] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3(-1.f,  0.f,  0.f), glm::vec3(0.f, -1.f,  0.f));
-		GShadowTransforms[2] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  1.f,  0.f), glm::vec3(0.f,  0.f,  1.f));
-		GShadowTransforms[3] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f, -1.f,  0.f), glm::vec3(0.f,  0.f, -1.f));
-		GShadowTransforms[4] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  0.f,  1.f), glm::vec3(0.f, -1.f,  0.f));
-		GShadowTransforms[5] = shadowProj * glm::lookAt(GLightPos, GLightPos + glm::vec3( 0.f,  0.f, -1.f), glm::vec3(0.f, -1.f,  0.f));
-	}
-	
 	return true;
 }
 
@@ -572,43 +566,8 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	Uniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
 	Uniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
 	
-	// Scene
-	// * To shadow map
-	if(GUseShadow)
-	{
-		GShadowCubemap->Enable();
-		
-		// Setup
-		{
-			glEnable(GL_DEPTH_TEST);
-			glDisable(GL_STENCIL_TEST);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		}
-
-		// Draw scene
-		{
-			Shaders[EShaderMainType::ShadowCubemap]->Enable();
-
-			// Setup
-			{
-				Shaders[EShaderMainType::ShadowCubemap]->SetFloat("shadowFarPlane", GShadowClipPlane.y);
-				Shaders[EShaderMainType::ShadowCubemap]->SetVec3("lightPos", GLightPos);
-				
-				for (uint8 i = 0; i < 6; ++i)
-				{
-					const FString resultName = "shadowMatrices[" + std::to_string(i) + "]";
-					Shaders[EShaderMainType::ShadowCubemap]->SetMat4(resultName.c_str(), GShadowTransforms[i]);
-				}
-			}
-			
-			GScene->Draw(Shaders[EShaderMainType::ShadowCubemap], GCamera);
-			
-			Shaders[EShaderMainType::ShadowCubemap]->Disable();
-		}
-		
-		
-		GShadowCubemap->Disable();
-	}
+	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
+	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(NShaderUtils::GetSTD140Size<float>(), GExposure);
 	
 	// Scene
 	// * To custom framebuffer
@@ -637,22 +596,22 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			{
 				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
 				
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.position", GLightPos);
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.diffuse", GLightColor.ToVec3() * 0.5f);
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.ambient", GLightColor.ToVec3() * 0.05f);
-				Shaders[EShaderMainType::Mesh]->SetVec3("light.specular", {1.0f, 1.0f, 1.0f});
+				for(uint8 i = 0; i < 3; ++i)
+				{
+					const FString uniformName = "lights[" + std::to_string(i) + "]";
 				
-				Shaders[EShaderMainType::Mesh]->SetFloat("shadowFarPlane", GShadowClipPlane.y);
-				
-				Shaders[EShaderMainType::Mesh]->SetInt32("shadowCube", GShadowCubemapIndex);
-				Shaders[EShaderMainType::Mesh]->SetBool("useShadow", GUseShadow);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GLights[i].Position);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {1.0f, 1.0f, 1.0f});
+					
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), 1.f);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), 0.09f);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".quadratic").c_str(), 0.032f);
+				}
 			}
 			
-			GShadowCubemap->UseCube(GShadowCubemapIndex);
-			
 			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);
-			
-			GShadowCubemap->ClearCube();
 			
 			Shaders[EShaderMainType::Mesh]->Disable();
 		}
@@ -683,7 +642,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			glClear(GL_COLOR_BUFFER_BIT);
 		}
 
-		// Draw
+		// Draw quad
 		{
 			Shaders[EShaderMainType::Screen]->Enable();
 
@@ -700,6 +659,8 @@ bool EngineInit()
 		{-16.5f, 2.5f, -5.f}, 
 		{19.f, -6.5f, 0.f} 
 	);
+
+	GCamera->SetShouldProcessInput(BUILD_DEBUG != 1);
 	
 	return true;
 }
@@ -737,12 +698,12 @@ int32 GuardedMain()
 		return -2;
 	}
 	
-	if(!PrepareScreenScene(GScreenObject, GMSAAFramebuffer, GScreenFramebuffer))
+	if(!PrepareFBs(GScreenObject, GMSAAFramebuffer, GScreenFramebuffer))
 	{
 		return -3;
 	}
 	
-	if(!PrepareScene(GScene, GShadowCubemap))
+	if(!PrepareScene(GScene))
 	{
 		return -4;
 	}

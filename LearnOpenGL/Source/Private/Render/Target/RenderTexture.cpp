@@ -2,7 +2,7 @@
 #include "RenderTexture.h"
 #include "Framebuffer.h"
 
-FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType)
+FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType, uint8 InFlags)
 	: Id(0)
 	, Type(ERenderTargetType::Invalid)
 	, FBType(0)
@@ -14,8 +14,25 @@ FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight,
 	switch (InType)
 	{
 		case ERenderTargetType::Color:
-			internalFormat = format = GL_RGB;
-			type = GL_UNSIGNED_BYTE;
+			
+			if(InFlags & ERenderTextureColorFlag::Float16)
+			{
+				type = GL_FLOAT;
+				internalFormat = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA16F : GL_RGB16F;
+				format = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA : GL_RGB;
+			}
+			else if(InFlags & ERenderTextureColorFlag::Float32)
+			{
+				type = GL_FLOAT;
+				internalFormat = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA32F : GL_RGB32F;
+				format = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA : GL_RGB;
+			}
+			else
+			{
+				type = GL_UNSIGNED_BYTE;
+				internalFormat = format = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA : GL_RGB;
+			}
+			
 			break;
 		case ERenderTargetType::DepthOnly:
 			internalFormat = format = GL_DEPTH_COMPONENT;

@@ -12,24 +12,31 @@ uniform struct Material
 layout (std140) uniform UPostProcess
 {
 	float gamma;
+	float exposure;
 } u_postprocess;
 
 out vec4 FragColor;
 
-vec4 ApplyGamaCorrection(vec4 InFragColor)
+vec3 ApplyToneMapping(vec3 InFragColor)
 {
-	vec3 correctedColor = pow(InFragColor.rgb, vec3(1.f / u_postprocess.gamma));
-	return vec4(correctedColor, InFragColor.a);
+	return vec3(1.f) - exp(-InFragColor * u_postprocess.exposure);
+}
+
+vec3 ApplyGamaCorrection(vec3 InFragColor)
+{
+	return pow(InFragColor.rgb, vec3(1.f / u_postprocess.gamma));
 }
 
 void main()
 {
-	vec4 resultColor = texture(material.diffuse0, frag_in.TexCoord);
+	vec3 resultColor = texture(material.diffuse0, frag_in.TexCoord).rgb;
 
 	// Post-processing
 	{
+		resultColor = ApplyToneMapping(resultColor);
 		resultColor = ApplyGamaCorrection(resultColor);
 	}
-	
-	FragColor = resultColor;
+
+	// We dont care about alpha calculation
+	FragColor = vec4(resultColor, 1.f);
 }

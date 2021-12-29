@@ -5,35 +5,35 @@
 
 namespace NColors
 {
-	constexpr FColor Transparent = FColor::RGB(0, 0, 0, 0);
+	static constexpr FColor Transparent = FColor(0, 0, 0, 0);
 	
-	constexpr FColor White = FColor::RGB(255, 255, 255);
-	constexpr FColor Azure = FColor::RGB(240, 255, 255);
-	constexpr FColor Snow = FColor::RGB(255,250,250);
+	static constexpr FColor White = FColor(255, 255, 255);
+	static constexpr FColor Azure = FColor(240, 255, 255);
+	static constexpr FColor Snow = FColor(255,250,250);
 
-	constexpr FColor Black = FColor::RGB(0, 0, 0);
-	constexpr FColor Gray = FColor::RGB(128);
-	constexpr FColor Silver = FColor::RGB(192);
+	static constexpr FColor Black = FColor(0, 0, 0);
+	static constexpr FColor Gray = FColor(128);
+	static constexpr FColor Silver = FColor(192);
 	
-	constexpr FColor Brown = FColor::RGB(165, 42, 42);
-	constexpr FColor Sienna = FColor::RGB(160, 82, 45);
-	constexpr FColor Maroon = FColor::RGB(128, 0, 0);
+	static constexpr FColor Brown = FColor(165, 42, 42);
+	static constexpr FColor Sienna = FColor(160, 82, 45);
+	static constexpr FColor Maroon = FColor(128, 0, 0);
 
-	constexpr FColor Blue = FColor::RGB(0, 0, 255);
-	constexpr FColor Navy = FColor::RGB(0, 0, 128);
-	constexpr FColor DeepSkyBlue = FColor::RGB(0, 191, 255);
+	static constexpr FColor Blue = FColor(0, 0, 255);
+	static constexpr FColor Navy = FColor(0, 0, 128);
+	static constexpr FColor DeepSkyBlue = FColor(0, 191, 255);
 	
-	constexpr FColor Red = FColor::RGB(255, 0, 0);
-	constexpr FColor Green = FColor::RGB(0, 255, 0);
+	static constexpr FColor Red = FColor(255, 0, 0);
+	static constexpr FColor Green = FColor(0, 255, 0);
 	
-	constexpr FColor Orange = FColor::RGB(255, 128, 80);
+	static constexpr FColor Orange = FColor(255, 128, 80);
 	
-	constexpr FColor Yellow = FColor::RGB(255, 255, 0);
-	constexpr FColor LightYellow = FColor::RGB(255, 255, 0);
+	static constexpr FColor Yellow = FColor(255, 255, 0);
+	static constexpr FColor LightYellow = FColor(255, 255, 0);
 	
-	constexpr FColor Magenta = FColor::RGB(255, 0, 255);
-	constexpr FColor Purple = FColor::RGB(128, 0, 128);
-	constexpr FColor Violet = FColor::RGB(238, 130, 238);
+	static constexpr FColor Magenta = FColor(255, 0, 255);
+	static constexpr FColor Purple = FColor(128, 0, 128);
+	static constexpr FColor Violet = FColor(238, 130, 238);
 	
-	constexpr FColor Pink = FColor::RGB(255, 192, 203);
+	static constexpr FColor Pink = FColor(255, 192, 203);
 }

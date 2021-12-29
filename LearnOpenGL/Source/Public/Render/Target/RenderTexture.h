@@ -4,12 +4,32 @@
 #include "ModuleMinimal.h"
 #include "RenderTargetBase.h"
 
+struct FRenderTextureFlag
+{
+	// Color flags
+	enum EColor
+	{
+		// Default is size 8 and type unsigned byte
+		
+		// Includes alpha
+		WithAlpha = 0x01,
+		
+		// Size
+		Float16 = 0x02,
+		Float32 = 0x04
+	};
+	
+	static constexpr uint8 None = 0;
+};
+
+typedef FRenderTextureFlag::EColor ERenderTextureColorFlag;
+
 class FRenderTexture : public IRenderTarget
 {
 
 private: // Constructors
 
-	explicit FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType);
+	explicit FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType, uint8 InFlags);
 
 public: // Destructor
 	
@@ -17,8 +37,8 @@ public: // Destructor
 
 public: // Static creation
 
-	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetType Type, uint8 Samples = 1)
-	{ return MakeShareable(new FRenderTexture(Samples, Width, Height, Type)); }
+	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetType Type, uint8 Flags = FRenderTextureFlag::None, uint8 Samples = 1)
+	{ return MakeShareable(new FRenderTexture(Samples, Width, Height, Type, Flags)); }
 
 public: // Getters
 
