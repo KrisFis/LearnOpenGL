@@ -64,7 +64,7 @@ bool GUseBlinn = true;
 struct FLightInfo
 {
 	glm::vec3 Position;
-	glm::vec4 Color;
+	FColor Color;
 } GLights[3];
 
 // TEST
@@ -204,7 +204,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	glfwSetCursorPosCallback(OutWindow, &MousePositionChanged);
 	glfwSetScrollCallback(OutWindow, &MouseScrollChanged);
 
-	glfwSetInputMode(OutWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(OutWindow, GLFW_CURSOR, BUILD_DEBUG == 1 ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 	FApplication::Get().SetWindowSize(GInitWindowWidth, GInitWindowHeight);
 
 	// Log Info
@@ -360,9 +360,9 @@ bool PrepareScene(FScenePtr& OutScene)
 	
 	OutScene = FScene::Create(sceneObjects);
 	
-	GLights[0] = {{1.7f, 3.6f, -4.f}, NColors::LightYellow.ToVec4() * 4.f };
-	GLights[2] = {{0.4f, 0.2f, 0.f}, NColors::Magenta.ToVec4() };
-	GLights[1] = {{0.5f, 2.0f, 1.8f}, NColors::Navy.ToVec4() };
+	GLights[0] = {{1.7f, 3.6f, -4.f}, NColors::LightYellow * 4.f };
+	GLights[2] = {{0.4f, 0.2f, 0.f}, NColors::Magenta };
+	GLights[1] = {{0.5f, 2.0f, 1.8f}, NColors::Navy };
 
 	return true;
 }
@@ -575,8 +575,8 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 					const FString uniformName = "lights[" + std::to_string(i) + "]";
 				
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GLights[i].Position);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color * 0.5f);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color * 0.05f);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {1.0f, 1.0f, 1.0f});
 					
 					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), 1.f);
@@ -633,6 +633,8 @@ bool EngineInit()
 		{-16.5f, 2.5f, -5.f}, 
 		{19.f, -6.5f, 0.f} 
 	);
+
+	GCamera->SetShouldProcessInput(BUILD_DEBUG != 1);
 	
 	return true;
 }

@@ -53,35 +53,35 @@ public: // Operations
 
 	// Normalize color to be between 0 - 255
 	void Normalize();
-	void Normalize(FColor& OutColor);
+	FColor NormalizeCopy();
 	
 public: // Arithmetic operators (FColor)
 
-	FColor operator+(const FColor& Other) const;
 	FColor& operator+=(const FColor& Other);
+	FColor operator+(const FColor& Other) const;
 
-	FColor operator-(const FColor& Other) const;
 	FColor& operator-=(const FColor& Other);
+	FColor operator-(const FColor& Other) const;
 
-	FColor operator*(const FColor& Other) const;
 	FColor& operator*=(const FColor& Other);
+	FColor operator*(const FColor& Other) const;
 
-	FColor operator/(const FColor& Other) const;
 	FColor& operator/=(const FColor& Other);
+	FColor operator/(const FColor& Other) const;
 
 public: // Arithmetic operators (uint16)
 
-	FColor operator+(uint16 Value) const;
 	FColor& operator+=(uint16 Value);
+	FColor operator+(uint16 Value) const;
 
-	FColor operator-(uint16 Value) const;
 	FColor& operator-=(uint16 Value);
+	FColor operator-(uint16 Value) const;
 
-	FColor operator*(float Value) const;
 	FColor& operator*=(float Value);
+	FColor operator*(float Value) const;
 
-	FColor operator/(float Value) const;
 	FColor& operator/=(float Value);
+	FColor operator/(float Value) const;
 
 public: // Fields
 

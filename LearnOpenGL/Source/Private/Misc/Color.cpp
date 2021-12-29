@@ -2,66 +2,6 @@
 #include "Color.h"
 #include "StringUtils.h"
 
-namespace NColorPrivate
-{
-	FORCEINLINE void CheckAdd(const FColor& A, const FColor& B)
-	{
-		#if BUILD_DEBUG
-		ENSURE(A.R <= UINT16_MAX - B.R);
-		ENSURE(A.G <= UINT16_MAX - B.G);
-		ENSURE(A.B <= UINT16_MAX - B.B);
-		ENSURE(A.A <= UINT16_MAX - B.A);
-		#endif // BUILD_DEBUG
-	}
-	
-	FORCEINLINE void CheckSubstract(const FColor& A, const FColor& B)
-	{
-		#if BUILD_DEBUG
-		ENSURE(A.R < B.R);
-		ENSURE(A.G < B.G);
-		ENSURE(A.B < B.B);
-		ENSURE(A.A < B.A);
-		#endif // BUILD_DEBUG
-	}
-	
-	FORCEINLINE void CheckMultiply(const FColor& A, const FColor& B)
-	{
-		#if BUILD_DEBUG
-		ENSURE(A.R > UINT16_MAX / B.R);
-		ENSURE(A.G > UINT16_MAX / B.G);
-		ENSURE(A.B > UINT16_MAX / B.B);
-		ENSURE(A.A > UINT16_MAX / B.A);
-		#endif // BUILD_DEBUG
-	}
-	
-	FORCEINLINE void CheckMultiply(const FColor& A, float Value)
-	{
-		#if BUILD_DEBUG
-		ENSURE(A.R > UINT16_MAX / Value);
-		ENSURE(A.G > UINT16_MAX / Value);
-		ENSURE(A.B > UINT16_MAX / Value);
-		ENSURE(A.A > UINT16_MAX / Value);
-		#endif // BUILD_DEBUG
-	}
-	
-	FORCEINLINE void CheckDivide(const FColor& A, const FColor& B)
-	{
-		#if BUILD_DEBUG
-		ENSURE(B.R > 0);
-		ENSURE(B.G > 0);
-		ENSURE(B.B > 0);
-		ENSURE(B.A > 0);
-		#endif // BUILD_DEBUG
-	}
-	
-	FORCEINLINE void CheckDivide(const FColor& A, float Value)
-	{
-		#if BUILD_DEBUG
-		ENSURE(Value > 0);
-		#endif // BUILD_DEBUG
-	}
-}
-
 const FColor& FColor::GetEmpty()
 {
 	static FColor emptyVal = FColor();
@@ -114,29 +54,22 @@ void FColor::Normalize()
 	A = glm::clamp<uint16>(A, 0, UINT8_MAX);
 }
 
-void FColor::Normalize(FColor& OutColor)
+FColor FColor::NormalizeCopy()
 {
-	OutColor.R = glm::clamp<uint16>(R, 0, UINT8_MAX);
-	OutColor.G = glm::clamp<uint16>(G, 0, UINT8_MAX);
-	OutColor.B = glm::clamp<uint16>(B, 0, UINT8_MAX);
-	OutColor.A = glm::clamp<uint16>(A, 0, UINT8_MAX);
-}
-
-FColor FColor::operator+(const FColor& Other) const
-{
-	NColorPrivate::CheckAdd(*this, Other);
-	
-	FColor newColor;
-	newColor.R = R + Other.R;
-	newColor.G = G + Other.G;
-	newColor.B = B + Other.B;
-	newColor.A = A + Other.A;
+	FColor newColor(*this);
+	newColor.Normalize();
 	return newColor;
 }
 
+
 FColor& FColor::operator+=(const FColor& Other)
 {
-	NColorPrivate::CheckAdd(*this, Other);
+#if BUILD_DEBUG
+	ENSURE(R <= UINT16_MAX - Other.R);
+	ENSURE(G <= UINT16_MAX - Other.G);
+	ENSURE(B <= UINT16_MAX - Other.B);
+	ENSURE(A <= UINT16_MAX - Other.A);
+#endif // BUILD_DEBUG
 	
 	R += Other.R;
 	G += Other.G;
@@ -145,21 +78,21 @@ FColor& FColor::operator+=(const FColor& Other)
 	return *this;
 }
 
-FColor FColor::operator-(const FColor& Other) const
+FColor FColor::operator+(const FColor& Other) const
 {
-	NColorPrivate::CheckSubstract(*this, Other);
-
-	FColor newColor;
-	newColor.R = R - Other.R;
-	newColor.G = G - Other.G;
-	newColor.B = B - Other.B;
-	newColor.A = A - Other.A;
+	FColor newColor(*this);
+	newColor += Other;
 	return newColor;
 }
 
 FColor& FColor::operator-=(const FColor& Other)
 {
-	NColorPrivate::CheckSubstract(*this, Other);
+#if BUILD_DEBUG
+	ENSURE(R > Other.R);
+	ENSURE(G > Other.G);
+	ENSURE(B > Other.B);
+	ENSURE(A > Other.A);
+#endif // BUILD_DEBUG
 
 	R -= Other.R;
 	G -= Other.G;
@@ -168,21 +101,21 @@ FColor& FColor::operator-=(const FColor& Other)
 	return *this;
 }
 
-FColor FColor::operator*(const FColor& Other) const
+FColor FColor::operator-(const FColor& Other) const
 {
-	NColorPrivate::CheckMultiply(*this, Other);
-
-	FColor newColor;
-	newColor.R = R * Other.R;
-	newColor.G = G * Other.G;
-	newColor.B = B * Other.B;
-	newColor.A = A * Other.A;
+	FColor newColor(*this);
+	newColor -= Other;
 	return newColor;
 }
 
 FColor& FColor::operator*=(const FColor& Other)
 {
-	NColorPrivate::CheckMultiply(*this, Other);
+#if BUILD_DEBUG
+	ENSURE(R <= UINT16_MAX / Other.R);
+	ENSURE(G <= UINT16_MAX / Other.G);
+	ENSURE(B <= UINT16_MAX / Other.B);
+	ENSURE(A <= UINT16_MAX / Other.A);
+#endif // BUILD_DEBUG
 
 	R *= Other.R;
 	G *= Other.G;
@@ -191,21 +124,21 @@ FColor& FColor::operator*=(const FColor& Other)
 	return *this;
 }
 
-FColor FColor::operator/(const FColor& Other) const
+FColor FColor::operator*(const FColor& Other) const
 {
-	NColorPrivate::CheckDivide(*this, Other);
-
-	FColor newColor;
-	newColor.R = R / Other.R;
-	newColor.G = G / Other.G;
-	newColor.B = B / Other.B;
-	newColor.A = A / Other.A;
+	FColor newColor(*this);
+	newColor *= Other;
 	return newColor;
 }
 
 FColor& FColor::operator/=(const FColor& Other)
 {
-	NColorPrivate::CheckDivide(*this, Other);
+#if BUILD_DEBUG
+	ENSURE(Other.R > 0);
+	ENSURE(Other.G > 0);
+	ENSURE(Other.B > 0);
+	ENSURE(Other.A > 0);
+#endif // BUILD_DEBUG
 
 	R /= Other.R;
 	G /= Other.G;
@@ -214,9 +147,11 @@ FColor& FColor::operator/=(const FColor& Other)
 	return *this;
 }
 
-FColor FColor::operator+(uint16 Value) const
+FColor FColor::operator/(const FColor& Other) const
 {
-	return operator+(FColor(Value,Value,Value,Value));
+	FColor newColor(*this);
+	newColor /= Other;
+	return newColor;
 }
 
 FColor& FColor::operator+=(uint16 Value)
@@ -224,9 +159,9 @@ FColor& FColor::operator+=(uint16 Value)
 	return operator+=(FColor(Value,Value,Value,Value));
 }
 
-FColor FColor::operator-(uint16 Value) const
+FColor FColor::operator+(uint16 Value) const
 {
-	return operator-(FColor(Value,Value,Value,Value));
+	return operator+(FColor(Value,Value,Value,Value));
 }
 
 FColor& FColor::operator-=(uint16 Value)
@@ -234,21 +169,19 @@ FColor& FColor::operator-=(uint16 Value)
 	return operator-=(FColor(Value,Value,Value,Value));
 }
 
-FColor FColor::operator*(float Value) const
+FColor FColor::operator-(uint16 Value) const
 {
-	NColorPrivate::CheckMultiply(*this, Value);
-
-	FColor newColor;
-	newColor.R = R * Value;
-	newColor.G = G * Value;
-	newColor.B = B * Value;
-	newColor.A = A * Value;
-	return newColor;
+	return operator-(FColor(Value,Value,Value,Value));
 }
 
 FColor& FColor::operator*=(float Value)
 {
-	NColorPrivate::CheckMultiply(*this, Value);
+#if BUILD_DEBUG
+	ENSURE(R <= UINT16_MAX / Value);
+	ENSURE(G <= UINT16_MAX / Value);
+	ENSURE(B <= UINT16_MAX / Value);
+	ENSURE(A <= UINT16_MAX / Value);
+#endif // BUILD_DEBUG
 
 	R *= Value;
 	G *= Value;
@@ -257,25 +190,29 @@ FColor& FColor::operator*=(float Value)
 	return *this;
 }
 
-FColor FColor::operator/(float Value) const
+FColor FColor::operator*(float Value) const
 {
-	NColorPrivate::CheckDivide(*this, Value);
-
-	FColor newColor;
-	newColor.R = R / Value;
-	newColor.G = G / Value;
-	newColor.B = B / Value;
-	newColor.A = A / Value;
+	FColor newColor(*this);
+	newColor *= Value;
 	return newColor;
 }
 
 FColor& FColor::operator/=(float Value)
 {
-	NColorPrivate::CheckDivide(*this, Value);
+#if BUILD_DEBUG
+	ENSURE(Value > 0);
+#endif // BUILD_DEBUG
 
 	R /= Value;
 	G /= Value;
 	B /= Value;
 	A /= Value;
 	return *this;
+}
+
+FColor FColor::operator/(float Value) const
+{
+	FColor newColor(*this);
+	newColor /= Value;
+	return newColor;
 }
