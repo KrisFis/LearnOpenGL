@@ -33,12 +33,12 @@ FColor FColor::FromHex(const char* Value)
 
 FColor FColor::FromVec4(const glm::vec4& Value)
 {
-	return {(uint16)Value.x, (uint16)Value.y, (uint16)Value.z, (uint16)Value.w };
+	return {(uint16)(Value.x * UINT8_MAX), (uint16)(Value.y * UINT8_MAX), (uint16)(Value.z * UINT8_MAX), (uint16)(Value.w * UINT8_MAX )};
 }
 
 FColor FColor::FromVec3(const glm::vec3& Value)
 {
-	return {(uint16)Value.x, (uint16)Value.y, (uint16)Value.z, UINT8_MAX };
+	return {(uint16)(Value.x * UINT8_MAX), (uint16)(Value.y * UINT8_MAX), (uint16)(Value.z * UINT8_MAX), UINT8_MAX };
 }
 
 glm::vec4 FColor::ToVec4() const

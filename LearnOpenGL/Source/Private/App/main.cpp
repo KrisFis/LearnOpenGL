@@ -26,8 +26,8 @@
 #include "DepthCubemap.h"
 
 // Window
-uint16 GInitWindowWidth = 800;
-uint16 GInitWindowHeight = 600;
+uint16 GInitWindowWidth = 1360;
+uint16 GInitWindowHeight = 765;
 
 GLFWwindow* GWindow = nullptr;
 
@@ -668,6 +668,7 @@ void ProcessUIRender()
 			{
 				ImGui::SetNextWindowPos(defaultPos);
 				ImGui::SetNextWindowSize(defaultSize);
+				ImGui::SetNextItemOpen(true);
 
 				layoutApplied = true;
 			}
@@ -676,11 +677,15 @@ void ProcessUIRender()
 			ImGui::Text("FPS: %.1f (%.3f ms)", currentFramerate, 1000.0f / currentFramerate);
 			if(ImGui::CollapsingHeader("Camera"))
 			{
+				ImGui::Indent();
+
 				const glm::vec3& pos = GCamera->GetPosition();
 				const glm::vec3& rot = GCamera->GetRotation();
 
 				ImGui::Text("Position: [%.1f, %.1f, %.1f]", pos.x, pos.y, pos.z);
 				ImGui::Text("Rotation: [%.1f, %.1f, %.1f]", rot.x, rot.y, rot.z);
+
+				ImGui::Unindent();
 			}
 			ImGui::End();
 		}
@@ -688,7 +693,7 @@ void ProcessUIRender()
 		if(!GViewportCapturesInput)
 		{
 			static ImVec2 defaultPos(0, 105);
-			static ImVec2 defaultSize(255, 200);
+			static ImVec2 defaultSize(460, 375);
 
 			if(GUIResetLayout)
 			{
@@ -702,21 +707,53 @@ void ProcessUIRender()
 
 			if (ImGui::CollapsingHeader("Testing"))
 			{
+				ImGui::Indent();
+
 				ImGui::Checkbox("Blinn shading", &GUseBlinn);
 				ImGui::SliderFloat("Gamma", &GGamma, 0.f, 5.f);
 				ImGui::SliderFloat("HDR exposure", &GExposure, 0.f, 5.f);
+
+				if(ImGui::CollapsingHeader("Lights"))
+				{
+					ImGui::Indent();
+
+					for(uint8 i = 0; i < 3; ++i)
+					{
+						if(ImGui::CollapsingHeader(FString("[" + std::to_string(i) + "]").c_str()))
+						{
+							ImGui::Indent();
+							glm::vec4 colorCopy = GLights[i].Color.ToVec4();
+
+							ImGui::SliderFloat3("Position", &GLights[i].Position.x, -25.f, 25.f);
+							if(ImGui::ColorEdit4("Color", &colorCopy.x))
+							{
+								GLights[i].Color = FColor::FromVec4(colorCopy);
+							}
+
+							ImGui::Unindent();
+						}
+					}
+				}
+
+				ImGui::Unindent();
 			}
 			if (ImGui::CollapsingHeader("Settings"))
 			{
+				ImGui::Indent();
 				ImGui::Checkbox("Details in viewport", &GUIDetailsInViewport);
+				ImGui::Unindent();
 			}
 			if (ImGui::CollapsingHeader("Help"))
 			{
+				ImGui::Indent();
+
 				if(ImGui::Button((!GUIDemoVisible) ? "Show" : "Hide"))
 					GUIDemoVisible = !GUIDemoVisible;
 
 				if(ImGui::Button("Reset Layout"))
 					GUIResetLayout = true;
+
+				ImGui::Unindent();
 			}
 
 			ImGui::End();
