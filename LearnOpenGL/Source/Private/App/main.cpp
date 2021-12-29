@@ -64,6 +64,7 @@ float GExposure = 0.15f;
 
 bool GUIDemoVisible = false;
 bool GUIDetailsInViewport = true;
+bool GUIResetLayout = true;
 
 // ~ TEST
 
@@ -535,33 +536,6 @@ void ProcessInput()
 		if (glfwGetKey(GWindow, GLFW_KEY_D) == GLFW_PRESS)
 			GCamera->ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
-
-	// Blinn
-	{
-		const bool BWasPreviouslyPressed = GbBWasPressed;
-		GbBWasPressed = (glfwGetKey(GWindow, GLFW_KEY_B) == GLFW_PRESS);
-	
-		const bool BWasJustPressed = !BWasPreviouslyPressed && GbBWasPressed;
-		const bool BWasJustReleased = BWasPreviouslyPressed && !GbBWasPressed;
-	
-		if (BWasJustPressed)
-		{
-			GUseBlinn = !GUseBlinn;
-		}
-	}
-
-	// Gamma and exposure
-	{
-		if (glfwGetKey(GWindow, GLFW_KEY_KP_MULTIPLY) == GLFW_PRESS)
-			GExposure += 0.1f * GDeltaSeconds;
-		if (glfwGetKey(GWindow, GLFW_KEY_KP_DIVIDE) == GLFW_PRESS)
-			GExposure -= 0.1f * GDeltaSeconds;
-			
-		if (glfwGetKey(GWindow, GLFW_KEY_KP_ADD) == GLFW_PRESS)
-			GGamma += 0.15f * GDeltaSeconds;
-		if (glfwGetKey(GWindow, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
-			GGamma -= 0.15f * GDeltaSeconds;
-	}
 }
 
 bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
@@ -680,29 +654,57 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 
 void ProcessUIRender()
 {
+	bool layoutApplied = false;
+
 	{
 		if(!GViewportCapturesInput || GUIDetailsInViewport)
 		{
 			const float currentFramerate = 60.f / GDeltaSeconds;
 
-			ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowSize(ImVec2(255, 50), ImGuiCond_FirstUseEver);
+			static ImVec2 defaultPos(0, 0);
+			static ImVec2 defaultSize(255, 105);
+
+			if(GUIResetLayout)
+			{
+				ImGui::SetNextWindowPos(defaultPos);
+				ImGui::SetNextWindowSize(defaultSize);
+
+				layoutApplied = true;
+			}
 
 			ImGui::Begin("Details");
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / currentFramerate, currentFramerate);
+			ImGui::Text("FPS: %.1f (%.3f ms)", currentFramerate, 1000.0f / currentFramerate);
+			if(ImGui::CollapsingHeader("Camera"))
+			{
+				const glm::vec3& pos = GCamera->GetPosition();
+				const glm::vec3& rot = GCamera->GetRotation();
+
+				ImGui::Text("Position: [%.1f, %.1f, %.1f]", pos.x, pos.y, pos.z);
+				ImGui::Text("Rotation: [%.1f, %.1f, %.1f]", rot.x, rot.y, rot.z);
+			}
 			ImGui::End();
 		}
 
 		if(!GViewportCapturesInput)
 		{
-			ImGui::SetNextWindowPos(ImVec2(0, 50), ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowSize(ImVec2(255, 200), ImGuiCond_FirstUseEver);
+			static ImVec2 defaultPos(0, 105);
+			static ImVec2 defaultSize(255, 200);
+
+			if(GUIResetLayout)
+			{
+				ImGui::SetNextWindowPos(defaultPos);
+				ImGui::SetNextWindowSize(defaultSize);
+
+				layoutApplied = true;
+			}
 
 			ImGui::Begin("Configurations");
 
 			if (ImGui::CollapsingHeader("Testing"))
 			{
-				// Here add testing fields
+				ImGui::Checkbox("Blinn shading", &GUseBlinn);
+				ImGui::SliderFloat("Gamma", &GGamma, 0.f, 5.f);
+				ImGui::SliderFloat("HDR exposure", &GExposure, 0.f, 5.f);
 			}
 			if (ImGui::CollapsingHeader("Settings"))
 			{
@@ -712,6 +714,9 @@ void ProcessUIRender()
 			{
 				if(ImGui::Button((!GUIDemoVisible) ? "Show" : "Hide"))
 					GUIDemoVisible = !GUIDemoVisible;
+
+				if(ImGui::Button("Reset Layout"))
+					GUIResetLayout = true;
 			}
 
 			ImGui::End();
@@ -720,6 +725,11 @@ void ProcessUIRender()
 			{
 				ImGui::ShowDemoWindow(&GUIDemoVisible);
 			}
+		}
+
+		if(layoutApplied)
+		{
+			GUIResetLayout = false;
 		}
 	}
 }
