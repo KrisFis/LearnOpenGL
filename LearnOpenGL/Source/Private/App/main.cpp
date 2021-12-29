@@ -58,6 +58,7 @@ FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
 
 bool GUseBlinn = true;
+float GHDRExposure = 1.f;
 
 // ~ TEST
 
@@ -103,7 +104,7 @@ struct FUniformBufferMainType
 			case Light:
 				return NShaderUtils::GetSTD140Size<glm::vec4>() + NShaderUtils::GetSTD140Size<bool>();
 			case PostProcess:
-				return NShaderUtils::GetSTD140Size<float>();
+				return NShaderUtils::GetSTD140Size<float>() * 2;
 			default:
 				ENSURE_NO_ENTRY();
 				return 0;
@@ -246,20 +247,26 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 	return true;
 }
 
-bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
+bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
 {
 	uint16 windowWidth, windowHeight;
 	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
 
 	// MSAA
 	{
-		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(windowWidth, windowHeight, ERenderTargetType::Color, 4);
-		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil, 4);
+		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(
+			windowWidth, 
+			windowHeight, 
+			ERenderTargetType::Color, 
+			ERenderTextureColorFlag::WithAlpha | ERenderTextureColorFlag::Float16
+		);
+		
+		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
 		if(!multisampledTextureTarget->IsInitialized() || !multisampledBufferTarget->IsInitialized())
 		{
 			return false;
 		}
-	
+		
 		OutMSAAFramebuffer = FFramebuffer::Create();
 		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledTextureTarget->AsShared());
 		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledBufferTarget->AsShared());
@@ -267,7 +274,13 @@ bool PrepareScreenScene(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAF
 	
 	// SCREEN
 	{
-		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(windowWidth, windowHeight, ERenderTargetType::Color);
+		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(
+			windowWidth,
+			windowHeight,
+			ERenderTargetType::Color,
+			ERenderTextureColorFlag::WithAlpha | ERenderTextureColorFlag::Float16
+		);
+		
 		if(!sceneTextureTarget->IsInitialized())
 		{
 			return false;
@@ -360,7 +373,7 @@ bool PrepareScene(FScenePtr& OutScene)
 	
 	OutScene = FScene::Create(sceneObjects);
 	
-	GLights[0] = {{1.7f, 3.6f, -4.f}, NColors::LightYellow * 4.f };
+	GLights[0] = {{1.7f, 3.6f, -4.f}, NColors::LightYellow * 100.f };
 	GLights[2] = {{0.4f, 0.2f, 0.f}, NColors::Magenta };
 	GLights[1] = {{0.5f, 2.0f, 1.8f}, NColors::Navy };
 
@@ -522,6 +535,7 @@ bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 {
 	// GAMMA
 	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
+	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(NShaderUtils::GetSTD140Size<float>(), GHDRExposure);
 	
 	return true;
 }
@@ -616,7 +630,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			glClear(GL_COLOR_BUFFER_BIT);
 		}
 
-		// Draw
+		// Draw quad
 		{
 			Shaders[EShaderMainType::Screen]->Enable();
 
@@ -672,7 +686,7 @@ int32 GuardedMain()
 		return -2;
 	}
 	
-	if(!PrepareScreenScene(GScreenObject, GMSAAFramebuffer, GScreenFramebuffer))
+	if(!PrepareFBs(GScreenObject, GMSAAFramebuffer, GScreenFramebuffer))
 	{
 		return -3;
 	}
