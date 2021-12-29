@@ -752,11 +752,11 @@ void ProcessUIRender()
 			ImGui::SliderFloat("Gamma", &GGamma, 0.f, 5.f);
 			ImGui::SliderFloat("HDR exposure", &GExposure, 0.f, 5.f);
 
+			bool colorPickerVisible = false;
 			if(ImGui::CollapsingHeader("Lights"))
 			{
 				ImGui::Indent();
 
-				bool colorPickerVisible = false;
 				for(uint8 i = 0; i < 3; ++i)
 				{
 					if(ImGui::CollapsingHeader(FString("[" + std::to_string(i) + "]").c_str()))
@@ -780,13 +780,13 @@ void ProcessUIRender()
 					}
 				}
 
-				if(colorPickerVisible != colorPickerWasVisible)
-				{
-					colorPickerWasVisible = colorPickerVisible;
-					debugWindowSizeDirty = true;
-				}
-
 				ImGui::Unindent();
+			}
+
+			if(colorPickerVisible != colorPickerWasVisible)
+			{
+				colorPickerWasVisible = colorPickerVisible;
+				debugWindowSizeDirty = true;
 			}
 
 			ImGui::End();
