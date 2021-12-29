@@ -33,6 +33,8 @@ GLFWwindow* GWindow = nullptr;
 
 float GGamma = 1.5f; // 2.2f is best for most of the monitors
 
+bool GViewportCapturesInput = (BUILD_DEBUG != 1);
+
 // Global
 float GLastSeconds = 0.f;
 float GDeltaSeconds = 0.f;
@@ -59,6 +61,9 @@ FSceneObjectPtr GScreenObject;
 
 bool GUseBlinn = true;
 float GExposure = 0.15f;
+
+bool GUIDemoVisible = false;
+bool GUIDetailsInViewport = true;
 
 // ~ TEST
 
@@ -137,7 +142,10 @@ typedef FUniformBufferMainType::EType EUniformBufferMainType;
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
-	GCamera->ProcessScroll((float)ScrollY);
+	if(GViewportCapturesInput)
+	{
+		GCamera->ProcessScroll((float)ScrollY);
+	}
 }
 
 void MousePositionChanged(GLFWwindow* window, double MouseX, double MouseY)
@@ -205,7 +213,7 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	glfwSetCursorPosCallback(OutWindow, &MousePositionChanged);
 	glfwSetScrollCallback(OutWindow, &MouseScrollChanged);
 
-	glfwSetInputMode(OutWindow, GLFW_CURSOR, BUILD_DEBUG == 1 ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(OutWindow, GLFW_CURSOR, GViewportCapturesInput ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 	FApplication::Get().SetWindowSize(GInitWindowWidth, GInitWindowHeight);
 
 	// Log Info
@@ -504,10 +512,10 @@ void ProcessInput()
 	{
 		if(altWasJustPressed)
 		{
-			const bool isProcessingInput = GCamera->GetShouldProcessInput();
+			GViewportCapturesInput = !GViewportCapturesInput;
 
-			GCamera->SetShouldProcessInput(!isProcessingInput);
-			glfwSetInputMode(GWindow, GLFW_CURSOR, (isProcessingInput) ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+			GCamera->SetShouldProcessInput(GViewportCapturesInput);
+			glfwSetInputMode(GWindow, GLFW_CURSOR, GViewportCapturesInput ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 		}
 	}
 
@@ -672,42 +680,46 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 
 void ProcessUIRender()
 {
-	static bool show_demo_window = false;
-	static bool show_another_window = false;
-	static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
 	{
-		if (show_demo_window)
-			ImGui::ShowDemoWindow(&show_demo_window);
-
-		static float f = 0.0f;
-		static int counter = 0;
-
-		ImGui::Begin("Hello, world!");
-
-		ImGui::Text("This is some useful text.");
-		ImGui::Checkbox("Demo Window", &show_demo_window);
-		ImGui::Checkbox("Another Window", &show_another_window);
-
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-		ImGui::ColorEdit3("clear color", (float*)&clear_color);
-
-		 if (ImGui::Button("Button"))
-			 counter++;
-
-		ImGui::SameLine();
-		ImGui::Text("counter = %d", counter);
-
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::End();
-
-		if (show_another_window)
+		if(!GViewportCapturesInput || GUIDetailsInViewport)
 		{
-			ImGui::Begin("Another Window", &show_another_window);
-			ImGui::Text("Hello from another window!");
-			if (ImGui::Button("Close Me"))
-				show_another_window = false;
+			const float currentFramerate = 60.f / GDeltaSeconds;
+
+			ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2(255, 50), ImGuiCond_FirstUseEver);
+
+			ImGui::Begin("Details");
+			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / currentFramerate, currentFramerate);
 			ImGui::End();
+		}
+
+		if(!GViewportCapturesInput)
+		{
+			ImGui::SetNextWindowPos(ImVec2(0, 50), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2(255, 200), ImGuiCond_FirstUseEver);
+
+			ImGui::Begin("Configurations");
+
+			if (ImGui::CollapsingHeader("Testing"))
+			{
+				// Here add testing fields
+			}
+			if (ImGui::CollapsingHeader("Settings"))
+			{
+				ImGui::Checkbox("Details in viewport", &GUIDetailsInViewport);
+			}
+			if (ImGui::CollapsingHeader("Help"))
+			{
+				if(ImGui::Button((!GUIDemoVisible) ? "Show" : "Hide"))
+					GUIDemoVisible = !GUIDemoVisible;
+			}
+
+			ImGui::End();
+
+			if(GUIDemoVisible)
+			{
+				ImGui::ShowDemoWindow(&GUIDemoVisible);
+			}
 		}
 	}
 }
@@ -728,12 +740,12 @@ void EngineTick()
 {
 	// Update FPS
 	{
-		FString resultTitle;
-		resultTitle.append("LearnOpenGL: FPS [");
-		resultTitle.append(std::to_string((uint16)std::floor(60.f / GDeltaSeconds)));
-		resultTitle.append("]");
-	
-		glfwSetWindowTitle(GWindow, resultTitle.c_str());
+//		FString resultTitle;
+//		resultTitle.append("LearnOpenGL: FPS [");
+//		resultTitle.append(std::to_string((uint16)std::floor(60.f / GDeltaSeconds)));
+//		resultTitle.append("]");
+//
+//		glfwSetWindowTitle(GWindow, resultTitle.c_str());
 	}
 	
 	// Position log
