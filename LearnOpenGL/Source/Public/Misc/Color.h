@@ -3,6 +3,23 @@
 
 #include "ModuleMinimal.h"
 
+struct FColorChannel
+{
+	enum EType : uint8
+	{
+		None = 0x00,
+
+		Red = 0x01,
+		Green = 0x02,
+		Blue = 0x04,
+		Alpha = 0x08,
+
+		All = Red | Green | Blue | Alpha
+	};
+};
+
+typedef FColorChannel::EType EColorChannel;
+
 struct FColor
 {
 
@@ -52,8 +69,9 @@ public: // Checks
 public: // Operations
 
 	// Normalize color to be between 0 - 255
-	void Normalize();
-	FColor NormalizeCopy();
+	void Normalize(const uint8 Channels = EColorChannel::All);
+	FColor& NormalizeInline(const uint8 Channels = EColorChannel::All);
+	FColor NormalizeCopy(const uint8 Channels = EColorChannel::All);
 	
 public: // Arithmetic operators (FColor)
 
@@ -89,4 +107,5 @@ public: // Fields
 	union { uint16 G, Y; };
 	union { uint16 B, Z; };
 	union { uint16 A, W; };
+
 };

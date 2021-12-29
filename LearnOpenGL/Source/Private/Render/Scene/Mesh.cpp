@@ -4,7 +4,7 @@
 #include "Texture.h"
 #include "RenderUtils.h"
 #include "ShaderProgram.h"
-#include "ColorUtils.h"
+#include "ColorConsts.h"
 
 FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndices, const TArray<TSharedPtr<FTexture>>& InTextures, bool Owned) 
 	: OutlineSize(0.f)

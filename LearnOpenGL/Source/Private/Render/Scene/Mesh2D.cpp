@@ -3,7 +3,7 @@
 #include "RenderUtils.h"
 #include "ShaderProgram.h"
 #include "Texture.h"
-#include "ColorUtils.h"
+#include "ColorConsts.h"
 
 FMesh2D::FMesh2D(const TArray<FMesh2DVertex>& InVertices, const TArray<TSharedPtr<FTexture>>& InTextures)
 	: OutlineSize(0.f)

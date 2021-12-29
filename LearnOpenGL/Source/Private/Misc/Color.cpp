@@ -2,6 +2,14 @@
 #include "Color.h"
 #include "StringUtils.h"
 
+namespace
+{
+	FORCEINLINE void NormalizeChannel(uint16& channel)
+	{
+		channel = glm::clamp<uint16>(channel, 0, UINT8_MAX);
+	}
+}
+
 const FColor& FColor::GetEmpty()
 {
 	static FColor emptyVal = FColor();
@@ -33,12 +41,12 @@ FColor FColor::FromHex(const char* Value)
 
 FColor FColor::FromVec4(const glm::vec4& Value)
 {
-	return {(uint16)Value.x, (uint16)Value.y, (uint16)Value.z, (uint16)Value.w };
+	return {(uint16)(Value.x * UINT8_MAX), (uint16)(Value.y * UINT8_MAX), (uint16)(Value.z * UINT8_MAX), (uint16)(Value.w * UINT8_MAX )};
 }
 
 FColor FColor::FromVec3(const glm::vec3& Value)
 {
-	return {(uint16)Value.x, (uint16)Value.y, (uint16)Value.z, UINT8_MAX };
+	return {(uint16)(Value.x * UINT8_MAX), (uint16)(Value.y * UINT8_MAX), (uint16)(Value.z * UINT8_MAX), UINT8_MAX };
 }
 
 glm::vec4 FColor::ToVec4() const
@@ -51,22 +59,30 @@ glm::vec3 FColor::ToVec3() const
 	return {(float)R / UINT8_MAX, (float)G / UINT8_MAX, (float)B / UINT8_MAX };
 }
 
-void FColor::Normalize()
+void FColor::Normalize(const uint8 Channels)
 {
-	R = glm::clamp<uint16>(R, 0, UINT8_MAX);
-	G = glm::clamp<uint16>(G, 0, UINT8_MAX);
-	B = glm::clamp<uint16>(B, 0, UINT8_MAX);
-	A = glm::clamp<uint16>(A, 0, UINT8_MAX);
+	if(Channels & EColorChannel::Red)
+		NormalizeChannel(R);
+	if(Channels & EColorChannel::Green)
+		NormalizeChannel(G);
+	if(Channels & EColorChannel::Blue)
+		NormalizeChannel(B);
+	if(Channels & EColorChannel::Alpha)
+		NormalizeChannel(A);
 }
 
-FColor FColor::NormalizeCopy()
+FColor& FColor::NormalizeInline(const uint8 Channels)
+{
+	Normalize(Channels);
+	return *this;
+}
+
+FColor FColor::NormalizeCopy(const uint8 Channels)
 {
 	FColor newColor(*this);
-	newColor.Normalize();
+	newColor.Normalize(Channels);
 	return newColor;
 }
-
-
 FColor& FColor::operator+=(const FColor& Other)
 {
 #if BUILD_DEBUG
