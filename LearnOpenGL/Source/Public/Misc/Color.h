@@ -5,43 +5,56 @@
 
 struct FColor
 {
-public: // Default constructor
 
-	FORCEINLINE constexpr FColor() : R(0), G(0), B(0), A(0) {}
+public: // Constructors
 
-private: // Internal constructions
+	FORCEINLINE constexpr FColor()
+		: R(0)
+		, G(0)
+		, B(0)
+		, A(0)
+	{}
+	
+	FORCEINLINE constexpr FColor(uint16 RGBA, uint16 Alpha = UINT8_MAX)
+		: R(RGBA)
+		, G(RGBA)
+		, B(RGBA)
+		, A(Alpha)
+	{}
+	
+	FORCEINLINE constexpr FColor(uint16 Red, uint16 Green, uint16 Blue, uint16 Alpha = UINT8_MAX)
+		: R(Red)
+		, G(Green)
+		, B(Blue)
+		, A(Alpha)
+	{}
 
-	template<typename ParType, typename TEnableIf<!TIsFloatingType<ParType>::Value>::Type* = nullptr>
-	FORCEINLINE static constexpr FColor ConstructImpl(ParType Red, ParType Green, ParType Blue, ParType Alpha)
-	{
-		return FColor((uint8)Red, (uint8)Green, (uint8)Blue, (uint8)Alpha);
-	}
+public: // Static values
 	
-	template<typename ParType, typename TEnableIf<TIsFloatingType<ParType>::Value>::Type* = nullptr>
-	FORCEINLINE static constexpr FColor ConstructImpl(ParType Red, ParType Green, ParType Blue, ParType Alpha)
-	{
-		return FColor(
-			(uint8)(glm::clamp(Red, 0.f, 1.f) * (float)UINT8_MAX),
-			(uint8)(glm::clamp(Green, 0.f, 1.f) * (float)UINT8_MAX),
-			(uint8)(glm::clamp(Blue, 0.f, 1.f) * (float)UINT8_MAX),
-			(uint8)(glm::clamp(Alpha, 0.f, 1.f) * (float)UINT8_MAX)
-		);
-	}
+	static const FColor& GetEmpty();
 	
-public: // Static constructions
+public: // Conversions
+
+	static FColor FromCMYK(float Cyan, float Magenta, float Yellow, float Black);
+	static FColor FromHex(const char* Value);
 	
-	// Construct color from RGB model
-	template<typename ParType>
-	FORCEINLINE static constexpr FColor RGB(ParType RGBA) { return ConstructImpl(RGBA, RGBA, RGBA, RGBA); }
-	template<typename ParType>
-	FORCEINLINE static constexpr FColor RGB(ParType Red, ParType Green, ParType Blue) { return ConstructImpl(Red, Green, Blue, (ParType)UINT8_MAX); }
-	template<typename ParType>
-	FORCEINLINE static constexpr FColor RGB(ParType Red, ParType Green, ParType Blue, ParType Alpha) { return ConstructImpl(Red, Green, Blue, Alpha); }
+	static FColor FromVec4(const glm::vec4& Value);
+	static FColor FromVec3(const glm::vec3& Value);
+
+	glm::vec4 ToVec4() const;
+	glm::vec3 ToVec3() const;
 	
-	// Construct color from CMYK model 
-	FORCEINLINE static constexpr FColor CMYK(float Cyan, float Magenta, float Yellow, float Black)
-	{ return ConstructImpl((1-Cyan) * (1-Black), (1-Magenta) * (1-Black), (1-Yellow) * (1-Black), (float)UINT8_MAX); }
-		
+public: // Checks
+
+	FORCEINLINE bool IsNone() const { return R+G+B+A == 0; }
+	FORCEINLINE bool IsTransparent() const { return A == 0; }
+	
+public: // Operations
+
+	// Normalize color to be between 0 - 255
+	void Normalize();
+	void Normalize(FColor& OutColor);
+	
 public: // Arithmetic operators (FColor)
 
 	FColor operator+(const FColor& Other) const;
@@ -56,13 +69,13 @@ public: // Arithmetic operators (FColor)
 	FColor operator/(const FColor& Other) const;
 	FColor& operator/=(const FColor& Other);
 
-public: // Arithmetic operators (uint8)
+public: // Arithmetic operators (uint16)
 
-	FColor operator+(uint8 Value) const;
-	FColor& operator+=(uint8 Value);
+	FColor operator+(uint16 Value) const;
+	FColor& operator+=(uint16 Value);
 
-	FColor operator-(uint8 Value) const;
-	FColor& operator-=(uint8 Value);
+	FColor operator-(uint16 Value) const;
+	FColor& operator-=(uint16 Value);
 
 	FColor operator*(float Value) const;
 	FColor& operator*=(float Value);
@@ -70,32 +83,10 @@ public: // Arithmetic operators (uint8)
 	FColor operator/(float Value) const;
 	FColor& operator/=(float Value);
 
-public: // Checks
-
-	FORCEINLINE bool IsTransparent() const { return A == 0; } 
-
-public: // Casts
-
-	static FColor FromHex(const char* Value);
-	static FColor FromVec4(const glm::vec4& Value);
-	static FColor FromVec3(const glm::vec3& Value);
-	
-	glm::vec4 ToVec4() const;
-	glm::vec3 ToVec3() const;
-
 public: // Fields
 
-	union { uint8 R, X; };
-	union { uint8 G, Y; };
-	union { uint8 B, Z; };
-	union { uint8 A, W; };
-
-private: // Private constructor
-
-	FORCEINLINE constexpr FColor(uint8 Red, uint8 Green, uint8 Blue, uint8 Alpha)
-		: R(Red)
-		, G(Green)
-		, B(Blue)
-		, A(Alpha)
-	{}
+	union { uint16 R, X; };
+	union { uint16 G, Y; };
+	union { uint16 B, Z; };
+	union { uint16 A, W; };
 };
