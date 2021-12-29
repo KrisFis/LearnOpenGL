@@ -58,7 +58,7 @@ FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
 
 bool GUseBlinn = true;
-float GHDRExposure = 1.f;
+float GExposure = 0.15f;
 
 // ~ TEST
 
@@ -258,7 +258,7 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuff
 			windowWidth, 
 			windowHeight, 
 			ERenderTargetType::Color, 
-			ERenderTextureColorFlag::WithAlpha | ERenderTextureColorFlag::Float16
+			ERenderTextureColorFlag::Float16
 		);
 		
 		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
@@ -278,7 +278,7 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuff
 			windowWidth,
 			windowHeight,
 			ERenderTargetType::Color,
-			ERenderTextureColorFlag::WithAlpha | ERenderTextureColorFlag::Float16
+			ERenderTextureColorFlag::Float16
 		);
 		
 		if(!sceneTextureTarget->IsInitialized())
@@ -373,9 +373,9 @@ bool PrepareScene(FScenePtr& OutScene)
 	
 	OutScene = FScene::Create(sceneObjects);
 	
-	GLights[0] = {{1.7f, 3.6f, -4.f}, NColors::LightYellow * 100.f };
-	GLights[2] = {{0.4f, 0.2f, 0.f}, NColors::Magenta };
-	GLights[1] = {{0.5f, 2.0f, 1.8f}, NColors::Navy };
+	GLights[0] = {{1.5f, 0.1f, 3.f}, NColors::Red * 2.f };
+	GLights[1] = {{20.f, 5.f, 0.f}, NColors::White * 10.f };
+	GLights[2] = {{1.5f, 0.1f, -3.f}, NColors::Blue * 2.f };
 
 	return true;
 }
@@ -516,7 +516,7 @@ void ProcessInput()
 			GCamera->ProcessMoveInput(ECameraMoveDirection::Right, GDeltaSeconds);
 	}
 
-	// Testing
+	// Blinn
 	{
 		const bool BWasPreviouslyPressed = GbBWasPressed;
 		GbBWasPressed = (glfwGetKey(GWindow, GLFW_KEY_B) == GLFW_PRESS);
@@ -529,14 +529,23 @@ void ProcessInput()
 			GUseBlinn = !GUseBlinn;
 		}
 	}
+
+	// Gamma and exposure
+	{
+		if (glfwGetKey(GWindow, GLFW_KEY_KP_MULTIPLY) == GLFW_PRESS)
+			GExposure += 0.1f * GDeltaSeconds;
+		if (glfwGetKey(GWindow, GLFW_KEY_KP_DIVIDE) == GLFW_PRESS)
+			GExposure -= 0.1f * GDeltaSeconds;
+			
+		if (glfwGetKey(GWindow, GLFW_KEY_KP_ADD) == GLFW_PRESS)
+			GGamma += 0.15f * GDeltaSeconds;
+		if (glfwGetKey(GWindow, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
+			GGamma -= 0.15f * GDeltaSeconds;
+	}
 }
 
 bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
 {
-	// GAMMA
-	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
-	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(NShaderUtils::GetSTD140Size<float>(), GHDRExposure);
-	
 	return true;
 }
 
@@ -556,6 +565,9 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	
 	Uniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
 	Uniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
+	
+	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
+	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(NShaderUtils::GetSTD140Size<float>(), GExposure);
 	
 	// Scene
 	// * To custom framebuffer

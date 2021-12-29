@@ -88,11 +88,11 @@ vec4 CalculateLight(Light light)
 
 vec4 CalculateLights()
 {
-	vec4 result = vec4(0.f);
+	vec4 result = vec4(vec3(0.f), 1.f);
 
 	for(int i = 0; i < 3; ++i)
 	{
-		result += CalculateLight(lights[i]);
+		result.rgb += CalculateLight(lights[i]).rgb;
 	}
 	
 	return result;
