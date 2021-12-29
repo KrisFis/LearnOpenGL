@@ -3,7 +3,7 @@
 #include "RenderUtils.h"
 #include "FileUtils.h"
 #include "MeshUtils.h"
-#include "ColorUtils.h"
+#include "ColorConsts.h"
 #include "Scene.h"
 #include "TextureUtils.h"
 #include "ShaderUtils.h"
@@ -339,9 +339,7 @@ bool PrepareScene(FScenePtr& OutScene)
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
-	FTexturePtr grassTexture = FTexture::Create(NFileUtils::ContentPath("Textures/grass.png").c_str(), ETextureType::Diffuse, false, true);
-	FTexturePtr awesomeFace = FTexture::Create(NFileUtils::ContentPath("Textures/awesomeface.png").c_str(), ETextureType::Diffuse);
-	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized()|| !grassTexture->IsInitialized() || !awesomeFace->IsInitialized())
+	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized())
 	{
 		return false;
 	}
@@ -384,14 +382,6 @@ bool PrepareScene(FScenePtr& OutScene)
 			{-2.f, 1.f, 2.f},
 			{0.f, -45.f, 0.f},
 			{1.f, 1.f, 1.f}
-	});
-	
-	sceneObjects.push_back(NMeshUtils::ConstructPlane({grassTexture}));
-	sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
-	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{-6.f, -0.499f, 0.f},
-			{-90.f, 0.f, 90.f},
-			{0.5f, 0.5f, 0.5f}
 	});
 	
 	OutScene = FScene::Create(sceneObjects);
@@ -746,17 +736,17 @@ void ProcessUIRender()
 				debugWindowSizeDirty = false;
 			}
 
-			ImGui::Begin("Debug");
+			ImGui::Begin("Debug", &GUIDebugVisible);
 
 			ImGui::Checkbox("Blinn shading", &GUseBlinn);
 			ImGui::SliderFloat("Gamma", &GGamma, 0.f, 5.f);
 			ImGui::SliderFloat("HDR exposure", &GExposure, 0.f, 5.f);
 
+			bool colorPickerVisible = false;
 			if(ImGui::CollapsingHeader("Lights"))
 			{
 				ImGui::Indent();
 
-				bool colorPickerVisible = false;
 				for(uint8 i = 0; i < 3; ++i)
 				{
 					if(ImGui::CollapsingHeader(FString("[" + std::to_string(i) + "]").c_str()))
@@ -780,13 +770,13 @@ void ProcessUIRender()
 					}
 				}
 
-				if(colorPickerVisible != colorPickerWasVisible)
-				{
-					colorPickerWasVisible = colorPickerVisible;
-					debugWindowSizeDirty = true;
-				}
-
 				ImGui::Unindent();
+			}
+
+			if(colorPickerVisible != colorPickerWasVisible)
+			{
+				colorPickerWasVisible = colorPickerVisible;
+				debugWindowSizeDirty = true;
 			}
 
 			ImGui::End();
