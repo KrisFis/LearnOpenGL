@@ -3,6 +3,7 @@
 
 #include "ModuleMinimal.h"
 
+// TODO(kristian.fisera): Use Framebuffer internally
 class FDepthCubemap
 {
 private: // Constructor

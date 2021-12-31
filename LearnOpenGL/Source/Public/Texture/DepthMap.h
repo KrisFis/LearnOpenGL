@@ -6,6 +6,7 @@
 // Forward declaration
 class FFramebuffer;
 
+// TODO(kristian.fisera): Use Framebuffer internally
 class FDepthMap
 {
 private: // Private constructors
