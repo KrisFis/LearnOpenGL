@@ -59,6 +59,7 @@ FFramebufferPtr GSceneFramebuffer;
 
 FFramebufferPtr GBlurFramebuffers[2];
 FSceneObjectPtr GBlurObject;
+uint8 GBlurTextureIdx = 2;
 
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
@@ -746,7 +747,16 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		{
 			Shaders[EShaderMainType::Screen]->Enable();
 
+			FTexturePtr blurTexture = static_cast<FMesh2D*>(GBlurObject.Get())->GetTextures()[0];
+			
+			// Setup shaders
+			{
+				Shaders[EShaderMainType::Screen]->SetInt32("bloomBlur", GBlurTextureIdx);
+			}
+			
+			blurTexture->Use(GBlurTextureIdx);
 			GScreenObject->Draw(Shaders[EShaderMainType::Screen]);
+			blurTexture->Clear();
 			
 			Shaders[EShaderMainType::Screen]->Disable();
 		}
