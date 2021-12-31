@@ -291,8 +291,8 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuff
 		}
 		
 		OutMSAAFramebuffer = FFramebuffer::Create();
-		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledTextureTarget->AsShared());
-		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledBufferTarget->AsShared());
+		OutMSAAFramebuffer->Attach(multisampledTextureTarget->AsShared());
+		OutMSAAFramebuffer->Attach(multisampledBufferTarget->AsShared());
 	}
 	
 	// SCREEN
@@ -316,7 +316,7 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuff
 		}
 		
 		OutScreenFramebuffer = FFramebuffer::Create();
-		OutScreenFramebuffer->Attach(GL_FRAMEBUFFER, sceneTextureTarget->AsShared());
+		OutScreenFramebuffer->Attach(sceneTextureTarget->AsShared());
 	
 		static const TArray<FMesh2DVertex> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
 			{ glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},

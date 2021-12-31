@@ -4,10 +4,10 @@
 FRenderBuffer::FRenderBuffer(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType)
 	: Id(0)
 	, Type(ERenderTargetType::Invalid)
-	, FBType(0)
 	, Width(0)
 	, Height(0)
 	, Samples(0)
+	, bIsAttached(false)
 {
 	GLenum internalFormat;
 	switch (InType)
@@ -49,9 +49,9 @@ FRenderBuffer::~FRenderBuffer()
 		glDeleteRenderbuffers(1, &Id);
 }
 
-bool FRenderBuffer::AttachFramebuffer(const EFramebufferType FBTarget, const uint8 UseIndex)
+bool FRenderBuffer::AttachFramebuffer(const uint8 UseIndex)
 {
-	if(!IsInitialized() || FBType != 0)
+	if(!IsInitialized() || bIsAttached)
 	{
 		ENSURE_NO_ENTRY();
 		return false;
@@ -74,19 +74,19 @@ bool FRenderBuffer::AttachFramebuffer(const EFramebufferType FBTarget, const uin
 	}
 	
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, internalFormat, GL_RENDERBUFFER, Id);
-	FBType = FBTarget;
+	bIsAttached = true;
 	
 	return true;
 }
 
 bool FRenderBuffer::DetachFramebuffer()
 {
-	if(!IsInitialized() || FBType == 0)
+	if(!IsInitialized() || !bIsAttached)
 	{
 		ENSURE_NO_ENTRY();
 		return false;
 	}
 	
-	FBType = 0;
+	bIsAttached = false;
 	return true;
 }

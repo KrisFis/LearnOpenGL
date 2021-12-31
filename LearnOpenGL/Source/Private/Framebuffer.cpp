@@ -7,22 +7,21 @@ FFramebuffer::FFramebuffer()
 	: Id(0)
 	, bIsEnabled(false)
 	, bHasChanges(true)
-{}
+{
+	glGenFramebuffers(1, &Id);
+}
 
 FFramebuffer::~FFramebuffer()
 {
 	Disable();
 	
-	if(Id != NRenderConsts::Default::FramebufferId)
-	{
-		glDeleteFramebuffers(1, &Id);
-	}
+	glDeleteFramebuffers(1, &Id);
 }
 
 TArray<FRenderTargetPtr> FFramebuffer::GetAttachments(const ERenderTargetType Type) const
 {
-	auto foundTargets = RenderTargets.find(Type);
-	if(foundTargets == RenderTargets.end())
+	auto foundTargets = Targets.find(Type);
+	if(foundTargets == Targets.end())
 		return {};
 		
 	return foundTargets->second;
@@ -32,33 +31,54 @@ void FFramebuffer::Enable()
 {
 	if(bIsEnabled) return;
 
-	for(auto targetType : UsedFBTypes)
+	glBindFramebuffer(GL_FRAMEBUFFER, Id);
+	
+	uint8 numOfColors = 0;
+	auto foundTargets = Targets.find(ERenderTargetType::Color);
+	if(foundTargets != Targets.end())
+		numOfColors = foundTargets->second.size();
+
+	switch (numOfColors)
 	{
-		glBindFramebuffer(targetType.first, Id);
+		case 0: // DEPTH ONLY PASS
+		{
+			glDrawBuffer(GL_NONE);
+			glReadBuffer(GL_NONE);
+		}
+		break;
+		case 1: // DEFAULT SETUP
+		break;
+		default:
+		{
+			TArray<GLenum> colorAttachments;
+			colorAttachments.reserve(numOfColors);
+			
+			for(uint8 i = 0; i < numOfColors; ++i)
+			{
+				colorAttachments.push_back(GL_COLOR_ATTACHMENT0+i);
+			}
+			
+			glDrawBuffers(numOfColors, colorAttachments.data());
+		}
+		break;
 	}
 
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		ENSURE_NO_ENTRY();
-		
-		for(auto targetType : UsedFBTypes)
-		{
-			glBindFramebuffer(targetType.first, 0);
-		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		return;
 	}
-	else
-	{
-		bIsEnabled = true;
-		bHasChanges = false;
-	}
+	
+	bIsEnabled = true;
+	bHasChanges = false;
 }
 
 void FFramebuffer::Disable()
 {
 	if(!bIsEnabled) return;
 	
-	for(auto targetType : UsedFBTypes)
-		glBindFramebuffer(targetType.first, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	bIsEnabled = false;
 }
@@ -112,32 +132,20 @@ bool FFramebuffer::CopyTo(const TSharedPtr<FFramebuffer>& Destination, const FFr
 	return true;
 }
 
-bool FFramebuffer::Attach(const EFramebufferType FBTargetType, const FRenderTargetPtr& Target)
+bool FFramebuffer::Attach(const FRenderTargetPtr& Target)
 {	
 	if(!Target.IsValid()) return false;
-
-	// Generate id if necessary
-	if(Id == NRenderConsts::Default::FramebufferId)
-	{
-		glGenFramebuffers(1, &Id);
-	}
 	
 	const ERenderTargetType targetType = Target->GetType();
-	auto foundTargets = RenderTargets.find(targetType);
-	const uint8 useIndex = (foundTargets == RenderTargets.end()) ? 0 : (uint8)foundTargets->second.size();
+	auto foundTargets = Targets.find(targetType);
+	const uint8 useIndex = (foundTargets == Targets.end()) ? 0 : (uint8)foundTargets->second.size();
 	
-	glBindFramebuffer(FBTargetType, Id);
-	ENSURE_RET(Target->AttachFramebuffer(FBTargetType, useIndex), false);
-	glBindFramebuffer(FBTargetType, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, Id);
+	ENSURE_RET(Target->AttachFramebuffer(useIndex), false);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
-	auto foundFbType = UsedFBTypes.find(FBTargetType);
-	if(foundFbType == UsedFBTypes.end())
-		UsedFBTypes.insert({FBTargetType, 1});
-	else
-		++foundFbType->second;
-	
-	if(foundTargets == RenderTargets.end())
-		RenderTargets.insert({targetType, {Target}});
+	if(foundTargets == Targets.end())
+		Targets.insert({targetType, {Target}});
 	else
 		foundTargets->second.push_back(Target);
 	
@@ -148,7 +156,7 @@ bool FFramebuffer::Attach(const EFramebufferType FBTargetType, const FRenderTarg
 
 void FFramebuffer::DetachAll()
 {
-	for(auto& targetArr : RenderTargets)
+	for(auto& targetArr : Targets)
 	{
 		for(auto& target : targetArr.second)
 		{
@@ -156,33 +164,22 @@ void FFramebuffer::DetachAll()
 		}
 	}
 	
-	UsedFBTypes.clear();
-	RenderTargets.clear();
+	Targets.clear();
 	
 	bHasChanges = true;
 }
 
 void FFramebuffer::DetachAll(ERenderTargetType Type)
 {
-	auto foundArr = RenderTargets.find(Type);
-	if(foundArr == RenderTargets.end()) return;
+	auto foundArr = Targets.find(Type);
+	if(foundArr == Targets.end()) return;
 	
 	for(auto& target : foundArr->second)
 	{
-		const EFramebufferType attachFbType = target->GetAttachedFBType();
-	
-		auto foundFbType = UsedFBTypes.find(attachFbType);
-		--foundFbType->second;
-		
-		if(foundFbType->second == 0)
-		{
-			UsedFBTypes.erase(foundFbType);
-		}
-			
 		target->DetachFramebuffer();
 	}
 	
-	RenderTargets.erase(foundArr);
+	Targets.erase(foundArr);
 	
 	bHasChanges = true;
 }
@@ -191,8 +188,8 @@ bool FFramebuffer::Detach(const FRenderTargetPtr& Target)
 {
 	ENSURE_VALID_RET(Target, false);
 	
-	auto foundTargetArr = RenderTargets.find(Target->GetType());
-	if(foundTargetArr == RenderTargets.end()) return false;
+	auto foundTargetArr = Targets.find(Target->GetType());
+	if(foundTargetArr == Targets.end()) return false;
 	
 	auto foundTarget = std::find(foundTargetArr->second.begin(), foundTargetArr->second.end(), Target);
 	if(foundTarget == foundTargetArr->second.end()) return false;
@@ -203,15 +200,7 @@ bool FFramebuffer::Detach(const FRenderTargetPtr& Target)
 	}
 	else
 	{
-		RenderTargets.erase(foundTargetArr);
-	}
-	
-	auto foundFbType = UsedFBTypes.find(Target->GetAttachedFBType());
-	--foundFbType->second;
-	
-	if(foundFbType->second == 0)
-	{
-		UsedFBTypes.erase(foundFbType);
+		Targets.erase(foundTargetArr);
 	}
 	
 	Target->DetachFramebuffer();

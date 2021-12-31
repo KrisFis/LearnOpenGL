@@ -25,22 +25,26 @@ public: // IRenderTarget overrides
 	FORCEINLINE virtual bool IsInitialized() const override { return Type != ERenderTargetType::Invalid; };
 	FORCEINLINE virtual ERenderTargetType GetType() const override { return Type; }
 	
-	FORCEINLINE virtual EFramebufferType GetAttachedFBType() const override { return FBType; }
+	FORCEINLINE virtual bool IsAttached() const override { return bIsAttached; }
 	FORCEINLINE virtual uint8 GetSamples() const override { return Samples; }
 
 protected: // IRenderTarget overrides
 
-	virtual bool AttachFramebuffer(const EFramebufferType FBTarget, const uint8 UseIndex) override;
+	virtual bool AttachFramebuffer(const uint8 UseIndex) override;
 	virtual bool DetachFramebuffer() override;
 
 private: // Fields
 
 	FRenderBufferId Id;
 	ERenderTargetType Type;
-	EFramebufferType FBType;
 
 	uint16 Width;
 	uint16 Height;
 	
 	uint8 Samples;
+
+private: // Primitive Fields
+
+	uint8 bIsAttached : 1;
+
 };
