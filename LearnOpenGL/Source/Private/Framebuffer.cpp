@@ -39,11 +39,11 @@ void FFramebuffer::Enable()
 		switch (pair.first)
 		{
 			case ERenderTargetType::Color:
-			numOfColors += pair.second.size();
+			numOfColors += (uint8)pair.second.size();
 			break;
 			case ERenderTargetType::DepthOnly:
 			case ERenderTargetType::DepthAndStencil:
-			numOfDepth += pair.second.size();
+			numOfDepth += (uint8)pair.second.size();
 			break;
 			default:
 			break;

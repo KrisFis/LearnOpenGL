@@ -78,7 +78,7 @@ bool GUIResetLayout = true;
 
 struct FLightInfo
 {
-	uint64 BlockId;
+	uint16 BlockId;
 	FColor Color;
 	
 	float Constant;
@@ -435,7 +435,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[0] = {sceneObjects.size() - 1, NColors::Red * 2.f , 0.f, 0.f, 0.032f};
+		GLights[0] = {(uint16)(sceneObjects.size() - 1), NColors::Red * 2.f , 0.f, 0.f, 0.032f};
 	
 		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -443,7 +443,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[1] = {sceneObjects.size() - 1, NColors::White * 10.f, 0.f, 0.f, 0.032f };
+		GLights[1] = {(uint16)(sceneObjects.size() - 1), NColors::White * 10.f, 0.f, 0.f, 0.032f };
 		
 		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -451,7 +451,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[2] = {sceneObjects.size() - 1, NColors::Blue * 2.f, 0.f, 0.f, 0.032f };
+		GLights[2] = {(uint16)(sceneObjects.size() - 1), NColors::Blue * 2.f, 0.f, 0.f, 0.032f };
 	}
 
 	OutScene = FScene::Create(sceneObjects);
