@@ -67,6 +67,7 @@ FSceneObjectPtr GScreenObject;
 bool GUseBlinn = true;
 float GExposure = 0.15f;
 bool GWireframeMode = false;
+int32 GBloomIterations = 5;
 
 bool GUIDemoVisible = false;
 bool GUIDetailsInViewport = true;
@@ -689,7 +690,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			static_cast<FMesh2D*>(GBlurObject.Get())->SetTextures({initTexture});
 		}
 
-		for(uint8 i = 0; i < 10; ++i)
+		for(uint8 i = 0; i < GBloomIterations * 2; ++i)
 		{
 			uint8 currFbIdx = (i + 1) % 2;
 			uint8 prevFbIdx = (i + 2) % 2;
@@ -865,6 +866,7 @@ void ProcessUIRender()
 			ImGui::Checkbox("Blinn shading", &GUseBlinn);
 			ImGui::SliderFloat("Gamma", &GGamma, 0.f, 5.f);
 			ImGui::SliderFloat("HDR exposure", &GExposure, 0.f, 5.f);
+			ImGui::SliderInt("Bloom iterations", &GBloomIterations, 0, 10);
 
 			bool colorPickerVisible = false;
 			if(ImGui::CollapsingHeader("Lights"))
