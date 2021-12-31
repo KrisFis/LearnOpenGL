@@ -7,7 +7,7 @@
 
 namespace NMeshUtils
 {
-	namespace NPrivate
+	namespace
 	{
 		FSceneObjectPtr ConstructShape(const char* PathFromContent, const TArray<TSharedPtr<FTexture>>& Textures)
 		{
@@ -23,21 +23,21 @@ namespace NMeshUtils
 
 	FSceneObjectPtr ConstructCube(const TArray<TSharedPtr<FTexture>> Textures)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Cube/Cube.obj", Textures);
+		return ConstructShape("Models/Primitive/Cube/Cube.obj", Textures);
 	}
 
 	FSceneObjectPtr ConstructPlane(const TArray<TSharedPtr<FTexture>> Textures)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Plane/Plane.obj", Textures);
+		return ConstructShape("Models/Primitive/Plane/Plane.obj", Textures);
 	}
 
 	FSceneObjectPtr ConstructSphere(const TArray<TSharedPtr<FTexture>> Textures)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Sphere/Sphere.obj", Textures);
+		return ConstructShape("Models/Primitive/Sphere/Sphere.obj", Textures);
 	}
 
 	FSceneObjectPtr ConstructCylinder(const TArray<TSharedPtr<FTexture>> Textures)
 	{
-		return NPrivate::ConstructShape("Models/Primitive/Cylinder/Cylinder.obj", Textures);
+		return ConstructShape("Models/Primitive/Cylinder/Cylinder.obj", Textures);
 	}
 }

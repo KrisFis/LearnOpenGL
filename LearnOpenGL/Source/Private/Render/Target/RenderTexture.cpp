@@ -5,10 +5,10 @@
 FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType, uint8 InFlags)
 	: Id(0)
 	, Type(ERenderTargetType::Invalid)
-	, FBType(0)
 	, Width(0)
 	, Height(0)
 	, Samples(0)
+	, bIsAttached(false)
 {
 	GLenum internalFormat, format, type;
 	switch (InType)
@@ -67,7 +67,9 @@ FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight,
 		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	
@@ -84,9 +86,9 @@ FRenderTexture::~FRenderTexture()
 		glDeleteTextures(1, &Id);
 }
 
-bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget, const uint8 UseIndex)
+bool FRenderTexture::AttachFramebuffer(const uint8 UseIndex)
 {
-	if(!IsInitialized() || FBType != 0)
+	if(!IsInitialized() || bIsAttached)
 	{
 		ENSURE_NO_ENTRY();
 		return false;
@@ -111,20 +113,20 @@ bool FRenderTexture::AttachFramebuffer(const EFramebufferType FBTarget, const ui
 			return false;
 	}
 	
-	glFramebufferTexture2D(FBTarget, attachment, (Samples > 1) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, Id, 0);
-	FBType = FBTarget;
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, (Samples > 1) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, Id, 0);
+	bIsAttached = true;
 	
 	return true;
 }
 
 bool FRenderTexture::DetachFramebuffer()
 {
-	if(!IsInitialized() || FBType == 0)
+	if(!IsInitialized() || !bIsAttached)
 	{
 		ENSURE_NO_ENTRY();
 		return false;
 	}
 
-	FBType = 0;
+	bIsAttached = false;
 	return true;
 }

@@ -22,8 +22,6 @@ struct FFramebufferCopyArgs
 	enum { FT_Nearest, FT_Linear } FilterType;
 };
 
-// TODO(kristian.fisera: Fix issue with binding fb target per render target
-// * Binding should be only called for GL_FRAMEBUFFER for enable
 class FFramebuffer
 {
 	
@@ -62,7 +60,7 @@ public: // Copy methods
 
 public: // Attach methods
 
-	bool Attach(const EFramebufferType FBTargetType, const FRenderTargetPtr& Target);
+	int16 Attach(const FRenderTargetPtr& Target);
 	
 	void DetachAll();
 	void DetachAll(ERenderTargetType Type);
@@ -74,8 +72,7 @@ private: // Fields
 
 private: // Targets
 
-	TMap<EFramebufferType, uint8> UsedFBTypes;
-	TFastMap<ERenderTargetType, TArray<FRenderTargetPtr>> RenderTargets;
+	TFastMap<ERenderTargetType, TArray<FRenderTargetPtr>> Targets;
 
 private: // Primitive fields
 

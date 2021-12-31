@@ -55,7 +55,12 @@ FScenePtr GScene;
 
 FSceneObjectPtr GSkyboxObject;
 
-FFramebufferPtr GMSAAFramebuffer;
+FFramebufferPtr GSceneFramebuffer;
+
+FFramebufferPtr GBlurFramebuffers[2];
+FSceneObjectPtr GBlurObject;
+uint8 GBlurTextureIdx = 2;
+
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
 
@@ -72,8 +77,12 @@ bool GUIResetLayout = true;
 
 struct FLightInfo
 {
-	glm::vec3 Position;
+	uint64 BlockId;
 	FColor Color;
+	
+	float Constant;
+	float Linear;
+	float Quadratic;
 } GLights[3];
 
 // TEST
@@ -122,7 +131,7 @@ struct FUniformBufferMainType
 
 struct FShaderMainType
 {
-	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox };
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, Blur };
 	
 	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
 	{
@@ -270,54 +279,82 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 	return true;
 }
 
-bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
+bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FSceneObjectPtr& OutBlurObj, FFramebufferPtr& OutSceneFramebuffer, FFramebufferPtr (&OutBlurFramebuffers)[2], FFramebufferPtr& OutScreenFramebuffer)
 {
 	uint16 windowWidth, windowHeight;
 	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
 
-	// MSAA
+	FRenderTexturePtr brightTextureTarget, screenTextureTarget;
+
+	// SCENE
 	{
-		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(
-			windowWidth, 
+		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(
+			windowWidth,
 			windowHeight, 
-			ERenderTargetType::Color, 
+			ERenderTargetType::Color,
 			ERenderTextureColorFlag::Float16
 		);
 		
-		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
-		if(!multisampledTextureTarget->IsInitialized() || !multisampledBufferTarget->IsInitialized())
+		brightTextureTarget = FRenderTexture::Create(
+			windowWidth, 
+			windowHeight, 
+			ERenderTargetType::Color,
+			ERenderTextureColorFlag::Float16
+		);
+		
+		FRenderBufferPtr sceneBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
+		if(!sceneTextureTarget->IsInitialized() || !brightTextureTarget->IsInitialized() || !sceneBufferTarget->IsInitialized())
 		{
 			return false;
 		}
-		
-		OutMSAAFramebuffer = FFramebuffer::Create();
-		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledTextureTarget->AsShared());
-		OutMSAAFramebuffer->Attach(GL_FRAMEBUFFER, multisampledBufferTarget->AsShared());
+
+		OutSceneFramebuffer = FFramebuffer::Create();
+		OutSceneFramebuffer->Attach(sceneTextureTarget->AsShared());
+		OutSceneFramebuffer->Attach(brightTextureTarget->AsShared());
+		OutSceneFramebuffer->Attach(sceneBufferTarget->AsShared());
+	}
+	
+	// BLUR
+	{
+		for(uint8 i = 0; i < 2; ++i)
+		{
+			FRenderTexturePtr blurTextureTarget = FRenderTexture::Create(
+				windowWidth,
+				windowHeight,
+				ERenderTargetType::Color,
+				ERenderTextureColorFlag::Float16
+			);
+			
+			if(!blurTextureTarget->IsInitialized())
+			{
+				return false;
+			}
+			
+			OutBlurFramebuffers[i] = FFramebuffer::Create();
+			OutBlurFramebuffers[i]->Attach(blurTextureTarget->AsShared());
+		}
 	}
 	
 	// SCREEN
 	{
-		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(
+		screenTextureTarget = FRenderTexture::Create(
 			windowWidth,
 			windowHeight,
 			ERenderTargetType::Color,
 			ERenderTextureColorFlag::Float16
 		);
 		
-		if(!sceneTextureTarget->IsInitialized())
-		{
-			return false;
-		}
-		
-		FTexturePtr screenQuad = FTexture::Create(sceneTextureTarget.Get(), ETextureType::Diffuse);
-		if(!screenQuad->IsInitialized())
+		if(!screenTextureTarget->IsInitialized())
 		{
 			return false;
 		}
 		
 		OutScreenFramebuffer = FFramebuffer::Create();
-		OutScreenFramebuffer->Attach(GL_FRAMEBUFFER, sceneTextureTarget->AsShared());
-	
+		OutScreenFramebuffer->Attach(screenTextureTarget->AsShared());
+	}
+
+	// Misc -> Quad objects
+	{
 		static const TArray<FMesh2DVertex> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
 			{ glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
 			{ glm::vec2( -1.0f, -1.0f), glm::vec2(0.0f, 0.0f)},
@@ -327,8 +364,11 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuff
 			{ glm::vec2( 1.0f,  1.0f), glm::vec2(1.0f, 1.)}
 		};
 		
-		OutScreenObj = FMesh2D::Create(quadVertices, {screenQuad})->AsShared();
+		OutScreenObj = FMesh2D::Create(quadVertices, {FTexture::Create(screenTextureTarget.Get(), ETextureType::Diffuse)})->AsShared();
 		OutScreenObj->SetCullFaces(false);
+		
+		OutBlurObj = FMesh2D::Create(quadVertices, {FTexture::Create(brightTextureTarget.Get(), ETextureType::Diffuse)})->AsShared();
+		OutBlurObj->SetCullFaces(false);
 	}
 	
 	return true;
@@ -336,10 +376,11 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuff
 
 bool PrepareScene(FScenePtr& OutScene)
 {
+	FTexturePtr blankTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/blank.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
-	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized())
+	if(!blankTexture->IsInitialized() || !rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized())
 	{
 		return false;
 	}
@@ -354,42 +395,66 @@ bool PrepareScene(FScenePtr& OutScene)
 
 	sceneObjects.push_back(NMeshUtils::ConstructSphere({wallTexture}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{10.f, 10.f, 10.f},
-			{0.f, 0.f, 0.f},
-			{2.f, 2.f, 2.f}
+		{10.f, 10.f, 10.f},
+		{0.f, 0.f, 0.f},
+		{2.f, 2.f, 2.f}
 	});
 	
+	// CENTER
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{2.f, 0.f, 0.f},
-			{0.f, 0.f, 0.f},
-			{1.f, 1.f, 1.f}
+		{2.f, 0.f, 0.f},
+		{0.f, 0.f, 0.f},
+		{1.f, 1.f, 1.f}
 	});
 
 	// LEFT
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{-2.f, 2.f, -2.f},
-			{-45.f, 0.f, 0.f},
-			{1.f, 1.f, 1.f}
+		{-2.f, 2.f, -2.f},
+		{-45.f, 0.f, 0.f},
+		{1.f, 1.f, 1.f}
 	});
 
 	// RIGHT
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{-2.f, 1.f, 2.f},
-			{0.f, -45.f, 0.f},
-			{1.f, 1.f, 1.f}
+		{-2.f, 1.f, 2.f},
+		{0.f, -45.f, 0.f},
+		{1.f, 1.f, 1.f}
 	});
 	
+	// LIGHTS
+	{
+		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{1.5f, 0.1f, 3.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 0.25f, 0.25f}
+		});
+		GLights[0] = {sceneObjects.size() - 1, NColors::Red * 2.f , 0.f, 0.f, 0.032f};
+	
+		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{10.5f, 5.f, 0.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 0.25f, 0.25f}
+		});
+		GLights[1] = {sceneObjects.size() - 1, NColors::White * 10.f, 0.f, 0.f, 0.032f };
+		
+		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{1.5f, 0.1f, -3.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 0.25f, 0.25f}
+		});
+		GLights[2] = {sceneObjects.size() - 1, NColors::Blue * 2.f, 0.f, 0.f, 0.032f };
+	}
+
 	OutScene = FScene::Create(sceneObjects);
 	
-	GLights[0] = {{1.5f, 0.1f, 3.f}, NColors::Red * 2.f };
-	GLights[1] = {{20.f, 5.f, 0.f}, NColors::White * 10.f };
-	GLights[2] = {{1.5f, 0.1f, -3.f}, NColors::Blue * 2.f };
-
 	return true;
 }
 
@@ -410,6 +475,11 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		OutShaders.insert({
 			EShaderMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
+		});
+		
+		OutShaders.insert({
+			EShaderMainType::Blur,
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/GaussianBlur.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/GaussianBlur.frag").c_str())
 		});
 	}
 	
@@ -558,7 +628,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	// Scene
 	// * To custom framebuffer
 	{
-		GMSAAFramebuffer->Enable();
+		GSceneFramebuffer->Enable();
 
 		// Setup
 		{
@@ -586,14 +656,14 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				{
 					const FString uniformName = "lights[" + std::to_string(i) + "]";
 				
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GLights[i].Position);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {1.0f, 1.0f, 1.0f});
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
 					
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), 1.f);
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), 0.09f);
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".quadratic").c_str(), 0.032f);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
 				}
 			}
 			
@@ -602,7 +672,52 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			Shaders[EShaderMainType::Mesh]->Disable();
 		}
 		
-		GMSAAFramebuffer->Disable();
+		GSceneFramebuffer->Disable();
+	}
+	
+	// Blur rendering
+	{
+		Shaders[EShaderMainType::Blur]->Enable();
+
+		// Init draw
+		{
+			FTexturePtr initTexture = FTexture::Create(
+					static_cast<FRenderTexture*>(GSceneFramebuffer->GetAttachments(ERenderTargetType::Color)[1].Get()),
+					ETextureType::Diffuse
+			);
+			
+			static_cast<FMesh2D*>(GBlurObject.Get())->SetTextures({initTexture});
+		}
+
+		for(uint8 i = 0; i < 10; ++i)
+		{
+			uint8 currFbIdx = (i + 1) % 2;
+			uint8 prevFbIdx = (i + 2) % 2;
+
+			// Setup draw
+			{
+				Shaders[EShaderMainType::Blur]->SetBool("horizontal", (currFbIdx == 1));
+			
+				if (i != 0)
+				{
+					FTexturePtr newTexture = FTexture::Create(
+							static_cast<FRenderTexture*>(GBlurFramebuffers[prevFbIdx]->GetFirstAttachment(
+									ERenderTargetType::Color).Get()),
+							ETextureType::Diffuse
+					);
+	
+					static_cast<FMesh2D*>(GBlurObject.Get())->SetTextures({newTexture});
+				}
+			}
+			
+			GBlurFramebuffers[currFbIdx]->Enable();
+			
+			GBlurObject->Draw(Shaders[EShaderMainType::Blur]);
+			
+			GBlurFramebuffers[currFbIdx]->Disable();
+		}
+		
+		Shaders[EShaderMainType::Blur]->Disable();
 	}
 
 	// Screen rendering
@@ -619,7 +734,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			copyArgs.FilterType = FFramebufferCopyArgs::FT_Nearest;
 		}
 		
-		GMSAAFramebuffer->CopyTo(GScreenFramebuffer, copyArgs);
+		GSceneFramebuffer->CopyTo(GScreenFramebuffer, copyArgs);
 	
 		// Setup
 		{
@@ -632,7 +747,16 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		{
 			Shaders[EShaderMainType::Screen]->Enable();
 
+			FTexturePtr blurTexture = static_cast<FMesh2D*>(GBlurObject.Get())->GetTextures()[0];
+			
+			// Setup shaders
+			{
+				Shaders[EShaderMainType::Screen]->SetInt32("bloomBlur", GBlurTextureIdx);
+			}
+			
+			blurTexture->Use(GBlurTextureIdx);
 			GScreenObject->Draw(Shaders[EShaderMainType::Screen]);
+			blurTexture->Clear();
 			
 			Shaders[EShaderMainType::Screen]->Disable();
 		}
@@ -755,9 +879,23 @@ void ProcessUIRender()
 
 						ImGui::Indent();
 
+						glm::vec3 positionCopy = GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position;
 						glm::vec4 colorCopy = GLights[i].Color.ToVec4();
-
-						ImGui::SliderFloat3("Position", &GLights[i].Position.x, -25.f, 25.f);
+						
+						if(ImGui::SliderFloat3("Position", &positionCopy.x, -25.f, 25.f))
+						{
+							auto obj = GScene->GetObjectByIdx(GLights[i].BlockId);
+							FTransform objTransform = obj->GetTransform();
+							objTransform.Position = positionCopy;
+							obj->SetTransform(objTransform);
+						}
+						
+						ImGui::SliderFloat("Constant", &GLights[i].Constant, 0.f, 10.f);
+						ImGui::SliderFloat("Linear", &GLights[i].Linear, 0.f, 2.f);
+						ImGui::SliderFloat("Quadratic", &GLights[i].Quadratic, 0.f, 2.f);
+						
+						ImGui::Spacing();
+						
 						if(ImGui::ColorPicker4("Color", &colorCopy.x,
 							ImGuiColorEditFlags_HDR |
 							ImGuiColorEditFlags_NoSidePreview |
@@ -845,7 +983,7 @@ int32 GuardedMain()
 		return -3;
 	}
 	
-	if(!PrepareFBs(GScreenObject, GMSAAFramebuffer, GScreenFramebuffer))
+	if(!PrepareFBs(GScreenObject, GBlurObject, GSceneFramebuffer, GBlurFramebuffers, GScreenFramebuffer))
 	{
 		return -4;
 	}

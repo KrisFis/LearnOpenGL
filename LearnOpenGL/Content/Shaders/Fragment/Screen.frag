@@ -1,5 +1,7 @@
 #version 460 core
 
+out vec4 FragColor;
+
 in VERT_OUT {
 	vec2 TexCoord;
 } frag_in;
@@ -15,7 +17,12 @@ layout (std140) uniform UPostProcess
 	float exposure;
 } u_postprocess;
 
-out vec4 FragColor;
+uniform sampler2D bloomBlur;
+
+vec3 ApplyBloom(vec3 InFragColor)
+{
+	return InFragColor + texture(bloomBlur, frag_in.TexCoord).rgb;
+}
 
 vec3 ApplyToneMapping(vec3 InFragColor)
 {
@@ -33,6 +40,7 @@ void main()
 
 	// Post-processing
 	{
+		resultColor = ApplyBloom(resultColor);
 		resultColor = ApplyToneMapping(resultColor);
 		resultColor = ApplyGamaCorrection(resultColor);
 	}

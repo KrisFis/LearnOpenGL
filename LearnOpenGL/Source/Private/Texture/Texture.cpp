@@ -54,12 +54,14 @@ FTexture::FTexture(const FRenderTexture* RenderTexture, const ETextureType InTyp
 	: Id(RenderTexture->GetId())
 	, UseIndex(-1)
 	, Type(InType)
+	, bTargetInit(true)
 {}
 
 FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool IsLinear, bool ClampToEdge)
 	: Id(0)
 	, UseIndex(-1)
 	, Type(ETextureType::Invalid)
+	, bTargetInit(false)
 {
 	ENSURE(InType != ETextureType::Invalid);
 	
@@ -121,7 +123,7 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool IsLin
 
 FTexture::~FTexture()
 {
-	if(Id != NRenderConsts::Invalid::TextureId)
+	if(!bTargetInit && Id != NRenderConsts::Invalid::TextureId)
 		glDeleteTextures(1, &Id);
 }
 
@@ -135,9 +137,6 @@ void FTexture::Use(const uint8 Index)
 
 void FTexture::Clear()
 {
-	if(UseIndex == -1) return;
-
-	glActiveTexture(GL_TEXTURE0 + (unsigned char)UseIndex);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	UseIndex = -1;
