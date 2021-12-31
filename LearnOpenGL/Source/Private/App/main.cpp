@@ -55,7 +55,7 @@ FScenePtr GScene;
 
 FSceneObjectPtr GSkyboxObject;
 
-FFramebufferPtr GMSAAFramebuffer;
+FFramebufferPtr GSceneFramebuffer;
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
 
@@ -270,53 +270,53 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 	return true;
 }
 
-bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
+bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutSceneFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
 {
 	uint16 windowWidth, windowHeight;
 	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
 
 	// MSAA
 	{
-		FRenderTexturePtr multisampledTextureTarget = FRenderTexture::Create(
+		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(
 			windowWidth, 
 			windowHeight, 
 			ERenderTargetType::Color, 
 			ERenderTextureColorFlag::Float16
 		);
 		
-		FRenderBufferPtr multisampledBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
-		if(!multisampledTextureTarget->IsInitialized() || !multisampledBufferTarget->IsInitialized())
+		FRenderBufferPtr sceneBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
+		if(!sceneTextureTarget->IsInitialized() || !sceneBufferTarget->IsInitialized())
 		{
 			return false;
 		}
-		
-		OutMSAAFramebuffer = FFramebuffer::Create();
-		OutMSAAFramebuffer->Attach(multisampledTextureTarget->AsShared());
-		OutMSAAFramebuffer->Attach(multisampledBufferTarget->AsShared());
+
+		OutSceneFramebuffer = FFramebuffer::Create();
+		OutSceneFramebuffer->Attach(sceneTextureTarget->AsShared());
+		OutSceneFramebuffer->Attach(sceneBufferTarget->AsShared());
 	}
 	
 	// SCREEN
 	{
-		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(
+		FRenderTexturePtr screenTextureTarget = FRenderTexture::Create(
 			windowWidth,
 			windowHeight,
 			ERenderTargetType::Color,
 			ERenderTextureColorFlag::Float16
 		);
 		
-		if(!sceneTextureTarget->IsInitialized())
+		if(!screenTextureTarget->IsInitialized())
 		{
 			return false;
 		}
 		
-		FTexturePtr screenQuad = FTexture::Create(sceneTextureTarget.Get(), ETextureType::Diffuse);
-		if(!screenQuad->IsInitialized())
+		FTexturePtr screenTexture = FTexture::Create(screenTextureTarget.Get(), ETextureType::Diffuse);
+		if(!screenTexture->IsInitialized())
 		{
 			return false;
 		}
 		
 		OutScreenFramebuffer = FFramebuffer::Create();
-		OutScreenFramebuffer->Attach(sceneTextureTarget->AsShared());
+		OutScreenFramebuffer->Attach(screenTextureTarget->AsShared());
 	
 		static const TArray<FMesh2DVertex> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
 			{ glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
@@ -327,7 +327,7 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutMSAAFramebuff
 			{ glm::vec2( 1.0f,  1.0f), glm::vec2(1.0f, 1.)}
 		};
 		
-		OutScreenObj = FMesh2D::Create(quadVertices, {screenQuad})->AsShared();
+		OutScreenObj = FMesh2D::Create(quadVertices, {screenTexture})->AsShared();
 		OutScreenObj->SetCullFaces(false);
 	}
 	
@@ -558,7 +558,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	// Scene
 	// * To custom framebuffer
 	{
-		GMSAAFramebuffer->Enable();
+		GSceneFramebuffer->Enable();
 
 		// Setup
 		{
@@ -602,7 +602,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			Shaders[EShaderMainType::Mesh]->Disable();
 		}
 		
-		GMSAAFramebuffer->Disable();
+		GSceneFramebuffer->Disable();
 	}
 
 	// Screen rendering
@@ -619,7 +619,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			copyArgs.FilterType = FFramebufferCopyArgs::FT_Nearest;
 		}
 		
-		GMSAAFramebuffer->CopyTo(GScreenFramebuffer, copyArgs);
+		GSceneFramebuffer->CopyTo(GScreenFramebuffer, copyArgs);
 	
 		// Setup
 		{
@@ -845,7 +845,7 @@ int32 GuardedMain()
 		return -3;
 	}
 	
-	if(!PrepareFBs(GScreenObject, GMSAAFramebuffer, GScreenFramebuffer))
+	if(!PrepareFBs(GScreenObject, GSceneFramebuffer, GScreenFramebuffer))
 	{
 		return -4;
 	}
