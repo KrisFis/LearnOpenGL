@@ -56,6 +56,10 @@ FScenePtr GScene;
 FSceneObjectPtr GSkyboxObject;
 
 FFramebufferPtr GSceneFramebuffer;
+
+FFramebufferPtr GBlurFramebuffers[2];
+FSceneObjectPtr GBlurObject;
+
 FFramebufferPtr GScreenFramebuffer;
 FSceneObjectPtr GScreenObject;
 
@@ -126,7 +130,7 @@ struct FUniformBufferMainType
 
 struct FShaderMainType
 {
-	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox };
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, Blur };
 	
 	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
 	{
@@ -274,12 +278,14 @@ bool PrepareSkybox(FSceneObjectPtr& OutSkyboxObj)
 	return true;
 }
 
-bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutSceneFramebuffer, FFramebufferPtr& OutScreenFramebuffer)
+bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FSceneObjectPtr& OutBlurObj, FFramebufferPtr& OutSceneFramebuffer, FFramebufferPtr (&OutBlurFramebuffers)[2], FFramebufferPtr& OutScreenFramebuffer)
 {
 	uint16 windowWidth, windowHeight;
 	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
 
-	// MSAA
+	FRenderTexturePtr brightTextureTarget, screenTextureTarget;
+
+	// SCENE
 	{
 		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(
 			windowWidth,
@@ -288,7 +294,7 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutSceneFramebuf
 			ERenderTextureColorFlag::Float16
 		);
 		
-		FRenderTexturePtr sceneTextureTargetBright = FRenderTexture::Create(
+		brightTextureTarget = FRenderTexture::Create(
 			windowWidth, 
 			windowHeight, 
 			ERenderTargetType::Color,
@@ -296,20 +302,41 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutSceneFramebuf
 		);
 		
 		FRenderBufferPtr sceneBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
-		if(!sceneTextureTarget->IsInitialized() || !sceneTextureTargetBright->IsInitialized() || !sceneBufferTarget->IsInitialized())
+		if(!sceneTextureTarget->IsInitialized() || !brightTextureTarget->IsInitialized() || !sceneBufferTarget->IsInitialized())
 		{
 			return false;
 		}
 
 		OutSceneFramebuffer = FFramebuffer::Create();
 		OutSceneFramebuffer->Attach(sceneTextureTarget->AsShared());
-		OutSceneFramebuffer->Attach(sceneTextureTargetBright->AsShared());
+		OutSceneFramebuffer->Attach(brightTextureTarget->AsShared());
 		OutSceneFramebuffer->Attach(sceneBufferTarget->AsShared());
+	}
+	
+	// BLUR
+	{
+		for(uint8 i = 0; i < 2; ++i)
+		{
+			FRenderTexturePtr blurTextureTarget = FRenderTexture::Create(
+				windowWidth,
+				windowHeight,
+				ERenderTargetType::Color,
+				ERenderTextureColorFlag::Float16
+			);
+			
+			if(!blurTextureTarget->IsInitialized())
+			{
+				return false;
+			}
+			
+			OutBlurFramebuffers[i] = FFramebuffer::Create();
+			OutBlurFramebuffers[i]->Attach(blurTextureTarget->AsShared());
+		}
 	}
 	
 	// SCREEN
 	{
-		FRenderTexturePtr screenTextureTarget = FRenderTexture::Create(
+		screenTextureTarget = FRenderTexture::Create(
 			windowWidth,
 			windowHeight,
 			ERenderTargetType::Color,
@@ -321,15 +348,12 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutSceneFramebuf
 			return false;
 		}
 		
-		FTexturePtr screenTexture = FTexture::Create(screenTextureTarget.Get(), ETextureType::Diffuse);
-		if(!screenTexture->IsInitialized())
-		{
-			return false;
-		}
-		
 		OutScreenFramebuffer = FFramebuffer::Create();
 		OutScreenFramebuffer->Attach(screenTextureTarget->AsShared());
-	
+	}
+
+	// Misc -> Quad objects
+	{
 		static const TArray<FMesh2DVertex> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
 			{ glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f)},
 			{ glm::vec2( -1.0f, -1.0f), glm::vec2(0.0f, 0.0f)},
@@ -339,8 +363,11 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutSceneFramebuf
 			{ glm::vec2( 1.0f,  1.0f), glm::vec2(1.0f, 1.)}
 		};
 		
-		OutScreenObj = FMesh2D::Create(quadVertices, {screenTexture})->AsShared();
+		OutScreenObj = FMesh2D::Create(quadVertices, {FTexture::Create(screenTextureTarget.Get(), ETextureType::Diffuse)})->AsShared();
 		OutScreenObj->SetCullFaces(false);
+		
+		OutBlurObj = FMesh2D::Create(quadVertices, {FTexture::Create(brightTextureTarget.Get(), ETextureType::Diffuse)})->AsShared();
+		OutBlurObj->SetCullFaces(false);
 	}
 	
 	return true;
@@ -406,7 +433,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[0] = {sceneObjects.size() - 1, NColors::Red * 2.f , 0.f, 0.09f, 0.032f};
+		GLights[0] = {sceneObjects.size() - 1, NColors::Red * 2.f , 0.f, 0.f, 0.032f};
 	
 		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -414,7 +441,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[1] = {sceneObjects.size() - 1, NColors::White * 10.f, 0.f, 0.09f, 0.032f };
+		GLights[1] = {sceneObjects.size() - 1, NColors::White * 10.f, 0.f, 0.f, 0.032f };
 		
 		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -422,7 +449,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[2] = {sceneObjects.size() - 1, NColors::Blue * 2.f, 0.f, 0.09f, 0.032f };
+		GLights[2] = {sceneObjects.size() - 1, NColors::Blue * 2.f, 0.f, 0.f, 0.032f };
 	}
 
 	OutScene = FScene::Create(sceneObjects);
@@ -447,6 +474,11 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		OutShaders.insert({
 			EShaderMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
+		});
+		
+		OutShaders.insert({
+			EShaderMainType::Blur,
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/GaussianBlur.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/GaussianBlur.frag").c_str())
 		});
 	}
 	
@@ -626,7 +658,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {0.15f, 0.15f, 0.15f});
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
 					
 					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
 					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
@@ -640,6 +672,51 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		}
 		
 		GSceneFramebuffer->Disable();
+	}
+	
+	// Blur rendering
+	{
+		Shaders[EShaderMainType::Blur]->Enable();
+
+		// Init draw
+		{
+			FTexturePtr initTexture = FTexture::Create(
+					static_cast<FRenderTexture*>(GSceneFramebuffer->GetAttachments(ERenderTargetType::Color)[1].Get()),
+					ETextureType::Diffuse
+			);
+			
+			static_cast<FMesh2D*>(GBlurObject.Get())->SetTextures({initTexture});
+		}
+
+		for(uint8 i = 0; i < 10; ++i)
+		{
+			uint8 currFbIdx = (i + 1) % 2;
+			uint8 prevFbIdx = (i + 2) % 2;
+
+			// Setup draw
+			{
+				Shaders[EShaderMainType::Blur]->SetBool("horizontal", (currFbIdx == 1));
+			
+				if (i != 0)
+				{
+					FTexturePtr newTexture = FTexture::Create(
+							static_cast<FRenderTexture*>(GBlurFramebuffers[prevFbIdx]->GetFirstAttachment(
+									ERenderTargetType::Color).Get()),
+							ETextureType::Diffuse
+					);
+	
+					static_cast<FMesh2D*>(GBlurObject.Get())->SetTextures({newTexture});
+				}
+			}
+			
+			GBlurFramebuffers[currFbIdx]->Enable();
+			
+			GBlurObject->Draw(Shaders[EShaderMainType::Blur]);
+			
+			GBlurFramebuffers[currFbIdx]->Disable();
+		}
+		
+		Shaders[EShaderMainType::Blur]->Disable();
 	}
 
 	// Screen rendering
@@ -896,7 +973,7 @@ int32 GuardedMain()
 		return -3;
 	}
 	
-	if(!PrepareFBs(GScreenObject, GSceneFramebuffer, GScreenFramebuffer))
+	if(!PrepareFBs(GScreenObject, GBlurObject, GSceneFramebuffer, GBlurFramebuffers, GScreenFramebuffer))
 	{
 		return -4;
 	}

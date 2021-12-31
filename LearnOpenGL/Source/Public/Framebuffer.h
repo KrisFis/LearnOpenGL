@@ -60,7 +60,7 @@ public: // Copy methods
 
 public: // Attach methods
 
-	bool Attach(const FRenderTargetPtr& Target);
+	int16 Attach(const FRenderTargetPtr& Target);
 	
 	void DetachAll();
 	void DetachAll(ERenderTargetType Type);

@@ -69,6 +69,11 @@ private: // Fields
 	int16 UseIndex;
 	ETextureType Type;
 	FString FilePath;
+
+private: // Primitive Fields
+
+	uint8 bTargetInit : 1;
+
 };
 
 typedef TSharedPtr<FTexture> FTexturePtr;

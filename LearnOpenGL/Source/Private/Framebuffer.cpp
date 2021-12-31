@@ -29,21 +29,36 @@ TArray<FRenderTargetPtr> FFramebuffer::GetAttachments(const ERenderTargetType Ty
 
 void FFramebuffer::Enable()
 {
-	if(bIsEnabled) return;
-
 	glBindFramebuffer(GL_FRAMEBUFFER, Id);
 	
 	uint8 numOfColors = 0;
-	auto foundTargets = Targets.find(ERenderTargetType::Color);
-	if(foundTargets != Targets.end())
-		numOfColors = foundTargets->second.size();
+	uint8 numOfDepth = 0;
+	
+	for(const auto& pair : Targets)
+	{
+		switch (pair.first)
+		{
+			case ERenderTargetType::Color:
+			numOfColors += pair.second.size();
+			break;
+			case ERenderTargetType::DepthOnly:
+			case ERenderTargetType::DepthAndStencil:
+			numOfDepth += pair.second.size();
+			break;
+			default:
+			break;
+		}
+	}
 
 	switch (numOfColors)
 	{
 		case 0: // DEPTH ONLY PASS
 		{
-			glDrawBuffer(GL_NONE);
-			glReadBuffer(GL_NONE);
+			if(numOfDepth > 0)
+			{
+				glDrawBuffer(GL_NONE);
+				glReadBuffer(GL_NONE);
+			}
 		}
 		break;
 		case 1: // DEFAULT SETUP
@@ -76,8 +91,6 @@ void FFramebuffer::Enable()
 
 void FFramebuffer::Disable()
 {
-	if(!bIsEnabled) return;
-	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	bIsEnabled = false;
@@ -132,16 +145,16 @@ bool FFramebuffer::CopyTo(const TSharedPtr<FFramebuffer>& Destination, const FFr
 	return true;
 }
 
-bool FFramebuffer::Attach(const FRenderTargetPtr& Target)
+int16 FFramebuffer::Attach(const FRenderTargetPtr& Target)
 {	
-	if(!Target.IsValid()) return false;
+	if(!Target.IsValid()) return -1;
 	
 	const ERenderTargetType targetType = Target->GetType();
 	auto foundTargets = Targets.find(targetType);
 	const uint8 useIndex = (foundTargets == Targets.end()) ? 0 : (uint8)foundTargets->second.size();
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, Id);
-	ENSURE_RET(Target->AttachFramebuffer(useIndex), false);
+	ENSURE_RET(Target->AttachFramebuffer(useIndex), -1);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	if(foundTargets == Targets.end())
@@ -151,7 +164,7 @@ bool FFramebuffer::Attach(const FRenderTargetPtr& Target)
 	
 	bHasChanges = true;
 	
-	return true;
+	return useIndex;
 }
 
 void FFramebuffer::DetachAll()
