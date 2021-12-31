@@ -72,8 +72,12 @@ bool GUIResetLayout = true;
 
 struct FLightInfo
 {
-	glm::vec3 Position;
+	uint64 BlockId;
 	FColor Color;
+	
+	float Constant;
+	float Linear;
+	float Quadratic;
 } GLights[3];
 
 // TEST
@@ -278,20 +282,28 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutSceneFramebuf
 	// MSAA
 	{
 		FRenderTexturePtr sceneTextureTarget = FRenderTexture::Create(
+			windowWidth,
+			windowHeight, 
+			ERenderTargetType::Color,
+			ERenderTextureColorFlag::Float16
+		);
+		
+		FRenderTexturePtr sceneTextureTargetBright = FRenderTexture::Create(
 			windowWidth, 
 			windowHeight, 
-			ERenderTargetType::Color, 
+			ERenderTargetType::Color,
 			ERenderTextureColorFlag::Float16
 		);
 		
 		FRenderBufferPtr sceneBufferTarget = FRenderBuffer::Create(windowWidth, windowHeight, ERenderTargetType::DepthAndStencil);
-		if(!sceneTextureTarget->IsInitialized() || !sceneBufferTarget->IsInitialized())
+		if(!sceneTextureTarget->IsInitialized() || !sceneTextureTargetBright->IsInitialized() || !sceneBufferTarget->IsInitialized())
 		{
 			return false;
 		}
 
 		OutSceneFramebuffer = FFramebuffer::Create();
 		OutSceneFramebuffer->Attach(sceneTextureTarget->AsShared());
+		OutSceneFramebuffer->Attach(sceneTextureTargetBright->AsShared());
 		OutSceneFramebuffer->Attach(sceneBufferTarget->AsShared());
 	}
 	
@@ -336,10 +348,11 @@ bool PrepareFBs(FSceneObjectPtr& OutScreenObj, FFramebufferPtr& OutSceneFramebuf
 
 bool PrepareScene(FScenePtr& OutScene)
 {
+	FTexturePtr blankTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/blank.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
-	if(!rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized())
+	if(!blankTexture->IsInitialized() || !rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized())
 	{
 		return false;
 	}
@@ -354,42 +367,66 @@ bool PrepareScene(FScenePtr& OutScene)
 
 	sceneObjects.push_back(NMeshUtils::ConstructSphere({wallTexture}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{10.f, 10.f, 10.f},
-			{0.f, 0.f, 0.f},
-			{2.f, 2.f, 2.f}
+		{10.f, 10.f, 10.f},
+		{0.f, 0.f, 0.f},
+		{2.f, 2.f, 2.f}
 	});
 	
+	// CENTER
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{2.f, 0.f, 0.f},
-			{0.f, 0.f, 0.f},
-			{1.f, 1.f, 1.f}
+		{2.f, 0.f, 0.f},
+		{0.f, 0.f, 0.f},
+		{1.f, 1.f, 1.f}
 	});
 
 	// LEFT
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{-2.f, 2.f, -2.f},
-			{-45.f, 0.f, 0.f},
-			{1.f, 1.f, 1.f}
+		{-2.f, 2.f, -2.f},
+		{-45.f, 0.f, 0.f},
+		{1.f, 1.f, 1.f}
 	});
 
 	// RIGHT
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{-2.f, 1.f, 2.f},
-			{0.f, -45.f, 0.f},
-			{1.f, 1.f, 1.f}
+		{-2.f, 1.f, 2.f},
+		{0.f, -45.f, 0.f},
+		{1.f, 1.f, 1.f}
 	});
 	
+	// LIGHTS
+	{
+		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{1.5f, 0.1f, 3.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 0.25f, 0.25f}
+		});
+		GLights[0] = {sceneObjects.size() - 1, NColors::Red * 2.f , 0.f, 0.09f, 0.032f};
+	
+		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{10.5f, 5.f, 0.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 0.25f, 0.25f}
+		});
+		GLights[1] = {sceneObjects.size() - 1, NColors::White * 10.f, 0.f, 0.09f, 0.032f };
+		
+		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{1.5f, 0.1f, -3.f},
+			{0.f, 0.f, 0.f},
+			{0.25f, 0.25f, 0.25f}
+		});
+		GLights[2] = {sceneObjects.size() - 1, NColors::Blue * 2.f, 0.f, 0.09f, 0.032f };
+	}
+
 	OutScene = FScene::Create(sceneObjects);
 	
-	GLights[0] = {{1.5f, 0.1f, 3.f}, NColors::Red * 2.f };
-	GLights[1] = {{20.f, 5.f, 0.f}, NColors::White * 10.f };
-	GLights[2] = {{1.5f, 0.1f, -3.f}, NColors::Blue * 2.f };
-
 	return true;
 }
 
@@ -586,14 +623,14 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				{
 					const FString uniformName = "lights[" + std::to_string(i) + "]";
 				
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GLights[i].Position);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
 					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {1.0f, 1.0f, 1.0f});
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {0.15f, 0.15f, 0.15f});
 					
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), 1.f);
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), 0.09f);
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".quadratic").c_str(), 0.032f);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
 				}
 			}
 			
@@ -755,9 +792,23 @@ void ProcessUIRender()
 
 						ImGui::Indent();
 
+						glm::vec3 positionCopy = GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position;
 						glm::vec4 colorCopy = GLights[i].Color.ToVec4();
-
-						ImGui::SliderFloat3("Position", &GLights[i].Position.x, -25.f, 25.f);
+						
+						if(ImGui::SliderFloat3("Position", &positionCopy.x, -25.f, 25.f))
+						{
+							auto obj = GScene->GetObjectByIdx(GLights[i].BlockId);
+							FTransform objTransform = obj->GetTransform();
+							objTransform.Position = positionCopy;
+							obj->SetTransform(objTransform);
+						}
+						
+						ImGui::SliderFloat("Constant", &GLights[i].Constant, 0.f, 10.f);
+						ImGui::SliderFloat("Linear", &GLights[i].Linear, 0.f, 2.f);
+						ImGui::SliderFloat("Quadratic", &GLights[i].Quadratic, 0.f, 2.f);
+						
+						ImGui::Spacing();
+						
 						if(ImGui::ColorPicker4("Color", &colorCopy.x,
 							ImGuiColorEditFlags_HDR |
 							ImGuiColorEditFlags_NoSidePreview |

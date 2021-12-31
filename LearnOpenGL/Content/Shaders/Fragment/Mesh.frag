@@ -1,5 +1,8 @@
 #version 460 core
 
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;  
+
 in VERT_OUT {
 
 	vec3 FragPos;
@@ -33,8 +36,6 @@ layout (std140) uniform ULight
 	vec4 viewPos;
 	bool useBlinn;
 } u_light;
-
-out vec4 FragColor;
 
 uniform bool useOverrideColor;
 uniform vec4 overrideColor;
@@ -80,7 +81,7 @@ vec4 CalculateLight(Light light)
 	// attenuation
 	{
 		float distance = length(light.position - frag_in.FragPos);
-		attenuation = 1.f / (light.constant + light.linear * distance + light.quadratic * distance);
+		attenuation = 1.f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 	}
 
 	return vec4(attenuation * (ambient + diffuse + specular), 1.f);
@@ -106,4 +107,10 @@ void main()
 	discard;
 
 	FragColor = resultColor;
+	
+	float brightness = dot(FragColor.rgb, vec3(0.2126f, 0.7152f, 0.0722f));
+	    if(brightness > 1.0)
+	        BrightColor = vec4(FragColor.rgb, 1.f);
+	    else
+	        BrightColor = vec4(vec3(0.f), 1.f);
 }
