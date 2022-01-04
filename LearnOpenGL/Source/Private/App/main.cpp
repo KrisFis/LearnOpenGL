@@ -137,9 +137,9 @@ struct FShaderMainType
 		switch (Type)
 		{
 			case Mesh:
-				return { FUniformBufferMainType::Matrices, FUniformBufferMainType::Light };
+				return { FUniformBufferMainType::Matrices };
 			case Screen:
-				return { FUniformBufferMainType::PostProcess };
+				return { FUniformBufferMainType::Light, FUniformBufferMainType::PostProcess };
 			case Skybox:
 				return { FUniformBufferMainType::Matrices };
 			default:
@@ -380,8 +380,8 @@ bool PrepareScene(FScenePtr& OutScene)
 	
 	// CENTER
 	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
-	sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
+	//sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
+	//sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{2.f, 0.f, 0.f},
 		{0.f, 0.f, 0.f},
@@ -496,7 +496,7 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 				)
 			});
 		
-			ENSURE_RET(OutShaders[EShaderMainType::Mesh]->SetUniformBuffer(
+			ENSURE_RET(OutShaders[EShaderMainType::Screen]->SetUniformBuffer(
 				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
 			false);
 		}
@@ -606,8 +606,8 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		// Setup
 		{
 			glEnable(GL_DEPTH_TEST);
-			glEnable(GL_STENCIL_TEST);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			glDisable(GL_STENCIL_TEST);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		
 		// Draw skybox
@@ -620,25 +620,6 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		// Draw scene
 		{
 			Shaders[EShaderMainType::Mesh]->Enable();
-
-			// Setup light
-			{
-				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
-				
-				for(uint8 i = 0; i < 3; ++i)
-				{
-					const FString uniformName = "lights[" + std::to_string(i) + "]";
-				
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
-					
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
-				}
-			}
 			
 			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);
 			
@@ -669,11 +650,30 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			
 			ENSURE(gTextures.size() == 3);
 			
-			// Setup shaders
+			// Setup g-buffer
 			{
-				Shaders[EShaderMainType::Screen]->SetInt32("GPosition", 0);
-				Shaders[EShaderMainType::Screen]->SetInt32("GNormal", 1);
-				Shaders[EShaderMainType::Screen]->SetInt32("GAlbedoSpecular", 2);
+				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.position", 0);
+				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.normal", 1);
+				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.albedoSpecular", 2);
+			}
+			
+			// Setup light
+			{
+				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
+				
+				for(uint8 i = 0; i < 3; ++i)
+				{
+					const FString uniformName = "lights[" + std::to_string(i) + "]";
+				
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
+					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
+					
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
+					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
+				}
 			}
 			
 			gTextures[0]->Use(0);
