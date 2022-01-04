@@ -39,11 +39,11 @@ void FFramebuffer::Enable()
 		switch (pair.first)
 		{
 			case ERenderTargetAttachmentType::Color:
-			numOfColors += pair.second.size();
+			numOfColors += (uint8)pair.second.size();
 			break;
 			case ERenderTargetAttachmentType::DepthOnly:
 			case ERenderTargetAttachmentType::DepthAndStencil:
-			numOfDepth += pair.second.size();
+			numOfDepth += (uint8)pair.second.size();
 			break;
 			default:
 			break;
