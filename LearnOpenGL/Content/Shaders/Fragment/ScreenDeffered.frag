@@ -111,7 +111,7 @@ vec4 CalculateLight(Light light, GBufferTexData texData)
 		float distance = length(light.position - texData.fragPos);
 		attenuation = 1.f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 	}
-
+	
 	return vec4(attenuation * (ambient + diffuse + specular), 1.f);
 }
 
@@ -136,5 +136,6 @@ vec4 CalculateLights()
 void main()
 {
 	vec4 lightColor = CalculateLights();
-	FragColor = ApplyPostProcesses(lightColor);
+	FragColor = lightColor;
+	//FragColor = ApplyPostProcesses(lightColor);
 }

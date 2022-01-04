@@ -20,9 +20,11 @@ uniform mat4 model;
 
 void main()
 {
-	vert_out.FragPos = vec3(model * vec4(aPos, 1.f));
-	vert_out.Normal = mat3(transpose(inverse(model))) * aNormal;
-	vert_out.TexCoord = aTexCoord;
+	vec4 worldPos = model * vec4(aPos, 1.0);
 	
-	gl_Position = projection * view * model * vec4(aPos, 1.f);
+	vert_out.FragPos = worldPos.xyz;
+	vert_out.TexCoord = aTexCoord;
+	vert_out.Normal = transpose(inverse(mat3(model))) * aNormal;
+
+	gl_Position = projection * view * worldPos;
 }

@@ -240,9 +240,9 @@ bool CreateInitWindow(GLFWwindow*& OutWindow)
 	// Features enable
 	{
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_STENCIL_TEST);
-		glEnable(GL_BLEND);
-		glEnable(GL_CULL_FACE);
+		glDisable(GL_STENCIL_TEST);
+		glDisable(GL_BLEND);
+		glDisable(GL_CULL_FACE);
 	}
 
 	// Features set
@@ -315,7 +315,7 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 		FRenderBufferPtr depthStencilTarget = FRenderBuffer::Create(
 				windowWidth,
 				windowHeight,
-				ERenderTargetAttachmentType::DepthAndStencil
+				ERenderTargetAttachmentType::DepthOnly
 		);
 		
 		if(!depthStencilTarget->IsInitialized())
@@ -605,16 +605,15 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 
 		// Setup
 		{
-			glEnable(GL_DEPTH_TEST);
-			glDisable(GL_STENCIL_TEST);
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		
 		// Draw skybox
 		{
-			Shaders[EShaderMainType::Skybox]->Enable();
+/*			Shaders[EShaderMainType::Skybox]->Enable();
 			GSkyboxObject->Draw(Shaders[EShaderMainType::Skybox]);
-			Shaders[EShaderMainType::Skybox]->Disable();
+			Shaders[EShaderMainType::Skybox]->Disable();*/
 		}
 	
 		// Draw scene
@@ -633,9 +632,7 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	{
 		// Setup
 		{
-			glDisable(GL_DEPTH_TEST);
-			glDisable(GL_STENCIL_TEST);
-			glClear(GL_COLOR_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 
 		// Draw quad
@@ -659,20 +656,20 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			
 			// Setup light
 			{
-				Shaders[EShaderMainType::Mesh]->SetFloat("material.shininess", 8.f);
+				Shaders[EShaderMainType::Screen]->SetFloat("material.shininess", 8.f);
 				
 				for(uint8 i = 0; i < 3; ++i)
 				{
 					const FString uniformName = "lights[" + std::to_string(i) + "]";
 				
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
-					Shaders[EShaderMainType::Mesh]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
+					Shaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
+					Shaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
+					Shaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
+					Shaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
 					
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
-					Shaders[EShaderMainType::Mesh]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
+					Shaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
+					Shaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
+					Shaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
 				}
 			}
 			
