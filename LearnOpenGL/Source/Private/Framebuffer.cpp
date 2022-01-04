@@ -18,7 +18,7 @@ FFramebuffer::~FFramebuffer()
 	glDeleteFramebuffers(1, &Id);
 }
 
-TArray<FRenderTargetPtr> FFramebuffer::GetAttachments(const ERenderTargetType Type) const
+TArray<FRenderTargetPtr> FFramebuffer::GetAttachments(const ERenderTargetAttachmentType Type) const
 {
 	auto foundTargets = Targets.find(Type);
 	if(foundTargets == Targets.end())
@@ -38,11 +38,11 @@ void FFramebuffer::Enable()
 	{
 		switch (pair.first)
 		{
-			case ERenderTargetType::Color:
+			case ERenderTargetAttachmentType::Color:
 			numOfColors += pair.second.size();
 			break;
-			case ERenderTargetType::DepthOnly:
-			case ERenderTargetType::DepthAndStencil:
+			case ERenderTargetAttachmentType::DepthOnly:
+			case ERenderTargetAttachmentType::DepthAndStencil:
 			numOfDepth += pair.second.size();
 			break;
 			default:
@@ -149,7 +149,7 @@ int16 FFramebuffer::Attach(const FRenderTargetPtr& Target)
 {	
 	if(!Target.IsValid()) return -1;
 	
-	const ERenderTargetType targetType = Target->GetType();
+	const ERenderTargetAttachmentType targetType = Target->GetAttachmentType();
 	auto foundTargets = Targets.find(targetType);
 	const uint8 useIndex = (foundTargets == Targets.end()) ? 0 : (uint8)foundTargets->second.size();
 	
@@ -182,7 +182,7 @@ void FFramebuffer::DetachAll()
 	bHasChanges = true;
 }
 
-void FFramebuffer::DetachAll(ERenderTargetType Type)
+void FFramebuffer::DetachAll(ERenderTargetAttachmentType Type)
 {
 	auto foundArr = Targets.find(Type);
 	if(foundArr == Targets.end()) return;
@@ -201,7 +201,7 @@ bool FFramebuffer::Detach(const FRenderTargetPtr& Target)
 {
 	ENSURE_VALID_RET(Target, false);
 	
-	auto foundTargetArr = Targets.find(Target->GetType());
+	auto foundTargetArr = Targets.find(Target->GetAttachmentType());
 	if(foundTargetArr == Targets.end()) return false;
 	
 	auto foundTarget = std::find(foundTargetArr->second.begin(), foundTargetArr->second.end(), Target);

@@ -2,9 +2,9 @@
 #include "RenderTexture.h"
 #include "Framebuffer.h"
 
-FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType, uint8 InFlags)
+FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetAttachmentType InType, uint8 InFlags)
 	: Id(0)
-	, Type(ERenderTargetType::Invalid)
+	, Type(ERenderTargetAttachmentType::Invalid)
 	, Width(0)
 	, Height(0)
 	, Samples(0)
@@ -13,7 +13,7 @@ FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight,
 	GLenum internalFormat, format, type;
 	switch (InType)
 	{
-		case ERenderTargetType::Color:
+		case ERenderTargetAttachmentType::Color:
 			
 			if(InFlags & ERenderTextureColorFlag::Float16)
 			{
@@ -34,11 +34,11 @@ FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight,
 			}
 			
 			break;
-		case ERenderTargetType::DepthOnly:
+		case ERenderTargetAttachmentType::DepthOnly:
 			internalFormat = format = GL_DEPTH_COMPONENT;
 			type = GL_UNSIGNED_INT;
 			break;
-		case ERenderTargetType::DepthAndStencil:
+		case ERenderTargetAttachmentType::DepthAndStencil:
 			internalFormat = GL_DEPTH_STENCIL;
 			format = GL_DEPTH24_STENCIL8;
 			type = GL_UNSIGNED_INT_24_8;
@@ -94,18 +94,18 @@ bool FRenderTexture::AttachFramebuffer(const uint8 UseIndex)
 		return false;
 	}
 	
-	if(UseIndex > 0 && Type != ERenderTargetType::Color) return false;
+	if(UseIndex > 0 && Type != ERenderTargetAttachmentType::Color) return false;
 
 	GLenum attachment;
 	switch (Type)
 	{
-		case ERenderTargetType::Color:
+		case ERenderTargetAttachmentType::Color:
 			attachment = GL_COLOR_ATTACHMENT0 + UseIndex;
 			break;
-		case ERenderTargetType::DepthOnly:
+		case ERenderTargetAttachmentType::DepthOnly:
 			attachment = GL_DEPTH_ATTACHMENT;
 			break;
-		case ERenderTargetType::DepthAndStencil:
+		case ERenderTargetAttachmentType::DepthAndStencil:
 			attachment = GL_DEPTH_STENCIL_ATTACHMENT;
 			break;
 		default:

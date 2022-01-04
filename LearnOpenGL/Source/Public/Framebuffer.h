@@ -5,7 +5,7 @@
 
 // Forward declaration
 class IRenderTarget;
-enum class ERenderTargetType : uint8;
+enum class ERenderTargetAttachmentType : uint8;
 
 struct FFramebufferCopyArgs
 {
@@ -46,8 +46,7 @@ public: // Getters
 	
 public: // Getters -> Attachment
 
-	FORCEINLINE FRenderTargetPtr GetFirstAttachment(const ERenderTargetType Type) const { return GetAttachments(Type)[0]; }
-	TArray<FRenderTargetPtr> GetAttachments(const ERenderTargetType Type) const;
+	TArray<FRenderTargetPtr> GetAttachments(const ERenderTargetAttachmentType Type) const;
 
 public: // Use methods
 
@@ -63,7 +62,7 @@ public: // Attach methods
 	int16 Attach(const FRenderTargetPtr& Target);
 	
 	void DetachAll();
-	void DetachAll(ERenderTargetType Type);
+	void DetachAll(ERenderTargetAttachmentType Type);
 	bool Detach(const FRenderTargetPtr& Target);
 
 private: // Fields
@@ -72,7 +71,7 @@ private: // Fields
 
 private: // Targets
 
-	TFastMap<ERenderTargetType, TArray<FRenderTargetPtr>> Targets;
+	TFastMap<ERenderTargetAttachmentType, TArray<FRenderTargetPtr>> Targets;
 
 private: // Primitive fields
 
