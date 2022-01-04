@@ -1,9 +1,9 @@
 
 #include "RenderBuffer.h"
 
-FRenderBuffer::FRenderBuffer(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType)
+FRenderBuffer::FRenderBuffer(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetAttachmentType InType)
 	: Id(0)
-	, Type(ERenderTargetType::Invalid)
+	, Type(ERenderTargetAttachmentType::Invalid)
 	, Width(0)
 	, Height(0)
 	, Samples(0)
@@ -12,10 +12,10 @@ FRenderBuffer::FRenderBuffer(uint8 InSamples, uint16 InWidth, uint16 InHeight, E
 	GLenum internalFormat;
 	switch (InType)
 	{
-		case ERenderTargetType::DepthOnly:
+		case ERenderTargetAttachmentType::DepthOnly:
 			internalFormat = GL_DEPTH_COMPONENT;
 			break;
-		case ERenderTargetType::DepthAndStencil:
+		case ERenderTargetAttachmentType::DepthAndStencil:
 			internalFormat = GL_DEPTH24_STENCIL8;
 			break;
 		default:
@@ -62,10 +62,10 @@ bool FRenderBuffer::AttachFramebuffer(const uint8 UseIndex)
 	GLenum internalFormat;
 	switch (Type)
 	{
-		case ERenderTargetType::DepthOnly:
+		case ERenderTargetAttachmentType::DepthOnly:
 			internalFormat = GL_DEPTH_ATTACHMENT;
 			break;
-		case ERenderTargetType::DepthAndStencil:
+		case ERenderTargetAttachmentType::DepthAndStencil:
 			internalFormat = GL_DEPTH_STENCIL_ATTACHMENT;
 			break;
 		default:

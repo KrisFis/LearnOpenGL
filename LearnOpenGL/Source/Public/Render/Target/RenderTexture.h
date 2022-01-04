@@ -29,7 +29,7 @@ class FRenderTexture : public IRenderTarget
 
 private: // Constructors
 
-	explicit FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetType InType, uint8 InFlags);
+	explicit FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetAttachmentType InType, uint8 InFlags);
 
 public: // Destructor
 	
@@ -37,7 +37,7 @@ public: // Destructor
 
 public: // Static creation
 
-	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetType Type, uint8 Flags = FRenderTextureFlag::None, uint8 Samples = 1)
+	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetAttachmentType Type, uint8 Flags = FRenderTextureFlag::None, uint8 Samples = 1)
 	{ return MakeShareable(new FRenderTexture(Samples, Width, Height, Type, Flags)); }
 
 public: // Getters
@@ -46,8 +46,10 @@ public: // Getters
 
 public: // IRenderTarget overrides
 
-	FORCEINLINE virtual bool IsInitialized() const override { return Type != ERenderTargetType::Invalid; }
-	FORCEINLINE virtual ERenderTargetType GetType() const override { return Type; }
+	FORCEINLINE virtual bool IsInitialized() const override { return Type != ERenderTargetAttachmentType::Invalid; }
+	
+	FORCEINLINE virtual ERenderTargetType GetType() const override { return ERenderTargetType::RenderTexture; }
+	FORCEINLINE virtual ERenderTargetAttachmentType GetAttachmentType() const override { return Type; }
 	FORCEINLINE virtual bool IsAttached() const override { return bIsAttached; }
 	
 	FORCEINLINE virtual uint8 GetSamples() const override { return Samples; }
@@ -60,7 +62,7 @@ protected: // IRenderTarget overrides
 private: // Fields
 	
 	FTextureId Id;
-	ERenderTargetType Type;
+	ERenderTargetAttachmentType Type;
 
 	uint16 Width;
 	uint16 Height;
