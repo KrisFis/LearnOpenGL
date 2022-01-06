@@ -27,6 +27,7 @@ uniform struct GBuffer
 {
 	sampler2D position;
 	sampler2D normal;
+	sampler2D height;
 	sampler2D albedoSpecular;
 } gBuffer;
 
@@ -48,6 +49,7 @@ struct GBufferTexData
 	vec3 fragPos;
 	vec3 normal;
 	vec3 albedo;
+	vec3 height;
 	float specular;
 };
 
@@ -115,13 +117,21 @@ vec4 CalculateLight(Light light, GBufferTexData texData)
 	return vec4(attenuation * (ambient + diffuse + specular), 1.f);
 }
 
+GBufferTexData ConstructGBufferData()
+{
+	GBufferTexData result;
+	result.fragPos = texture(gBuffer.position, frag_in.TexCoord).rgb;
+	result.normal = texture(gBuffer.normal, frag_in.TexCoord).rgb;
+	result.height = texture(gBuffer.height, frag_in.TexCoord).rgb;
+	result.albedo = texture(gBuffer.albedoSpecular, frag_in.TexCoord).rgb;
+	result.specular = texture(gBuffer.albedoSpecular, frag_in.TexCoord).a;
+	
+	return result;
+}
+
 vec4 CalculateLights()
 {
-	GBufferTexData data;
-	data.fragPos = texture(gBuffer.position, frag_in.TexCoord).rgb;
-	data.normal = texture(gBuffer.normal, frag_in.TexCoord).rgb;
-	data.albedo = texture(gBuffer.albedoSpecular, frag_in.TexCoord).rgb;
-	data.specular = texture(gBuffer.albedoSpecular, frag_in.TexCoord).a;
+	GBufferTexData data = ConstructGBufferData();
 
 	vec3 result = vec3(0.f);
 
@@ -136,6 +146,5 @@ vec4 CalculateLights()
 void main()
 {
 	vec4 lightColor = CalculateLights();
-	FragColor = lightColor;
-	//FragColor = ApplyPostProcesses(lightColor);
+	FragColor = ApplyPostProcesses(lightColor);
 }

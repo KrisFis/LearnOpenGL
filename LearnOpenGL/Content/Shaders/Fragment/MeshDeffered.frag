@@ -2,7 +2,8 @@
 
 layout (location = 0) out vec4 GPosition;
 layout (location = 1) out vec4 GNormal;
-layout (location = 2) out vec4 GAlbedoSpec;
+layout (location = 2) out vec4 GHeight;
+layout (location = 3) out vec4 GAlbedoSpec;
 
 in VERT_OUT {
 	vec3 FragPos;
@@ -15,10 +16,12 @@ uniform struct Material
 	int numOfDiffuses;
 	int numOfSpeculars;
 	int numOfNormals;
+	int numOfHeights;
 	
 	sampler2D diffuse0;
 	sampler2D specular0;
 	sampler2D normal0;
+	sampler2D height0;
 } material;
 
 vec4 GetPosition()
@@ -31,6 +34,13 @@ vec4 GetNormal()
 	return (material.numOfNormals > 0) ? 
 		vec4(normalize(frag_in.TBN * normalize(texture(material.normal0, frag_in.TexCoord).rgb * 2.f - vec3(1.f))), 1.f) : 
 		vec4(frag_in.TBN[2], 1.f); // result normal
+}
+
+vec4 GetHeight()
+{
+	return (material.numOfHeights > 0) ?
+		texture(material.height0, frag_in.TexCoord) :
+		vec4(0.f); // No height
 }
 
 vec4 GetAlbedo()
@@ -46,10 +56,12 @@ vec4 GetSpecular()
 		texture(material.specular0, frag_in.TexCoord) : 
 		vec4(0.f); // No specular
 }
+
 void main()
 {
 	GPosition = GetPosition();
 	GNormal = GetNormal();
+	GHeight = GetHeight();
 	
 	GAlbedoSpec.rgb = GetAlbedo().rgb;
 	GAlbedoSpec.a = GetSpecular().r;

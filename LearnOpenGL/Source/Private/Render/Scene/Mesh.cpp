@@ -139,6 +139,7 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	uint8 diffuseCounter = 0;
 	uint8 specularCounter = 0;
 	uint8 normalCounter = 0;
+	uint8 heightCounter = 0;
 	
 	for(uint8 i = 0; i < Textures.size(); ++i)
 	{
@@ -153,6 +154,9 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 				break;
 			case ETextureType::Normals:
 				nameOfTexture = "normal" + std::to_string(normalCounter++);
+				break;
+			case ETextureType::Height:
+				nameOfTexture = "height" + std::to_string(heightCounter++);
 				break;
 			default:
 				ENSURE_NO_ENTRY();
@@ -172,6 +176,7 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	Shader->SetInt32("material.numOfDiffuses", diffuseCounter);
 	Shader->SetInt32("material.numOfSpeculars", specularCounter);
 	Shader->SetInt32("material.numOfNormals", normalCounter);
+	Shader->SetInt32("material.numOfHeights", heightCounter);
 
 	NRenderUtils::NVertexArray::Bind(VAO);
 	

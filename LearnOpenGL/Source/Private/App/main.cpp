@@ -70,6 +70,7 @@ bool GUIResetLayout = true;
 // ~ TEST
 
 uint16 GNormalMappingObjIdx = 0;
+uint16 GParalaxMappingObjIdx = 0;
 
 struct FLightInfo
 {
@@ -302,6 +303,13 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 			ERenderTextureColorFlag::Float16 | ERenderTextureColorFlag::WithAlpha
 		);
 		
+		FRenderTexturePtr heightTarget = FRenderTexture::Create(
+				windowWidth,
+				windowHeight,
+				ERenderTargetAttachmentType::Color,
+				ERenderTextureColorFlag::WithAlpha
+		);
+		
 		FRenderTexturePtr albedoWithSpecTarget = FRenderTexture::Create(
 				windowWidth,
 				windowHeight,
@@ -314,13 +322,13 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 			return false;
 		}
 		
-		FRenderBufferPtr depthStencilTarget = FRenderBuffer::Create(
+		FRenderBufferPtr depthTarget = FRenderBuffer::Create(
 				windowWidth,
 				windowHeight,
 				ERenderTargetAttachmentType::DepthOnly
 		);
 		
-		if(!depthStencilTarget->IsInitialized())
+		if(!depthTarget->IsInitialized())
 		{
 			return false;
 		}
@@ -332,8 +340,9 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 		
 		fb.first->second->Attach(positionTarget->AsShared());
 		fb.first->second->Attach(normalTarget->AsShared());
+		fb.first->second->Attach(heightTarget->AsShared());
 		fb.first->second->Attach(albedoWithSpecTarget->AsShared());
-		fb.first->second->Attach(depthStencilTarget->AsShared());
+		fb.first->second->Attach(depthTarget->AsShared());
 	}
 	
 	// Quad
@@ -365,13 +374,20 @@ bool PrepareScene(FScenePtr& OutScene)
 	FTexturePtr brickWall = FTexture::Create(NFileUtils::ContentPath("Textures/brickWall.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr brickWallNormal = FTexture::Create(NFileUtils::ContentPath("Textures/brickWall_normal.jpg").c_str(), ETextureType::Normals);
 	
+	FTexturePtr bricks = FTexture::Create(NFileUtils::ContentPath("Textures/bricks.jpg").c_str(), ETextureType::Diffuse);
+	FTexturePtr bricksNormal = FTexture::Create(NFileUtils::ContentPath("Textures/bricks_normal.jpg").c_str(), ETextureType::Normals);
+	FTexturePtr bricksHeight = FTexture::Create(NFileUtils::ContentPath("Textures/bricks_height.jpg").c_str(), ETextureType::Height);
+	
 	if( !blankTexture->IsInitialized() ||
 		!rocksFloorTexture->IsInitialized() ||
 		!wallTexture->IsInitialized() ||
 		!container->IsInitialized() ||
 		!containerSpecular->IsInitialized() ||
 		!brickWall->IsInitialized() ||
-		!brickWallNormal->IsInitialized())
+		!brickWallNormal->IsInitialized() ||
+		!bricks->IsInitialized() ||
+		!bricksNormal->IsInitialized() ||
+		!bricksHeight->IsInitialized())
 	{
 		return false;
 	}
@@ -426,12 +442,24 @@ bool PrepareScene(FScenePtr& OutScene)
 	{
 		sceneObjects.push_back(NMeshUtils::ConstructCube({brickWall, brickWallNormal}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{15.f, 2.5f, 0.f},
+			{15.f, 2.5f, -2.f},
 			{90.f, 0.f, 0.f},
 			{1.f, 1.f, 1.f}
 		});
 		
 		GNormalMappingObjIdx = sceneObjects.size() - 1;
+	}
+
+	// PARALAX MAPPING TEST
+	{
+		sceneObjects.push_back(NMeshUtils::ConstructCube({bricks, bricksNormal, bricksHeight}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{15.f, 2.5f, 2.f},
+			{90.f, 0.f, 0.f},
+			{1.f, 1.f, 1.f}
+		});
+		
+		GParalaxMappingObjIdx = sceneObjects.size() - 1;
 	}
 	
 	// LIGHTS
@@ -675,13 +703,14 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				ETextureType::Diffuse
 			);
 			
-			ENSURE(gTextures.size() == 3);
+			ENSURE(gTextures.size() == 4);
 			
 			// Setup g-buffer
 			{
 				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.position", 0);
 				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.normal", 1);
-				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.albedoSpecular", 2);
+				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.height", 2);
+				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.albedoSpecular", 3);
 			}
 			
 			// Setup light
@@ -706,9 +735,11 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			gTextures[0]->Use(0);
 			gTextures[1]->Use(1);
 			gTextures[2]->Use(2);
+			gTextures[3]->Use(3);
 			
 			GScreenObject->Draw(Shaders[EShaderMainType::Screen]);
 			
+			gTextures[3]->Clear();
 			gTextures[2]->Clear();
 			gTextures[1]->Clear();
 			gTextures[0]->Clear();
@@ -921,17 +952,33 @@ void EngineTick()
 	
 	// Rotate over time
 	{
-		FSceneObjectPtr object = GScene->GetObjectByIdx(GNormalMappingObjIdx);
-		FTransform transCopy = object->GetTransform();
-		
 		const float degrees = GDeltaSeconds * 2.f; // ten degrees in second
 		
-		if(transCopy.Rotation.z + degrees >= 360.f)
-			transCopy.Rotation.z -= 360.f - degrees;
-		else
-			transCopy.Rotation.z += degrees;
+		// Normal mapping test
+		{
+			FSceneObjectPtr object = GScene->GetObjectByIdx(GNormalMappingObjIdx);
+			FTransform transCopy = object->GetTransform();
 			
-		object->SetTransform(transCopy);
+			if(transCopy.Rotation.z - degrees < 0.f)
+				transCopy.Rotation.z = transCopy.Rotation.z - degrees + 360.f;
+			else
+				transCopy.Rotation.z -= degrees;
+				
+			object->SetTransform(transCopy);
+		}
+
+		// Paralax mapping test
+		{
+			FSceneObjectPtr object = GScene->GetObjectByIdx(GParalaxMappingObjIdx);
+			FTransform transCopy = object->GetTransform();
+			
+			if(transCopy.Rotation.z + degrees > 360.f)
+				transCopy.Rotation.z = transCopy.Rotation.z + degrees - 360.f;
+			else
+				transCopy.Rotation.z += degrees;
+				
+			object->SetTransform(transCopy);
+		}
 	}
 }
 
