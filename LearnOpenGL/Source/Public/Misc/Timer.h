@@ -3,13 +3,11 @@
 
 #include "ModuleMinimal.h"
 
+#include <ctime>
+
 class FTimer
 {
-
-private:
-
-	typedef std::chrono::time_point<std::chrono::high_resolution_clock> TClock;
-
+	
 public:
 
 	FTimer();
@@ -32,6 +30,6 @@ public:
 
 private:
 
-	TClock StartTimepoint;
-	TClock EndTimepoint;
+	clock_t StartTimepoint;
+	clock_t EndTimepoint;
 };

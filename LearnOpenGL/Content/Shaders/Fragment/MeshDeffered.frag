@@ -29,17 +29,23 @@ vec4 GetPosition()
 
 vec4 GetNormal()
 {
-	return (material.numOfNormals > 0) ? vec4(normalize(frag_in.TBN * normalize(texture(material.normal0, frag_in.TexCoord).rgb * 2.f - vec3(1.f))), 1.f) : vec4(frag_in.Normal, 1.f); // result normal
+	return (material.numOfNormals > 0) ? 
+		vec4(normalize(frag_in.TBN * normalize(texture(material.normal0, frag_in.TexCoord).rgb * 2.f - vec3(1.f))), 1.f) : 
+		vec4(frag_in.Normal, 1.f); // result normal
 }
 
 vec4 GetAlbedo()
 {
-	return (material.numOfDiffuses > 0) ? texture(material.diffuse0, frag_in.TexCoord) : vec4(1.f, 0.f, 0.f, 1.f); // red as error
+	return (material.numOfDiffuses > 0) ? 
+		texture(material.diffuse0, frag_in.TexCoord) : 
+		vec4(1.f, 0.f, 0.f, 1.f); // red as error
 }
 
 vec4 GetSpecular()
 {
-	return (material.numOfSpeculars > 0) ? texture(material.specular0, frag_in.TexCoord) : vec4(0.f); // No specular
+	return (material.numOfSpeculars > 0) ? 
+		texture(material.specular0, frag_in.TexCoord) : 
+		vec4(0.f); // No specular
 }
 void main()
 {

@@ -69,6 +69,8 @@ bool GUIResetLayout = true;
 
 // ~ TEST
 
+uint16 GNormalMappingObjIdx = 0;
+
 struct FLightInfo
 {
 	uint16 BlockId;
@@ -416,10 +418,12 @@ bool PrepareScene(FScenePtr& OutScene)
 	{
 		sceneObjects.push_back(NMeshUtils::ConstructCube({brickWall, brickWallNormal}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
-			{15.f, 1.f, 0.f},
+			{15.f, 2.5f, 0.f},
 			{90.f, 0.f, 0.f},
-			{1.f, 2.f, 2.f}
+			{1.f, 1.f, 1.f}
 		});
+		
+		GNormalMappingObjIdx = sceneObjects.size() - 1;
 	}
 	
 	// LIGHTS
@@ -906,6 +910,21 @@ void EngineTick()
 		//const glm::vec3& currentPos = GCamera->GetPosition(); 
 		//std::cout << "Current position: [" << currentPos.x << ',' << currentPos.y << ',' << currentPos.z << ']' << std::endl;
 	}
+	
+	// Rotate over time
+	{
+		FSceneObjectPtr object = GScene->GetObjectByIdx(GNormalMappingObjIdx);
+		FTransform transCopy = object->GetTransform();
+		
+		const float degrees = GDeltaSeconds * 2.f; // ten degrees in second
+		
+		if(transCopy.Rotation.z + degrees >= 360.f)
+			transCopy.Rotation.z -= 360.f - degrees;
+		else
+			transCopy.Rotation.z += degrees;
+			
+		object->SetTransform(transCopy);
+	}
 }
 
 int32 GuardedMain()
@@ -962,9 +981,6 @@ int32 GuardedMain()
 	FTimer frameTimer;
 	while (!glfwWindowShouldClose(GWindow))
 	{
-		GDeltaSeconds = GLastSeconds;
-		GLastSeconds = (float)frameTimer.GetSeconds();
-
 		frameTimer.Reset();
 		frameTimer.Start();
 
@@ -985,6 +1001,9 @@ int32 GuardedMain()
 		glfwPollEvents();
 
 		frameTimer.Stop();
+		
+		GDeltaSeconds = GLastSeconds;
+		GLastSeconds = (float)frameTimer.GetSeconds();
 	}
 
 	ImGui_ImplOpenGL3_Shutdown();

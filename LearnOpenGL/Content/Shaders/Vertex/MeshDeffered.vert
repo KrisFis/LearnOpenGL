@@ -37,7 +37,7 @@ void main()
 	vec3 B = cross(T, N);
 	
 	vert_out.Normal = normalize(normalMatrix * aNormal);
-	vert_out.TBN = mat3(T, B, N);
+	vert_out.TBN = transpose(mat3(T, B, N));
 	
 	gl_Position = projection * view * worldPos;
 }
