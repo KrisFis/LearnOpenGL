@@ -3,20 +3,15 @@
 
 namespace NTimerPrivate
 {
-	FORCEINLINE double ToMilliseconds(const clock_t& Timepoint)
+	FORCEINLINE double ToSeconds(const clock_t& Timepoint)
 	{
 		// units/(units/time) => time (seconds) * 1000 = milliseconds
-		return (Timepoint / (double) CLOCKS_PER_SEC) * 10e3;
+		return (Timepoint / (double) CLOCKS_PER_SEC);
 	}
 
 	FORCEINLINE bool IsTimepointValid(const clock_t& Timepoint)
 	{
-		return ToMilliseconds(Timepoint) > 0;
-	}
-	
-	FORCEINLINE double ElapsedTimeInMiliseconds(const clock_t& Start, const clock_t& End)
-	{
-		return ToMilliseconds(End) - ToMilliseconds(Start);
+		return ToSeconds(Timepoint) > 0.f;
 	}
 }
 
@@ -36,24 +31,24 @@ bool FTimer::IsFinished() const
 
 double FTimer::GetMilliseconds() const
 {
-	return NTimerPrivate::ElapsedTimeInMiliseconds(StartTimepoint, EndTimepoint);
+	return NTimerPrivate::ToSeconds(EndTimepoint - StartTimepoint) * 10e3;
 }
 
 double FTimer::GetSeconds() const
 {
-	return NTimerPrivate::ElapsedTimeInMiliseconds(StartTimepoint, EndTimepoint) * 10e-3;
+	return NTimerPrivate::ToSeconds(EndTimepoint - StartTimepoint);
 }
 
 void FTimer::Start()
 {
 	ENSURE(!NTimerPrivate::IsTimepointValid(StartTimepoint));
-	StartTimepoint = clock();
+	StartTimepoint = std::clock();
 }
 
 void FTimer::Stop()
 {
 	ENSURE(!NTimerPrivate::IsTimepointValid(EndTimepoint));
-	EndTimepoint = clock();
+	EndTimepoint = std::clock();
 }
 
 void FTimer::Reset()
