@@ -50,8 +50,8 @@ FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndi
 	glEnableVertexAttribArray(3);
 	
 	NRenderUtils::NVertexArray::Unbind();
-	
-	RecalculateModel();
+
+	RefreshCaches();
 	
 	bIsInitialized = true;
 }
@@ -109,6 +109,9 @@ void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
 			)
 		);
 		
+		// No lightning required
+		Shader->SetMat3("normalMatrix", glm::mat3(1.f));
+		
 		NRenderUtils::NVertexArray::Bind(VAO);
 		
 		glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
@@ -123,11 +126,12 @@ void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
 	}
 }
 
-void FMesh::RecalculateModel()
+void FMesh::RefreshCaches()
 {
 	if(bIsOwned) return;
 	
 	CachedModel = Transform.CalculateModelMatrix();
+	CachedNormalMatrix = glm::mat3(glm::transpose(glm::inverse(CachedModel)));
 }
 
 void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
@@ -160,7 +164,10 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	}
 	
 	if(!IsOwned())
+	{
 		Shader->SetMat4("model", CachedModel);
+		Shader->SetMat3("normalMatrix", CachedNormalMatrix);
+	}
 
 	Shader->SetInt32("material.numOfDiffuses", diffuseCounter);
 	Shader->SetInt32("material.numOfSpeculars", specularCounter);

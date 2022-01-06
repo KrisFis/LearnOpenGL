@@ -44,7 +44,8 @@ public: // Getters
 public: // Setters
 	
 	void SetTextures(const TArray<TSharedPtr<FTexture>>& InTextures);
-	FORCEINLINE void SetIsOwned(bool Value) { bIsOwned = Value; RecalculateModel(); }
+	FORCEINLINE void SetIsOwned(bool Value) { bIsOwned = Value;
+		RefreshCaches(); }
 
 public: // ISceneObject overrides
 
@@ -56,13 +57,14 @@ public: // ISceneObject overrides
 	FORCEINLINE virtual void SetOutlineSize(float Value) override { OutlineSize = Value; }
 	
 	FORCEINLINE virtual FTransform GetTransform() const override { return Transform; }
-	FORCEINLINE virtual void SetTransform(const FTransform& Value) override { Transform = Value; RecalculateModel(); }
+	FORCEINLINE virtual void SetTransform(const FTransform& Value) override { Transform = Value;
+		RefreshCaches(); }
 	
 	virtual void Draw(const TSharedPtr<FShaderProgram>& Shader) override;
 
 private: // Helper methods
 
-	void RecalculateModel();
+	void RefreshCaches();
 	void DrawImpl(const TSharedPtr<FShaderProgram>& Shader);
 
 private: // Owner
@@ -86,6 +88,7 @@ private: // Fields
 private: // Cache
 
 	glm::mat4 CachedModel;
+	glm::mat3 CachedNormalMatrix;
 
 private: // Primitive Fields
 	

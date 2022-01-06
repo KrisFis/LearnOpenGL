@@ -18,6 +18,7 @@ layout (std140) uniform UMatrices
 };
 
 uniform mat4 model;
+uniform mat3 normalMatrix;
 
 void main()
 {
@@ -26,7 +27,6 @@ void main()
 	vert_out.FragPos = worldPos.xyz;
 	vert_out.TexCoord = aTexCoord;
 	
-	mat3 normalMatrix = mat3(model);
 	vec3 N = normalize(normalMatrix * aNormal);
 	vec3 T = normalize(normalMatrix * aTangent);
 	

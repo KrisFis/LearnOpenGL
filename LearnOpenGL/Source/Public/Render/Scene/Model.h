@@ -42,7 +42,8 @@ public: // ISceneObject overrides
 	FORCEINLINE virtual void SetOutlineSize(float Value) override { OutlineSize = Value; }
 	
 	FORCEINLINE virtual FTransform GetTransform() const override { return Transform; }
-	FORCEINLINE virtual void SetTransform(const FTransform& Value) override { Transform = Value; RecalculateModel(); }
+	FORCEINLINE virtual void SetTransform(const FTransform& Value) override { Transform = Value;
+		RefreshCaches(); }
 	
 	virtual void Draw(const TSharedPtr<FShaderProgram>& Shader) override;
 
@@ -51,7 +52,7 @@ private: // Helper methods
 	void ProcessNode(aiNode* Node, const aiScene* Scene);
 	TSharedPtr<FMesh> ProcessMesh(aiMesh* Mesh, const aiScene* Scene);
 	TArray<TSharedPtr<FTexture>> LoadMaterialTextures(aiMaterial* Material, aiTextureType Type);
-	void RecalculateModel();
+	void RefreshCaches();
 
 private: // Fields
 
@@ -67,6 +68,7 @@ private: // Cache
 
 	TArray<TSharedPtr<FTexture>> LoadedTextures;
 	glm::mat4 CachedModel;
+	glm::mat3 CachedNormalMatrix;
 
 private: // Primitive fields
 	
