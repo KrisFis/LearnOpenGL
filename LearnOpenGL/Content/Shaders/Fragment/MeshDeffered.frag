@@ -14,6 +14,7 @@ uniform struct Material
 {
 	sampler2D diffuse0;
 	sampler2D specular0;
+	sampler2D normal0;
 } material;
 
 void main()

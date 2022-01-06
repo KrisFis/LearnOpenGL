@@ -358,10 +358,18 @@ bool PrepareScene(FScenePtr& OutScene)
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
+	
+	FTexturePtr brickWall = FTexture::Create(NFileUtils::ContentPath("Textures/brickWall.jpg").c_str(), ETextureType::Diffuse);
+	FTexturePtr brickWallNormal = FTexture::Create(NFileUtils::ContentPath("Textures/brickWall.jpg").c_str(), ETextureType::Normals);
 	if(!blankTexture->IsInitialized() || !rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized())
 	{
 		return false;
 	}
+	
+	// HELPER for scene
+	// X -> forward
+	// Y -> up
+	// Z -> right
 	
 	TArray<FSceneObjectPtr> sceneObjects;
 	sceneObjects.push_back(NMeshUtils::ConstructPlane({rocksFloorTexture}));
@@ -403,6 +411,16 @@ bool PrepareScene(FScenePtr& OutScene)
 		{0.f, -45.f, 0.f},
 		{1.f, 1.f, 1.f}
 	});
+
+	// NORMAL MAPPING TEST
+	{
+		sceneObjects.push_back(NMeshUtils::ConstructCube({brickWall, brickWallNormal}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{15.f, 1.f, 0.f},
+			{90.f, 0.f, 0.f},
+			{1.f, 2.f, 2.f}
+		});
+	}
 	
 	// LIGHTS
 	{
