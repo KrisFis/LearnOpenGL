@@ -431,7 +431,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{1.f, 1.f, 1.f}
 		});
 		
-		GNormalMappingObjIdx = sceneObjects.size() - 1;
+		GNormalMappingObjIdx = (uint16)sceneObjects.size() - 1;
 	}
 	
 	// LIGHTS
