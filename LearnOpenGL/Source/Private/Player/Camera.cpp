@@ -7,7 +7,7 @@ FCamera::FCamera()
 	, CameraCache()
 	, FieldOfView(45.f)
 	, LookSensitivity(0.1f)
-	, MoveSensitivity(0.5f)
+	, MoveSensitivity(5.f)
 	, bShouldProcessInput(true)
 {
 	UpdateCache();
@@ -19,7 +19,7 @@ FCamera::FCamera(const glm::vec3 &InPosition, const glm::vec3 &InRotation)
 	, CameraCache()
 	, FieldOfView(45.f)
 	, LookSensitivity(0.1f)
-	, MoveSensitivity(0.5f)
+	, MoveSensitivity(5.f)
 	, bShouldProcessInput(true)
 {
 	UpdateCache();
@@ -51,6 +51,12 @@ void FCamera::ProcessMoveInput(const ECameraMoveDirection Direction, float Delta
 	const float velocity = MoveSensitivity * DeltaSeconds;
 	switch (Direction)
 	{
+		case ECameraMoveDirection::Up: // 15% slower
+			Position += glm::vec3(0.f, 1.f, 0.f) * velocity * 0.85f;
+			break;
+		case ECameraMoveDirection::Down: // 15% slower
+			Position -= glm::vec3(0.f, 1.f, 0.f) * velocity * 0.85f;
+			break;
 		case ECameraMoveDirection::Forward:
 			Position += CameraCache[0] * velocity;
 			break;

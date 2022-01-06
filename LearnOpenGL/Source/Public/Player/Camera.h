@@ -5,6 +5,8 @@
 
 enum class ECameraMoveDirection
 {
+	Up,
+	Down,
 	Forward,
 	Backward,
 	Left,
