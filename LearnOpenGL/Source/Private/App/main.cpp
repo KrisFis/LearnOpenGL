@@ -360,10 +360,18 @@ bool PrepareScene(FScenePtr& OutScene)
 	FTexturePtr rocksFloorTexture = FTexture::Create(NFileUtils::ContentPath("Textures/ground.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr wallTexture = FTexture::Create(NFileUtils::ContentPath("Textures/Default/wall128x128.png").c_str(), ETextureType::Diffuse);
 	FTexturePtr container = FTexture::Create(NFileUtils::ContentPath("Textures/container2.png").c_str(), ETextureType::Diffuse);
+	FTexturePtr containerSpecular = FTexture::Create(NFileUtils::ContentPath("Textures/container2_specular.png").c_str(), ETextureType::Specular);
 	
 	FTexturePtr brickWall = FTexture::Create(NFileUtils::ContentPath("Textures/brickWall.jpg").c_str(), ETextureType::Diffuse);
 	FTexturePtr brickWallNormal = FTexture::Create(NFileUtils::ContentPath("Textures/brickWall_normal.jpg").c_str(), ETextureType::Normals);
-	if(!blankTexture->IsInitialized() || !rocksFloorTexture->IsInitialized() || !wallTexture->IsInitialized() || !container->IsInitialized())
+	
+	if( !blankTexture->IsInitialized() ||
+		!rocksFloorTexture->IsInitialized() ||
+		!wallTexture->IsInitialized() ||
+		!container->IsInitialized() ||
+		!containerSpecular->IsInitialized() ||
+		!brickWall->IsInitialized() ||
+		!brickWallNormal->IsInitialized())
 	{
 		return false;
 	}
@@ -389,7 +397,7 @@ bool PrepareScene(FScenePtr& OutScene)
 	});
 	
 	// CENTER
-	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
+	sceneObjects.push_back(NMeshUtils::ConstructCube({container, containerSpecular}));
 	//sceneObjects[sceneObjects.size() - 1]->SetOutlineSize(0.025f);
 	//sceneObjects[sceneObjects.size() - 1]->SetOutlineColor(NColors::Navy);
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -399,7 +407,7 @@ bool PrepareScene(FScenePtr& OutScene)
 	});
 
 	// LEFT
-	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
+	sceneObjects.push_back(NMeshUtils::ConstructCube({container, containerSpecular}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{-2.f, 2.f, -2.f},
 		{-45.f, 0.f, 0.f},
@@ -407,7 +415,7 @@ bool PrepareScene(FScenePtr& OutScene)
 	});
 
 	// RIGHT
-	sceneObjects.push_back(NMeshUtils::ConstructCube({container}));
+	sceneObjects.push_back(NMeshUtils::ConstructCube({container, containerSpecular}));
 	sceneObjects[sceneObjects.size() - 1]->SetTransform({
 		{-2.f, 1.f, 2.f},
 		{0.f, -45.f, 0.f},

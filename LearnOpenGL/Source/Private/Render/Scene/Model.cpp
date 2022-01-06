@@ -26,8 +26,8 @@ FModel::FModel(const char* FilePath)
 	ProcessNode(scene->mRootNode, scene);
 	
 	std::cout << "Model load successful [" << FilePath << "]" << std::endl;
-	
-	RecalculateModel();
+
+	RefreshCaches();
 	bIsInitialized = true;
 }
 
@@ -51,6 +51,7 @@ void FModel::Draw(const TSharedPtr<FShaderProgram>& Shader)
 	}
 
 	Shader->SetMat4("model", CachedModel);
+	Shader->SetMat3("normalMatrix", CachedNormalMatrix);
 
 	for(auto& mesh : Meshes)
 	{
@@ -192,7 +193,8 @@ TArray<TSharedPtr<FTexture>> FModel::LoadMaterialTextures(aiMaterial* Material, 
 	return result;
 }
 
-void FModel::RecalculateModel()
+void FModel::RefreshCaches()
 {
 	CachedModel = Transform.CalculateModelMatrix();
+	CachedNormalMatrix = glm::mat3(glm::transpose(glm::inverse(CachedModel)));
 }
