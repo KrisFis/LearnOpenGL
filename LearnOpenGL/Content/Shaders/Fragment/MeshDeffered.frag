@@ -6,7 +6,6 @@ layout (location = 2) out vec4 GAlbedoSpec;
 
 in VERT_OUT {
 	vec3 FragPos;
-	vec3 Normal;
 	mat3 TBN;
 	vec2 TexCoord;
 } frag_in;
@@ -31,7 +30,7 @@ vec4 GetNormal()
 {
 	return (material.numOfNormals > 0) ? 
 		vec4(normalize(frag_in.TBN * normalize(texture(material.normal0, frag_in.TexCoord).rgb * 2.f - vec3(1.f))), 1.f) : 
-		vec4(frag_in.Normal, 1.f); // result normal
+		vec4(frag_in.TBN[2], 1.f); // result normal
 }
 
 vec4 GetAlbedo()
