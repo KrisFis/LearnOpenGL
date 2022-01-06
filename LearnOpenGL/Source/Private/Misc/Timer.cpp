@@ -3,15 +3,25 @@
 
 namespace NTimerPrivate
 {
-	bool IsTimepointValid(const std::chrono::time_point<std::chrono::high_resolution_clock> Timepoint)
+	FORCEINLINE double ToMilliseconds(const clock_t& Timepoint)
 	{
-		return Timepoint.time_since_epoch().count() > 0;
+		// units/(units/time) => time (seconds) * 1000 = milliseconds
+		return (Timepoint / (double) CLOCKS_PER_SEC) * 10e3;
+	}
+
+	FORCEINLINE bool IsTimepointValid(const clock_t& Timepoint)
+	{
+		return ToMilliseconds(Timepoint) > 0;
+	}
+	
+	FORCEINLINE double ElapsedTimeInMiliseconds(const clock_t& Start, const clock_t& End)
+	{
+		return ToMilliseconds(End) - ToMilliseconds(Start);
 	}
 }
 
 FTimer::FTimer()
-	: StartTimepoint()
-	, EndTimepoint()
+		: StartTimepoint(), EndTimepoint()
 {}
 
 bool FTimer::IsStarted() const
@@ -26,34 +36,28 @@ bool FTimer::IsFinished() const
 
 double FTimer::GetMilliseconds() const
 {
-	auto start = std::chrono::time_point_cast<std::chrono::microseconds>(StartTimepoint).time_since_epoch().count();
-	auto end = std::chrono::time_point_cast<std::chrono::microseconds>(EndTimepoint).time_since_epoch().count();
-
-	return (end - start) * 10e-3;
+	return NTimerPrivate::ElapsedTimeInMiliseconds(StartTimepoint, EndTimepoint);
 }
 
 double FTimer::GetSeconds() const
 {
-	auto start = std::chrono::time_point_cast<std::chrono::microseconds>(StartTimepoint).time_since_epoch().count();
-	auto end = std::chrono::time_point_cast<std::chrono::microseconds>(EndTimepoint).time_since_epoch().count();
-
-	return (end - start) * 10e-6;
+	return NTimerPrivate::ElapsedTimeInMiliseconds(StartTimepoint, EndTimepoint) * 10e-3;
 }
 
 void FTimer::Start()
 {
 	ENSURE(!NTimerPrivate::IsTimepointValid(StartTimepoint));
-	StartTimepoint = std::chrono::high_resolution_clock::now();
+	StartTimepoint = clock();
 }
 
 void FTimer::Stop()
 {
 	ENSURE(!NTimerPrivate::IsTimepointValid(EndTimepoint));
-	EndTimepoint = std::chrono::high_resolution_clock::now();
+	EndTimepoint = clock();
 }
 
 void FTimer::Reset()
 {
-	StartTimepoint = std::chrono::time_point<std::chrono::high_resolution_clock>();
-	EndTimepoint = std::chrono::time_point<std::chrono::high_resolution_clock>();
+	StartTimepoint = clock_t();
+	EndTimepoint = clock_t();
 }

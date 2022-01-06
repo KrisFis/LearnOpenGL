@@ -12,7 +12,6 @@
 // STL
 #include <iostream>
 #include <memory>
-#include <chrono>
 
 // GLAD + GLFW
 #include <glad/glad.h>

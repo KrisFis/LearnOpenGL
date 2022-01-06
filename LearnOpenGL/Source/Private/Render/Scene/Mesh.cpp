@@ -46,6 +46,8 @@ FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndi
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)offsetof(FMeshVertex, TexCoord));
 	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)offsetof(FMeshVertex, Tangent));
+	glEnableVertexAttribArray(3);
 	
 	NRenderUtils::NVertexArray::Unbind();
 	
@@ -132,6 +134,8 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 {
 	uint8 diffuseCounter = 0;
 	uint8 specularCounter = 0;
+	uint8 normalCounter = 0;
+	
 	for(uint8 i = 0; i < Textures.size(); ++i)
 	{
 		FString nameOfTexture;
@@ -143,7 +147,11 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 			case ETextureType::Specular:
 				nameOfTexture = "specular" + std::to_string(specularCounter++);
 				break;
+			case ETextureType::Normals:
+				nameOfTexture = "normal" + std::to_string(normalCounter++);
+				break;
 			default:
+				ENSURE_NO_ENTRY();
 				continue;
 		}
 		
@@ -154,9 +162,18 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	if(!IsOwned())
 		Shader->SetMat4("model", CachedModel);
 
+	Shader->SetInt32("material.numOfDiffuses", diffuseCounter);
+	Shader->SetInt32("material.numOfSpeculars", specularCounter);
+	Shader->SetInt32("material.numOfNormals", normalCounter);
+
 	NRenderUtils::NVertexArray::Bind(VAO);
 	
 	glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
 	
 	NRenderUtils::NVertexArray::Unbind();
+	
+	for(uint8 i = 0; i < Textures.size(); ++i)
+	{
+		Textures[i]->Clear();
+	}
 }
