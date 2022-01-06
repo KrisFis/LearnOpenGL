@@ -12,7 +12,7 @@ FModel::FModel(const char* FilePath)
 	, bIsInitialized(false)
 {
 	Assimp::Importer importer;
-	const aiScene *scene = importer.ReadFile(FilePath, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene *scene = importer.ReadFile(FilePath, aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
 	
 	if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
@@ -112,10 +112,12 @@ TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 	{
 		const aiVector3D& currVertex = Mesh->mVertices[i];
 		const aiVector3D& currNormal = Mesh->mNormals[i];
+		const aiVector3D& currTangent = Mesh->mTangents[i];
 		
 		FMeshVertex vertex;
 		vertex.Position = { currVertex.x, currVertex.y, currVertex.z };
 		vertex.Normal = { currNormal.x, currNormal.y, currNormal.z };
+		vertex.Tangent = { currTangent.x, currTangent.y, currTangent.z };
 		
 		// We want only first texture
 		if(Mesh->mTextureCoords[0])

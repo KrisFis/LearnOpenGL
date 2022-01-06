@@ -46,6 +46,8 @@ FMesh::FMesh(const TArray<FMeshVertex>& InVertices, const TArray<uint32>& InIndi
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)offsetof(FMeshVertex, TexCoord));
 	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(FMeshVertex), (void*)offsetof(FMeshVertex, Tangent));
+	glEnableVertexAttribArray(3);
 	
 	NRenderUtils::NVertexArray::Unbind();
 	
@@ -159,6 +161,10 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	
 	if(!IsOwned())
 		Shader->SetMat4("model", CachedModel);
+
+	Shader->SetInt32("material.numOfDiffuses", diffuseCounter);
+	Shader->SetInt32("material.numOfSpeculars", specularCounter);
+	Shader->SetInt32("material.numOfNormals", normalCounter);
 
 	NRenderUtils::NVertexArray::Bind(VAO);
 	
