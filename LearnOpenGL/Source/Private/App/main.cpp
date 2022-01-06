@@ -62,6 +62,8 @@ float GExposure = 0.15f;
 bool GWireframeMode = false;
 int32 GBloomIterations = 5;
 
+uint16 GUIPreviousFPS = 0;
+float GUIRefreshFPSEverySec = 0.5f;
 bool GUIDemoVisible = false;
 bool GUIDetailsInViewport = true;
 bool GUIDebugVisible = false;
@@ -447,7 +449,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{1.f, 1.f, 1.f}
 		});
 		
-		GNormalMappingObjIdx = sceneObjects.size() - 1;
+		GNormalMappingObjIdx = (uint16)sceneObjects.size() - 1;
 	}
 
 	// PARALAX MAPPING TEST
@@ -615,6 +617,10 @@ void ProcessInput()
 		if(shiftWasJustReleased)
 			GCamera->SetMoveSensitivity(GCamera->GetMoveSensitivity()*0.5f);
 
+		if (glfwGetKey(GWindow, GLFW_KEY_SPACE) == GLFW_PRESS)
+			GCamera->ProcessMoveInput(ECameraMoveDirection::Up, GDeltaSeconds);
+		if (glfwGetKey(GWindow, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+			GCamera->ProcessMoveInput(ECameraMoveDirection::Down, GDeltaSeconds);
 		if (glfwGetKey(GWindow, GLFW_KEY_W) == GLFW_PRESS)
 			GCamera->ProcessMoveInput(ECameraMoveDirection::Forward, GDeltaSeconds);
 		if (glfwGetKey(GWindow, GLFW_KEY_S) == GLFW_PRESS)
@@ -769,6 +775,7 @@ void ProcessUIRender()
 			{
 				ImGui::Checkbox("Details in viewport", &GUIDetailsInViewport);
 				ImGui::Checkbox("Debug visible", &GUIDebugVisible);
+				ImGui::InputFloat("FPS counter refresh", &GUIRefreshFPSEverySec);
 				ImGui::EndMenu();
 			}
 
@@ -796,7 +803,15 @@ void ProcessUIRender()
 	{
 		if(!GViewportCapturesInput || GUIDetailsInViewport)
 		{
-			const float currentFramerate = 60.f / GDeltaSeconds;
+			static float currentWaitTime = 0;
+			currentWaitTime += GDeltaSeconds;
+			
+			// Refresh each second 
+			if(currentWaitTime >= GUIRefreshFPSEverySec)
+			{
+				currentWaitTime = 0.f;
+				GUIPreviousFPS = (uint16)(60.f / GDeltaSeconds);
+			}
 
 			static ImVec2 defaultPos(FApplication::Get().GetWindowWidth() - 255.f, 20.f);
 			static ImVec2 defaultSize(255.f, 105.f);
@@ -808,7 +823,7 @@ void ProcessUIRender()
 			}
 
 			ImGui::Begin("Details");
-			ImGui::Text("FPS: %.1f (%.3f ms)", currentFramerate, 1000.0f / currentFramerate);
+			ImGui::Text("FPS: %d (%.3f ms)", GUIPreviousFPS, 1000.0f / GUIPreviousFPS);
 			if(ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::Indent();
@@ -952,7 +967,7 @@ void EngineTick()
 	
 	// Rotate over time
 	{
-		const float degrees = GDeltaSeconds * 2.f; // ten degrees in second
+		const float degrees = GDeltaSeconds * 10.f; // ten degrees in second
 		
 		// Normal mapping test
 		{
