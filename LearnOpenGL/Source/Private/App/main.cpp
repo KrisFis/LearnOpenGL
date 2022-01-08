@@ -372,6 +372,10 @@ bool PrepareScene(FScenePtr& OutScene)
 	FTexturePtr bricksNormal = FTexture::Create(NFileUtils::ContentPath("Textures/bricks_normal.jpg").c_str(), ETextureType::Normals, true, true);
 	FTexturePtr bricksHeight = FTexture::Create(NFileUtils::ContentPath("Textures/bricks_height.jpg").c_str(), ETextureType::Height, true, true);
 	
+	FTexturePtr toy = FTexture::Create(NFileUtils::ContentPath("Textures/wood.png").c_str(), ETextureType::Diffuse);
+	FTexturePtr toyNormal = FTexture::Create(NFileUtils::ContentPath("Textures/toy_box_normal.png").c_str(), ETextureType::Normals, true, true);
+	FTexturePtr toyHeight = FTexture::Create(NFileUtils::ContentPath("Textures/toy_box_height.png").c_str(), ETextureType::Height, true, true);	
+	
 	if( !blankTexture->IsInitialized() ||
 		!rocksFloorTexture->IsInitialized() ||
 		!wallTexture->IsInitialized() ||
@@ -381,7 +385,10 @@ bool PrepareScene(FScenePtr& OutScene)
 		!brickWallNormal->IsInitialized() ||
 		!bricks->IsInitialized() ||
 		!bricksNormal->IsInitialized() ||
-		!bricksHeight->IsInitialized())
+		!bricksHeight->IsInitialized() ||
+		!toy->IsInitialized() ||
+		!toyNormal->IsInitialized() ||
+		!toyHeight->IsInitialized())
 	{
 		return false;
 	}
@@ -454,6 +461,13 @@ bool PrepareScene(FScenePtr& OutScene)
 		});
 		
 		GParalaxMappingObjIdx = (uint8)sceneObjects.size() - 1;
+		
+		sceneObjects.push_back(NMeshUtils::ConstructPlane({toy, toyNormal, toyHeight}));
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{17.f, 0.f, 0.f},
+			{0.f, 0.f, 90.f},
+			{1.f, 1.f, 1.f}
+		});
 	}
 	
 	// LIGHTS
