@@ -110,7 +110,7 @@ void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
 		);
 		
 		// No lightning required
-		Shader->SetMat3("normalMatrix", glm::mat3(1.f));
+		Shader->SetMat4("inverseModel", glm::mat3(1.f));
 		
 		NRenderUtils::NVertexArray::Bind(VAO);
 		
@@ -131,7 +131,7 @@ void FMesh::RefreshCaches()
 	if(bIsOwned) return;
 	
 	CachedModel = Transform.CalculateModelMatrix();
-	CachedNormalMatrix = glm::mat3(glm::transpose(glm::inverse(CachedModel)));
+	CachedNormalMatrix = glm::transpose(glm::inverse(CachedModel));
 }
 
 void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
@@ -170,7 +170,7 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	if(!IsOwned())
 	{
 		Shader->SetMat4("model", CachedModel);
-		Shader->SetMat3("normalMatrix", CachedNormalMatrix);
+		Shader->SetMat4("inverseModel", CachedNormalMatrix);
 	}
 
 	Shader->SetInt32("material.numOfDiffuses", diffuseCounter);
