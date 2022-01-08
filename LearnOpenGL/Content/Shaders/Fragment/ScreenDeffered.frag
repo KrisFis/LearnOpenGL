@@ -27,7 +27,6 @@ uniform struct GBuffer
 {
 	sampler2D position;
 	sampler2D normal;
-	sampler2D height;
 	sampler2D albedoSpecular;
 } gBuffer;
 
@@ -49,7 +48,6 @@ struct GBufferTexData
 	vec3 fragPos;
 	vec3 normal;
 	vec3 albedo;
-	vec3 height;
 	float specular;
 };
 
@@ -122,7 +120,6 @@ GBufferTexData ConstructGBufferData()
 	GBufferTexData result;
 	result.fragPos = texture(gBuffer.position, frag_in.TexCoord).rgb;
 	result.normal = texture(gBuffer.normal, frag_in.TexCoord).rgb;
-	result.height = texture(gBuffer.height, frag_in.TexCoord).rgb;
 	result.albedo = texture(gBuffer.albedoSpecular, frag_in.TexCoord).rgb;
 	result.specular = texture(gBuffer.albedoSpecular, frag_in.TexCoord).a;
 	

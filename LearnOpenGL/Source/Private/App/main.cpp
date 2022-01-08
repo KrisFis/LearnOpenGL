@@ -305,13 +305,6 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 			ERenderTextureColorFlag::Float16 | ERenderTextureColorFlag::WithAlpha
 		);
 		
-		FRenderTexturePtr heightTarget = FRenderTexture::Create(
-				windowWidth,
-				windowHeight,
-				ERenderTargetAttachmentType::Color,
-				ERenderTextureColorFlag::WithAlpha
-		);
-		
 		FRenderTexturePtr albedoWithSpecTarget = FRenderTexture::Create(
 				windowWidth,
 				windowHeight,
@@ -342,7 +335,6 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 		
 		fb.first->second->Attach(positionTarget->AsShared());
 		fb.first->second->Attach(normalTarget->AsShared());
-		fb.first->second->Attach(heightTarget->AsShared());
 		fb.first->second->Attach(albedoWithSpecTarget->AsShared());
 		fb.first->second->Attach(depthTarget->AsShared());
 	}
@@ -377,8 +369,8 @@ bool PrepareScene(FScenePtr& OutScene)
 	FTexturePtr brickWallNormal = FTexture::Create(NFileUtils::ContentPath("Textures/brickWall_normal.jpg").c_str(), ETextureType::Normals);
 	
 	FTexturePtr bricks = FTexture::Create(NFileUtils::ContentPath("Textures/bricks.jpg").c_str(), ETextureType::Diffuse);
-	FTexturePtr bricksNormal = FTexture::Create(NFileUtils::ContentPath("Textures/bricks_normal.jpg").c_str(), ETextureType::Normals);
-	FTexturePtr bricksHeight = FTexture::Create(NFileUtils::ContentPath("Textures/bricks_height.jpg").c_str(), ETextureType::Height);
+	FTexturePtr bricksNormal = FTexture::Create(NFileUtils::ContentPath("Textures/bricks_normal.jpg").c_str(), ETextureType::Normals, true, true);
+	FTexturePtr bricksHeight = FTexture::Create(NFileUtils::ContentPath("Textures/bricks_height.jpg").c_str(), ETextureType::Height, true, true);
 	
 	if( !blankTexture->IsInitialized() ||
 		!rocksFloorTexture->IsInitialized() ||
@@ -461,7 +453,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{1.f, 1.f, 1.f}
 		});
 		
-		GParalaxMappingObjIdx = sceneObjects.size() - 1;
+		GParalaxMappingObjIdx = (uint8)sceneObjects.size() - 1;
 	}
 	
 	// LIGHTS
@@ -683,6 +675,12 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		// Draw scene
 		{
 			Shaders[EShaderMainType::Mesh]->Enable();
+
+			// Setup uniforms
+			{
+				Shaders[EShaderMainType::Mesh]->SetVec3("viewPos", GCamera->GetPosition());
+				Shaders[EShaderMainType::Mesh]->SetFloat("parallaxHScale", 0.1f);
+			}
 			
 			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);
 			
@@ -709,14 +707,13 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 				ETextureType::Diffuse
 			);
 			
-			ENSURE(gTextures.size() == 4);
+			ENSURE(gTextures.size() == 3);
 			
 			// Setup g-buffer
 			{
 				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.position", 0);
 				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.normal", 1);
-				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.height", 2);
-				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.albedoSpecular", 3);
+				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.albedoSpecular", 2);
 			}
 			
 			// Setup light
@@ -741,11 +738,9 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			gTextures[0]->Use(0);
 			gTextures[1]->Use(1);
 			gTextures[2]->Use(2);
-			gTextures[3]->Use(3);
 			
 			GScreenObject->Draw(Shaders[EShaderMainType::Screen]);
 			
-			gTextures[3]->Clear();
 			gTextures[2]->Clear();
 			gTextures[1]->Clear();
 			gTextures[0]->Clear();
