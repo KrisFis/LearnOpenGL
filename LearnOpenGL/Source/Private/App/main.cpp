@@ -693,7 +693,12 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			// Setup uniforms
 			{
 				Shaders[EShaderMainType::Mesh]->SetVec3("viewPos", GCamera->GetPosition());
-				Shaders[EShaderMainType::Mesh]->SetFloat("parallaxHScale", 0.1f);
+				
+				Shaders[EShaderMainType::Mesh]->SetBool("parallax.steep", true);
+				Shaders[EShaderMainType::Mesh]->SetFloat("parallax.minLayers", 8.f);
+				Shaders[EShaderMainType::Mesh]->SetFloat("parallax.maxLayers", 32.f);
+				
+				Shaders[EShaderMainType::Mesh]->SetFloat("parallax.scale", 0.1f);
 			}
 			
 			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);

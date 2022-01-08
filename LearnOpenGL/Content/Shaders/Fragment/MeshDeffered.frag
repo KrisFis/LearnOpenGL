@@ -17,25 +17,60 @@ uniform struct Material
 	int numOfSpeculars;
 	int numOfNormals;
 	int numOfHeights;
-	
+
 	sampler2D diffuse0;
 	sampler2D specular0;
 	sampler2D normal0;
 	sampler2D height0;
 } material;
 
+uniform struct Parallax
+{
+	bool steep;
+
+	float scale;
+
+	float minLayers;
+	float maxLayers;
+} parallax;
+
 uniform float parallaxHScale;
 uniform vec3 viewPos;
 
 vec2 GetParallaxMappedTexCoord()
 {
-	if(material.numOfHeights > 0)
+	if (material.numOfHeights > 0)
 	{
-		vec3 viewDir = frag_in.TBN * normalize(viewPos - frag_in.FragPos);
-		float height = texture(material.height0, frag_in.TexCoord).r;
-		vec2 p = viewDir.xy / viewDir.z * (height * parallaxHScale);
-		
-		return frag_in.TexCoord - p;
+		vec3 viewDir = transpose(frag_in.TBN) * normalize(viewPos - frag_in.FragPos);
+
+		if (parallax.steep)
+		{
+			float numLayers = mix(parallax.maxLayers, parallax.minLayers, max(dot(vec3(0.f, 0.f, 1.f), viewDir), 0.f));
+			float layerH = 1.0 / numLayers;
+			float currentLayer = 0.f;
+
+			vec2 p = viewDir.xy * parallax.scale;
+			vec2 deltaTexCoord = p / numLayers;
+
+			vec2  currentTexCoords = frag_in.TexCoord;
+			float currentHValue = texture(material.height0, currentTexCoords).r;
+
+			while (currentLayer < currentHValue)
+			{
+				currentTexCoords -= deltaTexCoord;
+				currentHValue = texture(material.height0, currentTexCoords).r;
+				currentLayer += layerH;
+			}
+
+			return currentTexCoords;
+		}
+		else
+		{
+			float height = texture(material.height0, frag_in.TexCoord).r;
+			vec2 p = viewDir.xy / viewDir.z * (height * parallax.scale);
+
+			return frag_in.TexCoord - p;
+		}
 	}
 	else
 	{
@@ -45,23 +80,23 @@ vec2 GetParallaxMappedTexCoord()
 
 vec4 GetNormal(vec2 texCoord)
 {
-	return (material.numOfNormals > 0) ? 
-		vec4(normalize(frag_in.TBN * normalize(texture(material.normal0, texCoord).rgb * 2.f - vec3(1.f))), 1.f) : 
-		vec4(frag_in.Normal, 1.f); // result normal
+	return (material.numOfNormals > 0) ?
+	vec4(normalize(frag_in.TBN * normalize(texture(material.normal0, texCoord).rgb * 2.f - vec3(1.f))), 1.f) :
+	vec4(frag_in.Normal, 1.f);// result normal
 }
 
 vec4 GetAlbedo(vec2 texCoord)
 {
-	return (material.numOfDiffuses > 0) ? 
-		texture(material.diffuse0, texCoord) : 
-		vec4(1.f, 0.f, 0.f, 1.f); // red as error
+	return (material.numOfDiffuses > 0) ?
+	texture(material.diffuse0, texCoord) :
+	vec4(1.f, 0.f, 0.f, 1.f);// red as error
 }
 
 vec4 GetSpecular(vec2 texCoord)
 {
-	return (material.numOfSpeculars > 0) ? 
-		texture(material.specular0, texCoord) : 
-		vec4(0.f); // No specular
+	return (material.numOfSpeculars > 0) ?
+	texture(material.specular0, texCoord) :
+	vec4(0.f);// No specular
 }
 
 bool IsValidTexCoord(vec2 texCoord)
@@ -72,18 +107,18 @@ bool IsValidTexCoord(vec2 texCoord)
 void main()
 {
 	vec2 texCoord = GetParallaxMappedTexCoord();
-	if(!IsValidTexCoord(texCoord))
-		discard;
+	if (!IsValidTexCoord(texCoord))
+	discard;
 
 	// Position
 	GPosition = vec4(frag_in.FragPos, 1.f);
-	
+
 	// Normal
 	GNormal = GetNormal(texCoord);
-	
+
 	// Albedo
 	GAlbedoSpec.rgb = GetAlbedo(texCoord).rgb;
-	
+
 	// Specular
 	GAlbedoSpec.a = GetSpecular(texCoord).r;
 }

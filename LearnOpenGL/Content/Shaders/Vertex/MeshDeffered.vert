@@ -27,7 +27,7 @@ void main()
 	
 	vert_out.FragPos = worldPos.xyz;
 	vert_out.TexCoord = aTexCoord;
-	vert_out.Normal = aNormal;
+	vert_out.Normal = mat3(inverseModel) * aNormal;
 	
 	vec3 N = normalize(vec3(model * vec4(aNormal, 0.f)));
 	vec3 T = normalize(vec3(model * vec4(aTangent, 0.f)));
@@ -36,7 +36,7 @@ void main()
 	T = normalize(T - dot(T, N) * N);
 	
 	vec3 B = cross(T, N);
-	vert_out.TBN = transpose(mat3(T, B, N));
+	vert_out.TBN = mat3(T, B, N);
 	
 	gl_Position = projection * view * worldPos;
 }
