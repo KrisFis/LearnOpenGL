@@ -62,7 +62,13 @@ vec2 GetParallaxMappedTexCoord()
 				currentLayer += layerH;
 			}
 
-			return currentTexCoords;
+			vec2 prevTexCoords = currentTexCoords + deltaTexCoord;
+
+			float afterDepth  = currentHValue - currentLayer;
+			float beforeDepth = texture(material.height0, prevTexCoords).r - currentLayer + layerH;
+			
+			float weight = afterDepth / (afterDepth - beforeDepth);
+			return prevTexCoords * weight + currentTexCoords * (1.0 - weight);
 		}
 		else
 		{
@@ -81,22 +87,22 @@ vec2 GetParallaxMappedTexCoord()
 vec4 GetNormal(vec2 texCoord)
 {
 	return (material.numOfNormals > 0) ?
-	vec4(normalize(frag_in.TBN * normalize(texture(material.normal0, texCoord).rgb * 2.f - vec3(1.f))), 1.f) :
-	vec4(frag_in.Normal, 1.f);// result normal
+		vec4(normalize(frag_in.TBN * normalize(texture(material.normal0, texCoord).rgb * 2.f - vec3(1.f))), 1.f) :
+		vec4(frag_in.Normal, 1.f);// result normal
 }
 
 vec4 GetAlbedo(vec2 texCoord)
 {
 	return (material.numOfDiffuses > 0) ?
-	texture(material.diffuse0, texCoord) :
-	vec4(1.f, 0.f, 0.f, 1.f);// red as error
+		texture(material.diffuse0, texCoord) :
+		vec4(1.f, 0.f, 0.f, 1.f);// red as error
 }
 
 vec4 GetSpecular(vec2 texCoord)
 {
 	return (material.numOfSpeculars > 0) ?
-	texture(material.specular0, texCoord) :
-	vec4(0.f);// No specular
+		texture(material.specular0, texCoord) :
+		vec4(0.f);// No specular
 }
 
 bool IsValidTexCoord(vec2 texCoord)
