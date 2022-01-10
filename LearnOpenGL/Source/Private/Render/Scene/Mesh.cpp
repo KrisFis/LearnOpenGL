@@ -110,7 +110,7 @@ void FMesh::Draw(const TSharedPtr<FShaderProgram>& Shader)
 		);
 		
 		// No lightning required
-		Shader->SetMat3("normalMatrix", glm::mat3(1.f));
+		Shader->SetMat4("inverseModel", glm::mat3(1.f));
 		
 		NRenderUtils::NVertexArray::Bind(VAO);
 		
@@ -131,7 +131,7 @@ void FMesh::RefreshCaches()
 	if(bIsOwned) return;
 	
 	CachedModel = Transform.CalculateModelMatrix();
-	CachedNormalMatrix = glm::mat3(glm::transpose(glm::inverse(CachedModel)));
+	CachedNormalMatrix = glm::transpose(glm::inverse(CachedModel));
 }
 
 void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
@@ -139,6 +139,7 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	uint8 diffuseCounter = 0;
 	uint8 specularCounter = 0;
 	uint8 normalCounter = 0;
+	uint8 heightCounter = 0;
 	
 	for(uint8 i = 0; i < Textures.size(); ++i)
 	{
@@ -154,6 +155,9 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 			case ETextureType::Normals:
 				nameOfTexture = "normal" + std::to_string(normalCounter++);
 				break;
+			case ETextureType::Height:
+				nameOfTexture = "height" + std::to_string(heightCounter++);
+				break;
 			default:
 				ENSURE_NO_ENTRY();
 				continue;
@@ -166,12 +170,13 @@ void FMesh::DrawImpl(const TSharedPtr<FShaderProgram>& Shader)
 	if(!IsOwned())
 	{
 		Shader->SetMat4("model", CachedModel);
-		Shader->SetMat3("normalMatrix", CachedNormalMatrix);
+		Shader->SetMat4("inverseModel", CachedNormalMatrix);
 	}
 
 	Shader->SetInt32("material.numOfDiffuses", diffuseCounter);
 	Shader->SetInt32("material.numOfSpeculars", specularCounter);
 	Shader->SetInt32("material.numOfNormals", normalCounter);
+	Shader->SetInt32("material.numOfHeights", heightCounter);
 
 	NRenderUtils::NVertexArray::Bind(VAO);
 	

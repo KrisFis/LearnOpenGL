@@ -88,7 +88,7 @@ private: // Fields
 private: // Cache
 
 	glm::mat4 CachedModel;
-	glm::mat3 CachedNormalMatrix;
+	glm::mat4 CachedNormalMatrix;
 
 private: // Primitive Fields
 	

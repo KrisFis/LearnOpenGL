@@ -7,6 +7,7 @@ layout (location = 3) in vec3 aTangent;
 
 out VERT_OUT {
 	vec3 FragPos;
+	vec3 Normal;
 	mat3 TBN;
 	vec2 TexCoord;
 } vert_out;
@@ -18,7 +19,7 @@ layout (std140) uniform UMatrices
 };
 
 uniform mat4 model;
-uniform mat3 normalMatrix;
+uniform mat4 inverseModel;
 
 void main()
 {
@@ -26,9 +27,10 @@ void main()
 	
 	vert_out.FragPos = worldPos.xyz;
 	vert_out.TexCoord = aTexCoord;
+	vert_out.Normal = mat3(inverseModel) * aNormal;
 	
-	vec3 N = normalize(normalMatrix * aNormal);
-	vec3 T = normalize(normalMatrix * aTangent);
+	vec3 N = normalize(vec3(model * vec4(aNormal, 0.f)));
+	vec3 T = normalize(vec3(model * vec4(aTangent, 0.f)));
 	
 	// https://learnopengl.com/Advanced-Lighting/Normal-Mapping -> re-orthogonalize (Gram-Schmidt process)
 	T = normalize(T - dot(T, N) * N);

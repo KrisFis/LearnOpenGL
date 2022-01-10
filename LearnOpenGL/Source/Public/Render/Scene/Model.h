@@ -68,7 +68,7 @@ private: // Cache
 
 	TArray<TSharedPtr<FTexture>> LoadedTextures;
 	glm::mat4 CachedModel;
-	glm::mat3 CachedNormalMatrix;
+	glm::mat4 CachedNormalMatrix;
 
 private: // Primitive fields
 	
