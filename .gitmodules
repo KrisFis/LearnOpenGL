@@ -1,0 +1,3 @@
+[submodule "LearnOpenGL/ThirdParty/ASTD"]
+	path = LearnOpenGL/ThirdParty/ASTD
+	url = https://github.com/KrisFis/ASTD.git
