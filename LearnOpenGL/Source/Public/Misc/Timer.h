@@ -3,8 +3,6 @@
 
 #include "ModuleMinimal.h"
 
-#include <ctime>
-
 class FTimer
 {
 	
@@ -30,6 +28,6 @@ public:
 
 private:
 
-	clock_t StartTimepoint;
-	clock_t EndTimepoint;
+	double StartTimepoint;
+	double EndTimepoint;
 };

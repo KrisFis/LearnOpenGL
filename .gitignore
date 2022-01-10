@@ -2,6 +2,7 @@
 # Solutions
 .vs
 .idea
+.vscode
 
 # Binaries
 **/Binaries
