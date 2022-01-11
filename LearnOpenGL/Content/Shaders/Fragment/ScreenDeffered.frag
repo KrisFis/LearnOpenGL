@@ -119,7 +119,7 @@ GBufferTexData ConstructGBufferData()
 {
 	GBufferTexData result;
 	result.fragPos = texture(gBuffer.position, frag_in.TexCoord).rgb;
-	result.normal = texture(gBuffer.normal, frag_in.TexCoord).rgb;
+	result.normal = vec3(2.f * texture(gBuffer.normal, frag_in.TexCoord) - 1.f); // Unpack
 	result.albedo = texture(gBuffer.albedoSpecular, frag_in.TexCoord).rgb;
 	result.specular = texture(gBuffer.albedoSpecular, frag_in.TexCoord).a;
 	

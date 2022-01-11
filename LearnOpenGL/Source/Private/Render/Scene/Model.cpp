@@ -114,11 +114,13 @@ TSharedPtr<FMesh> FModel::ProcessMesh(aiMesh* Mesh, const aiScene* Scene)
 		const aiVector3D& currVertex = Mesh->mVertices[i];
 		const aiVector3D& currNormal = Mesh->mNormals[i];
 		const aiVector3D& currTangent = Mesh->mTangents[i];
+		const aiVector3D& currBitangent = Mesh->mBitangents[i];
 		
 		FMeshVertex vertex;
 		vertex.Position = { currVertex.x, currVertex.y, currVertex.z };
 		vertex.Normal = { currNormal.x, currNormal.y, currNormal.z };
 		vertex.Tangent = { currTangent.x, currTangent.y, currTangent.z };
+		vertex.Bitangent = { currBitangent.x, currBitangent.y, currBitangent.z };
 		
 		// We want only first texture
 		if(Mesh->mTextureCoords[0])
