@@ -16,6 +16,7 @@ struct FMeshVertex
 	glm::vec3 Normal;
 	glm::vec2 TexCoord;
 	glm::vec3 Tangent;
+	glm::vec3 Bitangent;
 };
 
 class FMesh : public ISceneObject
