@@ -61,6 +61,7 @@ bool GUseBlinn = true;
 float GExposure = 0.15f;
 bool GWireframeMode = false;
 int32 GBloomIterations = 5;
+bool GShouldReloadShaders = false;
 
 uint16 GUIPreviousFPS = 0;
 float GUIRefreshFPSEverySec = 0.5f;
@@ -504,25 +505,28 @@ bool PrepareScene(FScenePtr& OutScene)
 
 bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TFastMap<EUniformBufferMainType, FUniformBufferPtr>& OutUniforms)
 {
+	TFastMap<EShaderMainType, FShaderProgramPtr> tmpShaders;
+	TFastMap<EUniformBufferMainType, FUniformBufferPtr> tmpUniforms;
+
 	// Compile and set shaders
 	{
-		OutShaders.insert({
+		tmpShaders.insert({
 			EShaderMainType::Mesh,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/MeshDeffered.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/MeshDeffered.frag").c_str())
 		});
 		
-		OutShaders.insert({
+		tmpShaders.insert({
 			EShaderMainType::Screen,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/ScreenDeffered.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/ScreenDeffered.frag").c_str())
 		});
 		
-		OutShaders.insert({
+		tmpShaders.insert({
 			EShaderMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
 		});
 	}
 	
-	for(const auto& shader : OutShaders)
+	for(const auto& shader : tmpShaders)
 	{
 		if(!shader.second->IsInitialized()) return false;
 	}
@@ -533,7 +537,7 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		{
 			constexpr EUniformBufferMainType currentType = EUniformBufferMainType::Matrices;
 			
-			OutUniforms.insert({
+			tmpUniforms.insert({
 				currentType,
 				FUniformBuffer::Create(
 					FUniformBufferMainType::GetBindPoint(currentType), 
@@ -541,12 +545,12 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 				)
 			});
 			
-			ENSURE_RET(OutShaders[EShaderMainType::Mesh]->SetUniformBuffer(
-				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
+			ENSURE_RET(tmpShaders[EShaderMainType::Mesh]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), tmpUniforms[currentType].GetRef()), 
 			false);
 			
-			ENSURE_RET(OutShaders[EShaderMainType::Skybox]->SetUniformBuffer(
-				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()),
+			ENSURE_RET(tmpShaders[EShaderMainType::Skybox]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), tmpUniforms[currentType].GetRef()),
 			false);
 		}
 
@@ -554,7 +558,7 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		{
 			constexpr EUniformBufferMainType currentType = EUniformBufferMainType::Light;
 			
-			OutUniforms.insert({
+			tmpUniforms.insert({
 				currentType,
 				FUniformBuffer::Create(
 					FUniformBufferMainType::GetBindPoint(currentType), 
@@ -562,8 +566,8 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 				)
 			});
 		
-			ENSURE_RET(OutShaders[EShaderMainType::Screen]->SetUniformBuffer(
-				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
+			ENSURE_RET(tmpShaders[EShaderMainType::Screen]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), tmpUniforms[currentType].GetRef()), 
 			false);
 		}
 		
@@ -571,7 +575,7 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 		{
 			constexpr EUniformBufferMainType currentType = EUniformBufferMainType::PostProcess;
 			
-			OutUniforms.insert({
+			tmpUniforms.insert({
 				currentType,
 				FUniformBuffer::Create(
 					FUniformBufferMainType::GetBindPoint(currentType), 
@@ -579,12 +583,15 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 				)
 			});
 		
-			ENSURE_RET(OutShaders[EShaderMainType::Screen]->SetUniformBuffer(
-				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
+			ENSURE_RET(tmpShaders[EShaderMainType::Screen]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), tmpUniforms[currentType].GetRef()), 
 			false);
 		}
 	}
 	
+	OutShaders = tmpShaders;
+	OutUniforms = tmpUniforms;
+
 	return true;
 }
 
@@ -694,7 +701,6 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			{
 				Shaders[EShaderMainType::Mesh]->SetVec3("viewPos", GCamera->GetPosition());
 				
-				Shaders[EShaderMainType::Mesh]->SetBool("parallax.steep", true);
 				Shaders[EShaderMainType::Mesh]->SetFloat("parallax.minLayers", 8.f);
 				Shaders[EShaderMainType::Mesh]->SetFloat("parallax.maxLayers", 32.f);
 				
@@ -780,6 +786,11 @@ void ProcessUIRender()
 				if(ImGui::Checkbox("Wireframe", &GWireframeMode))
 				{
 					glPolygonMode(GL_FRONT_AND_BACK, GWireframeMode ? GL_LINE : GL_FILL);
+				}
+
+				if(ImGui::Button("Reload shaders"))
+				{
+					GShouldReloadShaders = true;
 				}
 
 				ImGui::EndMenu();
@@ -1069,6 +1080,12 @@ int32 GuardedMain()
 		frameTimer.Start();
 
 		EngineTick();
+		if(GShouldReloadShaders)
+		{
+			GShouldReloadShaders = false;
+			PrepareShaders(Shaders, Uniforms);
+		}
+
 		ProcessInput();
 		ProcessRender(Shaders, Uniforms, Framebuffers);
 
