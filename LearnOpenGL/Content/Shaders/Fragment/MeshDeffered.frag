@@ -52,7 +52,7 @@ vec2 GetParallaxMappedTexCoord()
 {
 	if (material.numOfHeights > 0)
 	{
-		mat3 inverseTBN = transpose(frag_in.TBN);
+		mat3 inverseTBN = transpose(mat3(frag_in.TBN[0], -frag_in.TBN[1], frag_in.TBN[2]));
 
 		vec3 viewPosTS = inverseTBN * viewPos;
 		vec3 fragPosTS = inverseTBN * frag_in.FragPos;
