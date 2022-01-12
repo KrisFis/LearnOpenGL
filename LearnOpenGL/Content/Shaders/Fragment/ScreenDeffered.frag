@@ -51,6 +51,11 @@ struct GBufferTexData
 	float specular;
 };
 
+vec3 UnpackNormal(vec3 normal)
+{
+	return 2.f * normal - 1.f;
+}
+
 vec4 ApplyToneMapping(vec4 InFragColor)
 {
 	return vec4(vec3(1.f) - exp(-InFragColor.rgb * u_postprocess.exposure), 1.f);
@@ -119,7 +124,7 @@ GBufferTexData ConstructGBufferData()
 {
 	GBufferTexData result;
 	result.fragPos = texture(gBuffer.position, frag_in.TexCoord).rgb;
-	result.normal = vec3(2.f * texture(gBuffer.normal, frag_in.TexCoord) - 1.f); // Unpack
+	result.normal = UnpackNormal(texture(gBuffer.normal, frag_in.TexCoord).rgb);
 	result.albedo = texture(gBuffer.albedoSpecular, frag_in.TexCoord).rgb;
 	result.specular = texture(gBuffer.albedoSpecular, frag_in.TexCoord).a;
 	

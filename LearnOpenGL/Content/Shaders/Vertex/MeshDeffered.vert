@@ -31,9 +31,6 @@ void main()
 	vec3 N = normalize(mat3(model) * aNormal);
 	vec3 T = normalize(mat3(model) * aTangent);
 	vec3 B = normalize(mat3(model) * aBitangent);
-	
-	// https://learnopengl.com/Advanced-Lighting/Normal-Mapping -> re-orthogonalize (Gram-Schmidt process)
-	//T = normalize(T - dot(T, N) * N);
 	vert_out.TBN = mat3(T, B, N);
 	
 	gl_Position = projection * view * worldPos;
