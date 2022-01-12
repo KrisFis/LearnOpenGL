@@ -52,12 +52,8 @@ vec2 GetParallaxMappedTexCoord()
 {
 	if (material.numOfHeights > 0)
 	{
-		mat3 inverseTBN = transpose(mat3(frag_in.TBN[0], -frag_in.TBN[1], frag_in.TBN[2]));
-
-		vec3 viewPosTS = inverseTBN * viewPos;
-		vec3 fragPosTS = inverseTBN * frag_in.FragPos;
-
-		vec3 viewDirTS = normalize(viewPosTS - fragPosTS);
+		mat3 modifiedBTN = mat3(frag_in.TBN[0], -frag_in.TBN[1], frag_in.TBN[2]);
+		vec3 viewDirTS = transpose(modifiedBTN) * normalize(viewPos - frag_in.FragPos);
 
 		float numLayers = mix(parallax.maxLayers, parallax.minLayers, abs(dot(vec3(0.f, 0.f, 1.f), viewDirTS)));
 		float layerH = 1.0 / numLayers;
