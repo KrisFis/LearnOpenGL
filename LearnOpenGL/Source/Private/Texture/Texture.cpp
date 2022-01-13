@@ -132,6 +132,8 @@ FTexture::FTexture(const TArray<glm::vec4>& InData, const ETextureType InType, b
 	ENSURE(InType != ETextureType::Invalid);
 	ENSURE_RET(InData.size() > 0);
 
+	glGenTextures(1, &Id);
+
 	glBindTexture(GL_TEXTURE_2D, Id);
 
 	// Is square texture
@@ -145,8 +147,6 @@ FTexture::FTexture(const TArray<glm::vec4>& InData, const ETextureType InType, b
 	// set texture filtering parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	glGenTextures(1, &Id);
 }
 
 FTexture::~FTexture()

@@ -102,7 +102,7 @@ struct FDirectionalLightInfo
 
 struct FFramebufferMainType
 {
-	enum EType : uint8 { Invalid = 0, SSAO, GBuffer };
+	enum EType : uint8 { Invalid = 0, SSAO, SSAOBlur, GBuffer };
 };
 
 struct FUniformBufferMainType
@@ -149,7 +149,7 @@ struct FUniformBufferMainType
 
 struct FShaderMainType
 {
-	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, Blur, SSAO };
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, Blur, SSAO, SSAOBlur };
 	
 	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
 	{
@@ -324,6 +324,28 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 
 		auto fb = OutFramebuffers.insert({
 			EFramebufferMainType::SSAO,
+			FFramebuffer::Create()
+		});
+		
+		fb.first->second->Attach(colorTarget->AsShared());
+	}
+
+	// SSAO blur
+	{
+		FRenderTexturePtr colorTarget = FRenderTexture::Create(
+			windowWidth,
+			windowHeight,
+			ERenderTargetAttachmentType::Color,
+			ERenderTextureFlag::Size8 | ERenderTextureFlag::Float | ERenderTextureFlag::R
+		);
+
+		if(!colorTarget->IsInitialized())
+		{
+			return false;
+		}
+
+		auto fb = OutFramebuffers.insert({
+			EFramebufferMainType::SSAOBlur,
 			FFramebuffer::Create()
 		});
 		
@@ -522,6 +544,7 @@ bool PrepareScene(FScenePtr& OutScene)
 		GParalaxMappingObjIdx = (uint8)sceneObjects.size() - 1;
 		
 		sceneObjects.push_back(NMeshUtils::ConstructPlane({toy, toyNormal, toyHeight}));
+		sceneObjects[sceneObjects.size() - 1]->SetCullFaces(false);
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
 			{17.f, 0.f, 0.f},
 			{0.f, 0.f, 90.f},
@@ -587,7 +610,12 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 
 		OutShaders.insert({
 			EShaderMainType::SSAO,
-			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/SSAODeffered.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/SSAODeffered.frag").c_str())
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/ScreenDeffered.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/SSAODeffered.frag").c_str())
+		});
+
+		OutShaders.insert({
+			EShaderMainType::SSAOBlur,
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/ScreenDeffered.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/SSAOBlurDeffered.frag").c_str())
 		});
 	}
 	
@@ -815,24 +843,62 @@ void ProcessRender()
 				GShaders[EShaderMainType::SSAO]->SetInt32("noise.map", 2);
 			}
 
+			gTextures[0]->Use(0);
+			gTextures[1]->Use(1);
+			GSSAONoiseTexture->Use(2);
+
+			GScreenObject->Draw(GShaders[EShaderMainType::SSAO]);
+
+			GSSAONoiseTexture->Clear();
+			gTextures[0]->Clear();
+			gTextures[1]->Clear();
+
 			GShaders[EShaderMainType::SSAO]->Disable();
 		}
-
-		gTextures[0]->Use(0);
-		gTextures[1]->Use(1);
-		GSSAONoiseTexture->Use(2);
-
-		GScreenObject->Draw(GShaders[EShaderMainType::SSAO]);
-
-		GSSAONoiseTexture->Clear();
-		gTextures[0]->Clear();
-		gTextures[1]->Clear();
 
 		GFramebuffers[EFramebufferMainType::SSAO]->Disable();
 	}
 
 	FTexturePtr ssaoTexture = NRenderTargetUtils::TryGetAsTexture(
 		GFramebuffers[EFramebufferMainType::SSAO],
+		ERenderTargetAttachmentType::Color,
+		ETextureType::Diffuse,
+		0
+	);
+
+	// SSAO blur
+	{
+		GFramebuffers[EFramebufferMainType::SSAOBlur]->Enable();
+
+		// Setup
+		{
+			glClear(GL_COLOR_BUFFER_BIT);
+		}
+
+		// Draw
+		{
+			GShaders[EShaderMainType::SSAOBlur]->Enable();
+
+			// Setup
+			{
+				GShaders[EShaderMainType::SSAOBlur]->SetInt32("ssao.map", 0);
+			}
+
+			ssaoTexture->Use(0);
+
+			GScreenObject->Draw(GShaders[EShaderMainType::SSAOBlur]);
+
+			ssaoTexture->Clear();
+
+			GShaders[EShaderMainType::SSAOBlur]->Disable();
+		}
+
+		GFramebuffers[EFramebufferMainType::SSAOBlur]->Disable();
+	}
+
+	// Replace with blured one
+	ssaoTexture = NRenderTargetUtils::TryGetAsTexture(
+		GFramebuffers[EFramebufferMainType::SSAOBlur],
 		ERenderTargetAttachmentType::Color,
 		ETextureType::Diffuse,
 		0
@@ -1159,7 +1225,7 @@ bool EngineInit()
 				noiseData.push_back(noise);
 			}
 
-			GSSAONoiseTexture = FTexture::Create(noiseData, ETextureType::Diffuse, true, true);
+			GSSAONoiseTexture = FTexture::Create(noiseData, ETextureType::Diffuse, true, false);
 		}
 	}
 
