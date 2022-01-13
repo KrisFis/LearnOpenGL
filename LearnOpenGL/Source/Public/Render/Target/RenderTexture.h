@@ -4,32 +4,39 @@
 #include "ModuleMinimal.h"
 #include "RenderTargetBase.h"
 
-struct FRenderTextureFlag
+struct ERenderTextureFlag
 {
-	// Color flags
-	enum EColor
+	enum
 	{
-		// Default is size 8 and type unsigned byte
-		
-		// Includes alpha
-		WithAlpha = 0x01,
-		
+		// Type
+		UByte = 1 << 1,
+		Float = 1 << 2,
+
 		// Size
-		Float16 = 0x02,
-		Float32 = 0x04
+		Size8 = 1 << 3,
+		Size16 = 1 << 4,
+		Size32 = 1 << 5,
+
+		// Num of channels
+		R = 1 << 6,
+		RG = 1 << 7,
+		RGB = 1 << 8,
+		RGBA = 1 << 9
 	};
 	
-	static constexpr uint8 None = 0;
-};
+	static constexpr uint32 Default = UByte | Size8 | RGBA;
+	static constexpr uint32 DefaultNoAlpha = UByte | Size8 | RGB;
 
-typedef FRenderTextureFlag::EColor ERenderTextureColorFlag;
+	static constexpr uint32 DefaultFloat = Float | Size16 | RGBA;
+	static constexpr uint32 DefaultFloatNoAlpha = Float | Size16 | RGB;
+};
 
 class FRenderTexture : public IRenderTarget
 {
 
 private: // Constructors
 
-	explicit FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetAttachmentType InType, uint8 InFlags);
+	explicit FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetAttachmentType InType, uint32 InFlags);
 
 public: // Destructor
 	
@@ -37,7 +44,7 @@ public: // Destructor
 
 public: // Static creation
 
-	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetAttachmentType Type, uint8 Flags = FRenderTextureFlag::None, uint8 Samples = 1)
+	FORCEINLINE static TSharedPtr<FRenderTexture> Create(uint16 Width, uint16 Height, ERenderTargetAttachmentType Type, uint32 Flags = ERenderTextureFlag::Default, uint8 Samples = 1)
 	{ return MakeShareable(new FRenderTexture(Samples, Width, Height, Type, Flags)); }
 
 public: // Getters

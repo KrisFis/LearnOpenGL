@@ -2,7 +2,7 @@
 #include "RenderTexture.h"
 #include "Framebuffer.h"
 
-FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetAttachmentType InType, uint8 InFlags)
+FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight, ERenderTargetAttachmentType InType, uint32 InFlags)
 	: Id(0)
 	, Type(ERenderTargetAttachmentType::Invalid)
 	, Width(0)
@@ -15,22 +15,145 @@ FRenderTexture::FRenderTexture(uint8 InSamples, uint16 InWidth, uint16 InHeight,
 	{
 		case ERenderTargetAttachmentType::Color:
 			
-			if(InFlags & ERenderTextureColorFlag::Float16)
+			if(InFlags & ERenderTextureFlag::UByte)
 			{
-				type = GL_FLOAT;
-				internalFormat = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA16F : GL_RGB16F;
-				format = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA : GL_RGB;
+				type = GL_UNSIGNED_BYTE;
 			}
-			else if(InFlags & ERenderTextureColorFlag::Float32)
+			else if(InFlags & ERenderTextureFlag::Float)
 			{
 				type = GL_FLOAT;
-				internalFormat = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA32F : GL_RGB32F;
-				format = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA : GL_RGB;
 			}
 			else
 			{
-				type = GL_UNSIGNED_BYTE;
-				internalFormat = format = (InFlags & ERenderTextureColorFlag::WithAlpha) ? GL_RGBA : GL_RGB;
+				ENSURE_NO_ENTRY_RET();
+			}
+
+			if(InFlags & ERenderTextureFlag::R)
+			{
+				format = GL_RED;
+			}
+			else if(InFlags & ERenderTextureFlag::RG)
+			{
+				format = GL_RG;
+			}
+			else if(InFlags & ERenderTextureFlag::RGB)
+			{
+				format = GL_RGB;
+			}
+			else if(InFlags & ERenderTextureFlag::RGBA)
+			{
+				format = GL_RGBA;
+			}
+			else
+			{
+				ENSURE_NO_ENTRY_RET();
+			}
+
+			if(InFlags & ERenderTextureFlag::Size8)
+			{
+				if(type == GL_UNSIGNED_BYTE || type == GL_FLOAT)
+				{
+					if(format == GL_RED)
+					{
+						internalFormat = GL_R8;
+					}
+					else if(format == GL_RG)
+					{
+						internalFormat = GL_RG8;
+					}
+					else if(format == GL_RGB)
+					{
+						internalFormat = GL_RGB8;
+					}
+					else if(format == GL_RGBA)
+					{
+						internalFormat = GL_RGBA8;
+					}
+				}
+				else
+				{
+					ENSURE_NO_ENTRY_RET();
+				}
+			}
+			else if(InFlags & ERenderTextureFlag::Size16)
+			{
+				if(type == GL_UNSIGNED_BYTE)
+				{
+					if(format == GL_RED)
+					{
+						internalFormat = GL_R16;
+					}
+					else if(format == GL_RG)
+					{
+						internalFormat = GL_RG16;
+					}
+					else if(format == GL_RGB)
+					{
+						internalFormat = GL_RGB16;
+					}
+					else if(format == GL_RGBA)
+					{
+						internalFormat = GL_RGBA16;
+					}
+				}
+				else if(type == GL_FLOAT)
+				{
+					if(format == GL_RED)
+					{
+						internalFormat = GL_R16F;
+					}
+					else if(format == GL_RG)
+					{
+						internalFormat = GL_RG16F;
+					}
+					else if(format == GL_RGB)
+					{
+						internalFormat = GL_RGB16F;
+					}
+					else if(format == GL_RGBA)
+					{
+						internalFormat = GL_RGBA16F;
+					}
+				}
+				else
+				{
+					ENSURE_NO_ENTRY_RET();
+				}
+			}
+			else if(InFlags & ERenderTextureFlag::Size32)
+			{
+				if(type == GL_UNSIGNED_BYTE)
+				{
+					// Unsupported
+					ENSURE_NO_ENTRY_RET();
+				}
+				else if(type == GL_FLOAT)
+				{
+					if(format == GL_RED)
+					{
+						internalFormat = GL_R32F;
+					}
+					else if(format == GL_RG)
+					{
+						internalFormat = GL_RG32F;
+					}
+					else if(format == GL_RGB)
+					{
+						internalFormat = GL_RGB32F;
+					}
+					else if(format == GL_RGBA)
+					{
+						internalFormat = GL_RGBA32F;
+					}
+				}
+				else
+				{
+					ENSURE_NO_ENTRY_RET();
+				}
+			}
+			else
+			{
+				ENSURE_NO_ENTRY_RET();
 			}
 			
 			break;

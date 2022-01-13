@@ -95,7 +95,7 @@ struct FDirectionalLightInfo
 
 struct FFramebufferMainType
 {
-	enum EType : uint8 { Invalid = 0, GBuffer };
+	enum EType : uint8 { Invalid = 0, SSAO, GBuffer };
 };
 
 struct FUniformBufferMainType
@@ -142,7 +142,7 @@ struct FUniformBufferMainType
 
 struct FShaderMainType
 {
-	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, Blur };
+	enum EType : uint8 { Invalid = 0, Mesh, Screen, Skybox, Blur, SSAO };
 	
 	static TArray<FUniformBufferMainType::EType> GetSupportedUniforms(EType Type)
 	{
@@ -300,29 +300,50 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 	uint16 windowWidth, windowHeight;
 	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
 
+	// SSAO
+	{
+		FRenderTexturePtr colorTarget = FRenderTexture::Create(
+			windowWidth,
+			windowHeight,
+			ERenderTargetAttachmentType::Color,
+			ERenderTextureFlag::Size8 | ERenderTextureFlag::Float | ERenderTextureFlag::R
+		);
+
+		if(!colorTarget->IsInitialized())
+		{
+			return false;
+		}
+
+		auto fb = OutFramebuffers.insert({
+			EFramebufferMainType::SSAO,
+			FFramebuffer::Create()
+		});
+		
+		fb.first->second->Attach(colorTarget->AsShared());
+	}
+
 	// GBuffer
 	{
 		// TODO(kristian.fisera): Position can be determined from depth
 		// * see: https://mynameismjp.wordpress.com/2010/09/05/position-from-depth-3/
 		FRenderTexturePtr positionTarget = FRenderTexture::Create(
-				windowWidth,
-				windowHeight,
-				ERenderTargetAttachmentType::Color,
-			ERenderTextureColorFlag::Float16 | ERenderTextureColorFlag::WithAlpha
+			windowWidth,
+			windowHeight,
+			ERenderTargetAttachmentType::Color,
+			ERenderTextureFlag::Size16 | ERenderTextureFlag::Float | ERenderTextureFlag::RGBA
 		);
 		
 		FRenderTexturePtr normalTarget = FRenderTexture::Create(
-				windowWidth,
-				windowHeight,
-				ERenderTargetAttachmentType::Color,
-			ERenderTextureColorFlag::Float16 | ERenderTextureColorFlag::WithAlpha
+			windowWidth,
+			windowHeight,
+			ERenderTargetAttachmentType::Color,
+			ERenderTextureFlag::Size16 | ERenderTextureFlag::Float | ERenderTextureFlag::RGBA
 		);
 		
 		FRenderTexturePtr albedoWithSpecTarget = FRenderTexture::Create(
-				windowWidth,
-				windowHeight,
-				ERenderTargetAttachmentType::Color,
-				ERenderTextureColorFlag::WithAlpha
+			windowWidth,
+			windowHeight,
+			ERenderTargetAttachmentType::Color
 		);
 		
 		if(!positionTarget->IsInitialized() || !normalTarget->IsInitialized() || !albedoWithSpecTarget->IsInitialized())
@@ -555,6 +576,11 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 			EShaderMainType::Skybox,
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
 		});
+
+		// OutShaders.insert({
+		// 	EShaderMainType::SSAO,
+		// 	FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/SSAODeffered.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/SSAODeffered.frag").c_str())
+		// });
 	}
 	
 	for(const auto& shader : OutShaders)
