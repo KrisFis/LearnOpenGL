@@ -61,6 +61,7 @@ bool GUseBlinn = true;
 float GExposure = 0.15f;
 bool GWireframeMode = false;
 int32 GBloomIterations = 5;
+bool GShouldReloadShaders = false;
 
 uint16 GUIPreviousFPS = 0;
 float GUIRefreshFPSEverySec = 0.5f;
@@ -156,6 +157,10 @@ struct FShaderMainType
 typedef FFramebufferMainType::EType EFramebufferMainType;
 typedef FUniformBufferMainType::EType EUniformBufferMainType;
 typedef FShaderMainType::EType EShaderMainType;
+
+TFastMap<EShaderMainType, FShaderProgramPtr> GShaders;
+TFastMap<EUniformBufferMainType, FUniformBufferPtr> GUniforms;
+TFastMap<EFramebufferMainType, FFramebufferPtr> GFramebuffers;
 
 void MouseScrollChanged(GLFWwindow* window, double ScrollX, double ScrollY)
 {
@@ -504,7 +509,7 @@ bool PrepareScene(FScenePtr& OutScene)
 
 bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TFastMap<EUniformBufferMainType, FUniformBufferPtr>& OutUniforms)
 {
-	// Compile and set shaders
+	// Compile and set gshaders
 	{
 		OutShaders.insert({
 			EShaderMainType::Mesh,
@@ -584,7 +589,7 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 			false);
 		}
 	}
-	
+
 	return true;
 }
 
@@ -638,7 +643,7 @@ void ProcessInput()
 	}
 }
 
-bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms)
+bool InitRender(TFastMap<EUniformBufferMainType, FUniformBufferPtr>& GUniforms)
 {
 	return true;
 }
@@ -648,7 +653,7 @@ bool InitUI()
 	return true;
 }
 
-void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastMap<EUniformBufferMainType, FUniformBufferPtr>& Uniforms, TFastMap<EFramebufferMainType, FFramebufferPtr>& Framebuffers)
+void ProcessRender()
 {
 	uint16 windowWidth, windowHeight;
 	FApplication::Get().GetWindowSize(windowWidth, windowHeight);
@@ -659,19 +664,19 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 	const glm::mat4 projection = glm::perspective(glm::radians(GCamera->GetFieldOfView()), (float)windowWidth / (float)windowHeight, 0.1f, 100.f);
 	const glm::mat4 view = GCamera->GetViewMatrix();
 	
-	Uniforms[EUniformBufferMainType::Matrices]->SetValue(0, projection);
-	Uniforms[EUniformBufferMainType::Matrices]->SetValue(NShaderUtils::GetSTD140Size<glm::mat4>(), view);
+	GUniforms[EUniformBufferMainType::Matrices]->SetValue(0, projection);
+	GUniforms[EUniformBufferMainType::Matrices]->SetValue(NShaderUtils::GetSTD140Size<glm::mat4>(), view);
 	
-	Uniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
-	Uniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
+	GUniforms[EUniformBufferMainType::Light]->SetValue(0, GCamera->GetPosition());
+	GUniforms[EUniformBufferMainType::Light]->SetValue(NShaderUtils::GetSTD140Size<glm::vec4>(), GUseBlinn);
 	
-	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
-	Uniforms[EUniformBufferMainType::PostProcess]->SetValue(NShaderUtils::GetSTD140Size<float>(), GExposure);
+	GUniforms[EUniformBufferMainType::PostProcess]->SetValue(0, GGamma);
+	GUniforms[EUniformBufferMainType::PostProcess]->SetValue(NShaderUtils::GetSTD140Size<float>(), GExposure);
 	
 	// Scene
 	// * To custom framebuffer
 	{
-		Framebuffers[EFramebufferMainType::GBuffer]->Enable();
+		GFramebuffers[EFramebufferMainType::GBuffer]->Enable();
 
 		// Setup
 		{
@@ -681,32 +686,31 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 		
 		// Draw skybox
 		{
-/*			Shaders[EShaderMainType::Skybox]->Enable();
-			GSkyboxObject->Draw(Shaders[EShaderMainType::Skybox]);
-			Shaders[EShaderMainType::Skybox]->Disable();*/
+/*			GShaders[EShaderMainType::Skybox]->Enable();
+			GSkyboxObject->Draw(GShaders[EShaderMainType::Skybox]);
+			GShaders[EShaderMainType::Skybox]->Disable();*/
 		}
 	
 		// Draw scene
 		{
-			Shaders[EShaderMainType::Mesh]->Enable();
+			GShaders[EShaderMainType::Mesh]->Enable();
 
-			// Setup uniforms
+			// Setup guniforms
 			{
-				Shaders[EShaderMainType::Mesh]->SetVec3("viewPos", GCamera->GetPosition());
+				GShaders[EShaderMainType::Mesh]->SetVec3("viewPos", GCamera->GetPosition());
 				
-				Shaders[EShaderMainType::Mesh]->SetBool("parallax.steep", true);
-				Shaders[EShaderMainType::Mesh]->SetFloat("parallax.minLayers", 8.f);
-				Shaders[EShaderMainType::Mesh]->SetFloat("parallax.maxLayers", 32.f);
+				GShaders[EShaderMainType::Mesh]->SetFloat("parallax.minLayers", 8.f);
+				GShaders[EShaderMainType::Mesh]->SetFloat("parallax.maxLayers", 32.f);
 				
-				Shaders[EShaderMainType::Mesh]->SetFloat("parallax.scale", 0.1f);
+				GShaders[EShaderMainType::Mesh]->SetFloat("parallax.scale", 0.1f);
 			}
 			
-			GScene->Draw(Shaders[EShaderMainType::Mesh], GCamera);
+			GScene->Draw(GShaders[EShaderMainType::Mesh], GCamera);
 			
-			Shaders[EShaderMainType::Mesh]->Disable();
+			GShaders[EShaderMainType::Mesh]->Disable();
 		}
 		
-		Framebuffers[EFramebufferMainType::GBuffer]->Disable();
+		GFramebuffers[EFramebufferMainType::GBuffer]->Disable();
 	}
 	
 	// Screen rendering
@@ -718,10 +722,10 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 
 		// Draw quad
 		{
-			Shaders[EShaderMainType::Screen]->Enable();
+			GShaders[EShaderMainType::Screen]->Enable();
 			
 			TArray<FTexturePtr> gTextures = NRenderTargetUtils::TryGetAsTextures(
-				Framebuffers[EFramebufferMainType::GBuffer],
+				GFramebuffers[EFramebufferMainType::GBuffer],
 				ERenderTargetAttachmentType::Color,
 				ETextureType::Diffuse
 			);
@@ -730,27 +734,27 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			
 			// Setup g-buffer
 			{
-				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.position", 0);
-				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.normal", 1);
-				Shaders[EShaderMainType::Screen]->SetInt32("gBuffer.albedoSpecular", 2);
+				GShaders[EShaderMainType::Screen]->SetInt32("gBuffer.position", 0);
+				GShaders[EShaderMainType::Screen]->SetInt32("gBuffer.normal", 1);
+				GShaders[EShaderMainType::Screen]->SetInt32("gBuffer.albedoSpecular", 2);
 			}
 			
 			// Setup light
 			{
-				Shaders[EShaderMainType::Screen]->SetFloat("material.shininess", 8.f);
+				GShaders[EShaderMainType::Screen]->SetFloat("material.shininess", 8.f);
 				
 				for(uint8 i = 0; i < 3; ++i)
 				{
 					const FString uniformName = "lights[" + std::to_string(i) + "]";
 				
-					Shaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
-					Shaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
-					Shaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
-					Shaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
+					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
+					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
+					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
+					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
 					
-					Shaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
-					Shaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
-					Shaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
+					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
+					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
+					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
 				}
 			}
 			
@@ -758,13 +762,13 @@ void ProcessRender(TFastMap<EShaderMainType, FShaderProgramPtr>& Shaders, TFastM
 			gTextures[1]->Use(1);
 			gTextures[2]->Use(2);
 			
-			GScreenObject->Draw(Shaders[EShaderMainType::Screen]);
+			GScreenObject->Draw(GShaders[EShaderMainType::Screen]);
 			
 			gTextures[2]->Clear();
 			gTextures[1]->Clear();
 			gTextures[0]->Clear();
 			
-			Shaders[EShaderMainType::Screen]->Disable();
+			GShaders[EShaderMainType::Screen]->Disable();
 		}
 	}
 }
@@ -780,6 +784,11 @@ void ProcessUIRender()
 				if(ImGui::Checkbox("Wireframe", &GWireframeMode))
 				{
 					glPolygonMode(GL_FRONT_AND_BACK, GWireframeMode ? GL_LINE : GL_FILL);
+				}
+
+				if(ImGui::Button("Reload gshaders"))
+				{
+					GShouldReloadShaders = true;
 				}
 
 				ImGui::EndMenu();
@@ -963,20 +972,13 @@ bool EngineInit()
 
 void EngineTick()
 {
-	// Update FPS
+	if(GShouldReloadShaders)
 	{
-//		FString resultTitle;
-//		resultTitle.append("LearnOpenGL: FPS [");
-//		resultTitle.append(std::to_string((uint16)std::floor(60.f / GDeltaSeconds)));
-//		resultTitle.append("]");
-//
-//		glfwSetWindowTitle(GWindow, resultTitle.c_str());
-	}
-	
-	// Position log
-	{
-		//const glm::vec3& currentPos = GCamera->GetPosition(); 
-		//std::cout << "Current position: [" << currentPos.x << ',' << currentPos.y << ',' << currentPos.z << ']' << std::endl;
+		GShaders.clear();
+		GUniforms.clear();
+
+		PrepareShaders(GShaders, GUniforms);
+		GShouldReloadShaders = false;
 	}
 	
 	// Rotate over time
@@ -1022,16 +1024,12 @@ int32 GuardedMain()
 	{
 		return -2;
 	}
-
-	TFastMap<EShaderMainType, FShaderProgramPtr> Shaders;
-	TFastMap<EUniformBufferMainType, FUniformBufferPtr> Uniforms;
-	if(!PrepareShaders(Shaders, Uniforms))
+	if(!PrepareShaders(GShaders, GUniforms))
 	{
 		return -3;
 	}
 	
-	TFastMap<EFramebufferMainType, FFramebufferPtr> Framebuffers;
-	if(!PrepareFBs(Framebuffers))
+	if(!PrepareFBs(GFramebuffers))
 	{
 		return -4;
 	}
@@ -1051,7 +1049,7 @@ int32 GuardedMain()
 		return -7;
 	}
 	
-	if(!InitRender(Uniforms))
+	if(!InitRender(GUniforms))
 	{
 		return -8;
 	}
@@ -1069,8 +1067,9 @@ int32 GuardedMain()
 		frameTimer.Start();
 
 		EngineTick();
+
 		ProcessInput();
-		ProcessRender(Shaders, Uniforms, Framebuffers);
+		ProcessRender();
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
