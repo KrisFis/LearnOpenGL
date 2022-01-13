@@ -30,7 +30,17 @@ uniform struct GBuffer
 	sampler2D albedoSpecular;
 } gBuffer;
 
-uniform struct Light
+uniform struct DirectionalLight
+{
+	vec3 direction;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+
+} dirLight;
+
+uniform struct PointLight
 {
 	vec3 position;
 
@@ -41,7 +51,7 @@ uniform struct Light
 	float constant;
 	float linear;
 	float quadratic;
-} lights[3];
+} pointLight[3];
 
 struct GBufferTexData
 {
@@ -73,7 +83,47 @@ vec4 ApplyPostProcesses(vec4 InFragColor)
 	return InFragColor;
 }
 
-vec4 CalculateLight(Light light, GBufferTexData texData)
+vec4 CalculateDirLight(DirectionalLight light, GBufferTexData texData)
+{
+	vec3 ambient, diffuse, specular;
+	
+	vec3 lightDir = normalize(-light.direction);
+	vec3 norm = normalize(texData.normal);
+	
+	// ambient
+	{
+		ambient = light.ambient * texData.albedo;
+	}
+
+	// diffuse
+	{
+		float diff = max(dot(norm, lightDir), 0.01f);
+		diffuse = light.diffuse * diff * texData.albedo;
+	}
+
+	// specular
+	{
+		vec3 viewDir = normalize(u_light.viewPos.rgb - texData.fragPos);
+		
+		float spec = 0.f;
+		if(u_light.useBlinn)
+		{
+			vec3 halfwayDir = normalize(lightDir + viewDir);
+			spec = pow(max(dot(norm, halfwayDir), 0.f), material.shininess);
+		}
+		else
+		{
+			vec3 reflectDir = reflect(-lightDir, norm);
+			spec = pow(max(dot(viewDir, reflectDir), 0.f), material.shininess);
+		}
+		
+		specular = light.specular * spec * texData.specular;
+	}
+
+	return vec4(ambient + diffuse + specular, 1.f);
+}
+
+vec4 CalculatePointLight(PointLight light, GBufferTexData texData)
 {
 	vec3 ambient, diffuse, specular;
 	float attenuation;
@@ -135,11 +185,11 @@ vec4 CalculateLights()
 {
 	GBufferTexData data = ConstructGBufferData();
 
-	vec3 result = vec3(0.f);
+	vec3 result = CalculateDirLight(dirLight, data).rgb;
 
 	for (int i = 0; i < 3; ++i)
 	{
-		result += CalculateLight(lights[i], data).rgb;
+		result += CalculatePointLight(pointLight[i], data).rgb;
 	}
 
 	return vec4(result, 1.f);

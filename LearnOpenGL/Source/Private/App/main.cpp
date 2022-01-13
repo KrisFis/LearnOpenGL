@@ -75,7 +75,7 @@ bool GUIResetLayout = true;
 uint16 GNormalMappingObjIdx = 0;
 uint16 GParalaxMappingObjIdx = 0;
 
-struct FLightInfo
+struct FPointLightInfo
 {
 	uint16 BlockId;
 	FColor Color;
@@ -83,7 +83,13 @@ struct FLightInfo
 	float Constant;
 	float Linear;
 	float Quadratic;
-} GLights[3];
+} GPointLights[3];
+
+struct FDirectionalLightInfo
+{
+	glm::vec3 Direction;
+	FColor Color;
+} GDirLight;
 
 // TEST
 
@@ -494,7 +500,12 @@ bool PrepareScene(FScenePtr& OutScene)
 		});
 	}
 	
-	// LIGHTS
+	// DIRECTIONAL LIGHT
+	{
+		GDirLight = { {0.f, -0.5f, -0.5f}, NColors::White };
+	}
+
+	// POINT LIGHTS
 	{
 		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -502,7 +513,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[0] = {(uint16)(sceneObjects.size() - 1), NColors::Red * 2.f , 0.f, 0.f, 0.032f};
+		GPointLights[0] = {(uint16)(sceneObjects.size() - 1), NColors::White * 2.f , 0.f, 0.f, 0.032f};
 	
 		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -510,7 +521,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[1] = {(uint16)(sceneObjects.size() - 1), NColors::White * 10.f, 0.f, 0.f, 0.032f };
+		GPointLights[1] = {(uint16)(sceneObjects.size() - 1), NColors::White * 6.f, 0.f, 0.f, 0.032f };
 		
 		sceneObjects.push_back(NMeshUtils::ConstructCube({blankTexture}));
 		sceneObjects[sceneObjects.size() - 1]->SetTransform({
@@ -518,7 +529,7 @@ bool PrepareScene(FScenePtr& OutScene)
 			{0.f, 0.f, 0.f},
 			{0.25f, 0.25f, 0.25f}
 		});
-		GLights[2] = {(uint16)(sceneObjects.size() - 1), NColors::Blue * 2.f, 0.f, 0.f, 0.032f };
+		GPointLights[2] = {(uint16)(sceneObjects.size() - 1), NColors::White * 2.f, 0.f, 0.f, 0.032f };
 	}
 
 	OutScene = FScene::Create(sceneObjects);
@@ -761,19 +772,24 @@ void ProcessRender()
 			// Setup light
 			{
 				GShaders[EShaderMainType::Screen]->SetFloat("material.shininess", 8.f);
-				
+
+				GShaders[EShaderMainType::Screen]->SetVec3("dirLight.direction", GDirLight.Direction);
+				GShaders[EShaderMainType::Screen]->SetVec3("dirLight.diffuse", GDirLight.Color.ToVec3() * 0.5f);
+				GShaders[EShaderMainType::Screen]->SetVec3("dirLight.ambient", GDirLight.Color.ToVec3() * 0.05f);
+				GShaders[EShaderMainType::Screen]->SetVec3("dirLight.specular", {0.05f, 0.05f, 0.05f});
+
 				for(uint8 i = 0; i < 3; ++i)
 				{
-					const FString uniformName = "lights[" + std::to_string(i) + "]";
+					const FString uniformName = "pointLight[" + std::to_string(i) + "]";
 				
-					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position);
-					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".diffuse").c_str(), GLights[i].Color.ToVec4() * 0.5f);
-					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".ambient").c_str(), GLights[i].Color.ToVec4() * 0.05f);
+					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".position").c_str(), GScene->GetObjectByIdx(GPointLights[i].BlockId)->GetTransform().Position);
+					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".diffuse").c_str(), GPointLights[i].Color.ToVec3() * 0.5f);
+					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".ambient").c_str(), GPointLights[i].Color.ToVec3() * 0.05f);
 					GShaders[EShaderMainType::Screen]->SetVec3(FString(uniformName + ".specular").c_str(), {0.05f, 0.05f, 0.05f});
 					
-					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".constant").c_str(), GLights[i].Constant);
-					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".linear").c_str(), GLights[i].Linear);
-					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".quadratic").c_str(), GLights[i].Quadratic);
+					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".constant").c_str(), GPointLights[i].Constant);
+					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".linear").c_str(), GPointLights[i].Linear);
+					GShaders[EShaderMainType::Screen]->SetFloat(FString(uniformName + ".quadratic").c_str(), GPointLights[i].Quadratic);
 				}
 			}
 			
@@ -911,32 +927,49 @@ void ProcessUIRender()
 			ImGui::SliderInt("Bloom iterations", &GBloomIterations, 0, 10);
 
 			bool colorPickerVisible = false;
-			if(ImGui::CollapsingHeader("Lights"))
+			if(ImGui::CollapsingHeader("Point Lights"))
 			{
 				ImGui::Indent();
 
+				if(ImGui::CollapsingHeader("Directional"))
+				{
+					ImGui::Indent();
+
+					ImGui::SliderFloat3("Direction", &GDirLight.Direction.x, -1.f, 1.f);
+
+					ImGui::Spacing();
+
+					glm::vec4 colorCopy = GDirLight.Color.ToVec4();
+					if(ImGui::ColorPicker4("Color", &colorCopy.x), ImGuiColorEditFlags_NoSidePreview)
+					{
+						GDirLight.Color = FColor::FromVec4(colorCopy);
+					}
+
+					ImGui::Unindent();
+				}
+
 				for(uint8 i = 0; i < 3; ++i)
 				{
-					if(ImGui::CollapsingHeader(FString("[" + std::to_string(i) + "]").c_str()))
+					if(ImGui::CollapsingHeader(FString("Point: " + std::to_string(i)).c_str()))
 					{
 						colorPickerVisible = true;
 
 						ImGui::Indent();
 
-						glm::vec3 positionCopy = GScene->GetObjectByIdx(GLights[i].BlockId)->GetTransform().Position;
-						glm::vec4 colorCopy = GLights[i].Color.ToVec4();
+						glm::vec3 positionCopy = GScene->GetObjectByIdx(GPointLights[i].BlockId)->GetTransform().Position;
+						glm::vec4 colorCopy = GPointLights[i].Color.ToVec4();
 						
 						if(ImGui::SliderFloat3("Position", &positionCopy.x, -25.f, 25.f))
 						{
-							auto obj = GScene->GetObjectByIdx(GLights[i].BlockId);
+							auto obj = GScene->GetObjectByIdx(GPointLights[i].BlockId);
 							FTransform objTransform = obj->GetTransform();
 							objTransform.Position = positionCopy;
 							obj->SetTransform(objTransform);
 						}
 						
-						ImGui::SliderFloat("Constant", &GLights[i].Constant, 0.f, 10.f);
-						ImGui::SliderFloat("Linear", &GLights[i].Linear, 0.f, 2.f);
-						ImGui::SliderFloat("Quadratic", &GLights[i].Quadratic, 0.f, 2.f);
+						ImGui::SliderFloat("Constant", &GPointLights[i].Constant, 0.f, 10.f);
+						ImGui::SliderFloat("Linear", &GPointLights[i].Linear, 0.f, 2.f);
+						ImGui::SliderFloat("Quadratic", &GPointLights[i].Quadratic, 0.f, 2.f);
 						
 						ImGui::Spacing();
 						
@@ -945,7 +978,7 @@ void ProcessUIRender()
 							ImGuiColorEditFlags_NoSidePreview |
 							ImGuiColorEditFlags_AlphaBar))
 						{
-							GLights[i].Color = FColor::FromVec4(colorCopy);
+							GPointLights[i].Color = FColor::FromVec4(colorCopy);
 						}
 
 						ImGui::Unindent();
