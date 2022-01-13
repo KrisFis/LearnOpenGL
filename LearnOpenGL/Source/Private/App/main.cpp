@@ -296,6 +296,8 @@ bool PrepareFBs(TFastMap<EFramebufferMainType, FFramebufferPtr>& OutFramebuffers
 
 	// GBuffer
 	{
+		// TODO(kristian.fisera): Position can be determined from depth
+		// * see: https://mynameismjp.wordpress.com/2010/09/05/position-from-depth-3/
 		FRenderTexturePtr positionTarget = FRenderTexture::Create(
 				windowWidth,
 				windowHeight,
@@ -398,10 +400,17 @@ bool PrepareScene(FScenePtr& OutScene)
 		return false;
 	}
 	
+	FModelPtr backpack = FModel::Create(NFileUtils::ContentPath("Models/Backpack/backpack.obj").c_str());
+
+	if( !backpack->IsInitialized() )
+	{
+		return false;
+	}
+
 	// HELPER for scene
-	// X -> forward
+	// Z -> forward
 	// Y -> up
-	// Z -> right
+	// X -> right
 	
 	TArray<FSceneObjectPtr> sceneObjects;
 	sceneObjects.push_back(NMeshUtils::ConstructPlane({rocksFloorTexture}));
@@ -443,6 +452,16 @@ bool PrepareScene(FScenePtr& OutScene)
 		{0.f, -45.f, 0.f},
 		{1.f, 1.f, 1.f}
 	});
+
+	// BAG
+	{
+		sceneObjects.push_back(backpack->AsShared());
+		sceneObjects[sceneObjects.size() - 1]->SetTransform({
+			{3.35f, -0.35f, 0.f},
+			{0.f, 90.f, 0.f},
+			{0.35f, 0.35f, 0.35f}
+		});
+	}
 
 	// NORMAL MAPPING TEST
 	{

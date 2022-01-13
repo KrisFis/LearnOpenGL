@@ -58,8 +58,7 @@ public: // ISceneObject overrides
 	FORCEINLINE virtual void SetOutlineSize(float Value) override { OutlineSize = Value; }
 	
 	FORCEINLINE virtual FTransform GetTransform() const override { return Transform; }
-	FORCEINLINE virtual void SetTransform(const FTransform& Value) override { Transform = Value;
-		RefreshCaches(); }
+	FORCEINLINE virtual void SetTransform(const FTransform& Value) override { Transform = Value; RefreshCaches(); }
 	
 	virtual void Draw(const TSharedPtr<FShaderProgram>& Shader) override;
 
