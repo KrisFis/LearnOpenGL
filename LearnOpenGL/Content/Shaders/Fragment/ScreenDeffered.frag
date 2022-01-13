@@ -53,6 +53,11 @@ uniform struct PointLight
 	float quadratic;
 } pointLight[3];
 
+uniform struct SSAO
+{
+	sampler2D map;
+} ssao;
+
 struct GBufferTexData
 {
 	vec3 fragPos;
@@ -83,7 +88,7 @@ vec4 ApplyPostProcesses(vec4 InFragColor)
 	return InFragColor;
 }
 
-vec4 CalculateDirLight(DirectionalLight light, GBufferTexData texData)
+vec4 CalculateDirLight(DirectionalLight light, GBufferTexData texData, float ambientOcclusion)
 {
 	vec3 ambient, diffuse, specular;
 	
@@ -92,7 +97,7 @@ vec4 CalculateDirLight(DirectionalLight light, GBufferTexData texData)
 	
 	// ambient
 	{
-		ambient = light.ambient * texData.albedo;
+		ambient = light.ambient * texData.albedo * ambientOcclusion;
 	}
 
 	// diffuse
@@ -123,7 +128,7 @@ vec4 CalculateDirLight(DirectionalLight light, GBufferTexData texData)
 	return vec4(ambient + diffuse + specular, 1.f);
 }
 
-vec4 CalculatePointLight(PointLight light, GBufferTexData texData)
+vec4 CalculatePointLight(PointLight light, GBufferTexData texData, float ambientOcclusion)
 {
 	vec3 ambient, diffuse, specular;
 	float attenuation;
@@ -133,7 +138,7 @@ vec4 CalculatePointLight(PointLight light, GBufferTexData texData)
 
 	// ambient
 	{
-		ambient = light.ambient * texData.albedo;
+		ambient = light.ambient * texData.albedo * ambientOcclusion;
 	}
 
 	// diffuse
@@ -184,12 +189,13 @@ GBufferTexData ConstructGBufferData()
 vec4 CalculateLights()
 {
 	GBufferTexData data = ConstructGBufferData();
+	float ambientOcclusion = texture(ssao.map, frag_in.TexCoord).r;
 
-	vec3 result = CalculateDirLight(dirLight, data).rgb;
+	vec3 result = CalculateDirLight(dirLight, data, ambientOcclusion).rgb;
 
 	for (int i = 0; i < 3; ++i)
 	{
-		result += CalculatePointLight(pointLight[i], data).rgb;
+		result += CalculatePointLight(pointLight[i], data, ambientOcclusion).rgb;
 	}
 
 	return vec4(result, 1.f);

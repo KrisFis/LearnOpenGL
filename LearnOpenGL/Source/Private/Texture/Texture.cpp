@@ -55,7 +55,9 @@ FTexture::FTexture(const FRenderTexture* RenderTexture, const ETextureType InTyp
 	, UseIndex(-1)
 	, Type(InType)
 	, bTargetInit(true)
-{}
+{
+	ENSURE(InType != ETextureType::Invalid);
+}
 
 FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool IsLinear, bool ClampToEdge)
 	: Id(0)
@@ -119,6 +121,32 @@ FTexture::FTexture(const char* InFilePath, const ETextureType InType, bool IsLin
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+FTexture::FTexture(const TArray<glm::vec4>& InData, const ETextureType InType, bool IsLinear, bool ClampToEdge)
+	: Id(0)
+	, UseIndex(-1)
+	, Type(ETextureType::Invalid)
+	, bTargetInit(false)
+{
+	ENSURE(InType != ETextureType::Invalid);
+	ENSURE_RET(InData.size() > 0);
+
+	glBindTexture(GL_TEXTURE_2D, Id);
+
+	// Is square texture
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, InData.size() / 4, InData.size() / 4, 0, (IsLinear) ? GL_RGBA : GL_SRGB_ALPHA, GL_FLOAT, InData.data());
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	// set the texture wrapping parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (ClampToEdge) ? GL_CLAMP_TO_EDGE : GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (ClampToEdge) ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glGenTextures(1, &Id);
 }
 
 FTexture::~FTexture()

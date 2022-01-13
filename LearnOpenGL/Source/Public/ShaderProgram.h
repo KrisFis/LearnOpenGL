@@ -47,6 +47,7 @@ public: // External methods
 	void SetInt32(const char* Name, const int32& Value);
 	void SetUInt32(const char* Name, const uint32& Value);
 	void SetFloat(const char* Name, float Value);
+	void SetVec2(const char* Name, const glm::vec2& Value);
 	void SetVec3(const char* Name, const glm::vec3& Value);
 	void SetVec4(const char* Name, const glm::vec4& Value);
 	void SetMat3(const char* Name, const glm::mat3& Value);

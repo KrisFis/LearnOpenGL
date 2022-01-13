@@ -34,6 +34,7 @@ private: // Constructors
 
 	explicit FTexture(const FRenderTexture* RenderTexture, const ETextureType InType);
 	explicit FTexture(const char* InFilePath, const ETextureType InType, bool IsLinear, bool ClampToEdge);
+	explicit FTexture(const TArray<glm::vec4>& InData, const ETextureType InType, bool IsLinear, bool ClampToEdge); // Make more options or create factory
 	
 public: // Destructors
 	
@@ -46,6 +47,9 @@ public: // Static constructions
 
 	FORCEINLINE static TSharedPtr<FTexture> Create(const char* FilePath, const ETextureType Type, bool IsLinear = false, bool ClampToEdge = false) 
 	{ return MakeShareable(new FTexture(FilePath, Type, IsLinear, ClampToEdge));}
+
+	FORCEINLINE static TSharedPtr<FTexture> Create(const TArray<glm::vec4>& Data, const ETextureType Type, bool IsLinear = false, bool ClampToEdge = false)
+	{ return MakeShareable(new FTexture(Data, Type, IsLinear, ClampToEdge)); }
 
 public: // Getters
 

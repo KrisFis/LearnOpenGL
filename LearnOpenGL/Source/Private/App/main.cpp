@@ -26,6 +26,9 @@
 #include "DepthMap.h"
 #include "DepthCubemap.h"
 
+#include <random>
+#include <cmath>
+
 // Window
 uint16 GInitWindowWidth = 1360;
 uint16 GInitWindowHeight = 765;
@@ -56,6 +59,10 @@ FScenePtr GScene;
 
 FSceneObjectPtr GSkyboxObject;
 FSceneObjectPtr GScreenObject;
+
+// SSAO
+FTexturePtr GSSAONoiseTexture;
+glm::vec3 GSSAOKernel[64];
 
 bool GUseBlinn = true;
 float GExposure = 0.15f;
@@ -148,6 +155,7 @@ struct FShaderMainType
 	{
 		switch (Type)
 		{
+			case SSAO:
 			case Mesh:
 				return { FUniformBufferMainType::Matrices };
 			case Screen:
@@ -435,9 +443,9 @@ bool PrepareScene(FScenePtr& OutScene)
 	}
 
 	// HELPER for scene
-	// Z -> forward
+	// X -> forward
 	// Y -> up
-	// X -> right
+	// Z -> right
 	
 	TArray<FSceneObjectPtr> sceneObjects;
 	sceneObjects.push_back(NMeshUtils::ConstructPlane({rocksFloorTexture}));
@@ -577,10 +585,10 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/Skybox.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/Skybox.frag").c_str())
 		});
 
-		// OutShaders.insert({
-		// 	EShaderMainType::SSAO,
-		// 	FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/SSAODeffered.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/SSAODeffered.frag").c_str())
-		// });
+		OutShaders.insert({
+			EShaderMainType::SSAO,
+			FShaderProgram::Create(NFileUtils::ContentPath("Shaders/Vertex/SSAODeffered.vert").c_str(), NFileUtils::ContentPath("Shaders/Fragment/SSAODeffered.frag").c_str())
+		});
 	}
 	
 	for(const auto& shader : OutShaders)
@@ -602,6 +610,10 @@ bool PrepareShaders(TFastMap<EShaderMainType, FShaderProgramPtr>& OutShaders, TF
 				)
 			});
 			
+			ENSURE_RET(OutShaders[EShaderMainType::SSAO]->SetUniformBuffer(
+				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
+			false);
+
 			ENSURE_RET(OutShaders[EShaderMainType::Mesh]->SetUniformBuffer(
 				FUniformBufferMainType::ToString(currentType), OutUniforms[currentType].GetRef()), 
 			false);
@@ -768,7 +780,64 @@ void ProcessRender()
 		
 		GFramebuffers[EFramebufferMainType::GBuffer]->Disable();
 	}
+
+			
+	TArray<FTexturePtr> gTextures = NRenderTargetUtils::TryGetAsTextures(
+		GFramebuffers[EFramebufferMainType::GBuffer],
+		ERenderTargetAttachmentType::Color,
+		ETextureType::Diffuse
+	);
 	
+	ENSURE(gTextures.size() == 3);
+	
+	// SSAO
+	{
+		GFramebuffers[EFramebufferMainType::SSAO]->Enable();
+
+		// Setup
+		{
+			glClear(GL_COLOR_BUFFER_BIT);
+		}
+
+		// Draw
+		{
+			GShaders[EShaderMainType::SSAO]->Enable();
+
+			// Setup textures
+			{
+				for(uint8 i = 0; i < 64; ++i)
+					GShaders[EShaderMainType::SSAO]->SetVec3(FString("samples[" + std::to_string(i) + "]").c_str(), GSSAOKernel[i]);
+
+				GShaders[EShaderMainType::SSAO]->SetInt32("gBuffer.position", 0);
+				GShaders[EShaderMainType::SSAO]->SetInt32("gBuffer.normal", 1);
+
+				GShaders[EShaderMainType::SSAO]->SetVec2("noise.scale", {windowWidth * 0.25f, windowHeight * 0.25f});
+				GShaders[EShaderMainType::SSAO]->SetInt32("noise.map", 2);
+			}
+
+			GShaders[EShaderMainType::SSAO]->Disable();
+		}
+
+		gTextures[0]->Use(0);
+		gTextures[1]->Use(1);
+		GSSAONoiseTexture->Use(2);
+
+		GScreenObject->Draw(GShaders[EShaderMainType::SSAO]);
+
+		GSSAONoiseTexture->Clear();
+		gTextures[0]->Clear();
+		gTextures[1]->Clear();
+
+		GFramebuffers[EFramebufferMainType::SSAO]->Disable();
+	}
+
+	FTexturePtr ssaoTexture = NRenderTargetUtils::TryGetAsTexture(
+		GFramebuffers[EFramebufferMainType::SSAO],
+		ERenderTargetAttachmentType::Color,
+		ETextureType::Diffuse,
+		0
+	);
+
 	// Screen rendering
 	{
 		// Setup
@@ -779,20 +848,17 @@ void ProcessRender()
 		// Draw quad
 		{
 			GShaders[EShaderMainType::Screen]->Enable();
-			
-			TArray<FTexturePtr> gTextures = NRenderTargetUtils::TryGetAsTextures(
-				GFramebuffers[EFramebufferMainType::GBuffer],
-				ERenderTargetAttachmentType::Color,
-				ETextureType::Diffuse
-			);
-			
-			ENSURE(gTextures.size() == 3);
-			
+
 			// Setup g-buffer
 			{
 				GShaders[EShaderMainType::Screen]->SetInt32("gBuffer.position", 0);
 				GShaders[EShaderMainType::Screen]->SetInt32("gBuffer.normal", 1);
 				GShaders[EShaderMainType::Screen]->SetInt32("gBuffer.albedoSpecular", 2);
+			}
+
+			// Setup SSAO
+			{
+				GShaders[EShaderMainType::Screen]->SetInt32("ssao.map", 3);
 			}
 			
 			// Setup light
@@ -822,9 +888,11 @@ void ProcessRender()
 			gTextures[0]->Use(0);
 			gTextures[1]->Use(1);
 			gTextures[2]->Use(2);
+			ssaoTexture->Use(3);
 			
 			GScreenObject->Draw(GShaders[EShaderMainType::Screen]);
 			
+			ssaoTexture->Clear();
 			gTextures[2]->Clear();
 			gTextures[1]->Clear();
 			gTextures[0]->Clear();
@@ -1045,6 +1113,56 @@ bool EngineInit()
 
 	GCamera->SetShouldProcessInput(BUILD_DEBUG != 1);
 	
+	// SSAO
+	{
+		std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between [0.0, 1.0]
+		std::default_random_engine generator;
+
+		// kernel
+		{
+			auto lerpFunc =
+			[](float a, float b, float f)
+			{
+				return a + f * (b - a);
+			};
+
+			for (uint8 i = 0; i < 64; ++i)
+			{
+				glm::vec3 sample(
+					randomFloats(generator) * 2.0 - 1.0,
+					randomFloats(generator) * 2.0 - 1.0,
+					randomFloats(generator)
+				);
+
+				sample = glm::normalize(sample);
+				sample *= randomFloats(generator);
+
+				float scale = float(i) / 64.0;
+
+				// scale samples s.t. they're more aligned to center of kernel
+				scale = lerpFunc(0.1f, 1.f, scale * scale);
+				sample *= scale;
+				GSSAOKernel[i] = sample;
+			}
+		}
+
+		// noise
+		{
+			TArray<glm::vec4> noiseData;
+			for (uint8 i = 0; i < 16; ++i)
+			{
+				glm::vec4 noise(
+					randomFloats(generator) * 2.0 - 1.0, 
+					randomFloats(generator) * 2.0 - 1.0, 
+					0.f, 0.f);
+
+				noiseData.push_back(noise);
+			}
+
+			GSSAONoiseTexture = FTexture::Create(noiseData, ETextureType::Diffuse, true, true);
+		}
+	}
+
 	return true;
 }
 
