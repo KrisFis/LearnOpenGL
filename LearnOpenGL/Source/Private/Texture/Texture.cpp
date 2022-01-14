@@ -137,7 +137,7 @@ FTexture::FTexture(const TArray<glm::vec4>& InData, const ETextureType InType, b
 	glBindTexture(GL_TEXTURE_2D, Id);
 
 	// Is square texture
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, InData.size() / 4, InData.size() / 4, 0, (IsLinear) ? GL_RGBA : GL_SRGB_ALPHA, GL_FLOAT, InData.data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, (GLsizei)InData.size() / 4, (GLsizei)InData.size() / 4, 0, (IsLinear) ? GL_RGBA : GL_SRGB_ALPHA, GL_FLOAT, InData.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	// set the texture wrapping parameters

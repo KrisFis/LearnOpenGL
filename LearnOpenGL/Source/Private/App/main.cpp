@@ -1203,7 +1203,7 @@ bool EngineInit()
 				sample = glm::normalize(sample);
 				sample *= randomFloats(generator);
 
-				float scale = float(i) / 64.0;
+				float scale = (float)i / 64.f;
 
 				// scale samples s.t. they're more aligned to center of kernel
 				scale = lerpFunc(0.1f, 1.f, scale * scale);
